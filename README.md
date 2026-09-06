@@ -143,5 +143,5 @@ npm run build   # 产物在 frontend/dist
 
 ## 开源协议
 
-（待定）本项目暂未指定开源许可证，正式发布前请补充 `LICENSE` 文件（如 MIT / Apache-2.0）。
+本项目采用 [MIT License](LICENSE)。Copyright (c) 2026 启智IEP团队。
 *（内容由AI生成，仅供参考）*
