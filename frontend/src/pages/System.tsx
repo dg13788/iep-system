@@ -383,7 +383,7 @@ function generateMockData() {
   const users: SystemUser[] = [
     { id: 'u1', username: 'admin', real_name: '系统管理员', role: '超级管理员', role_code: 'super_admin', department: '信息中心', phone: '13800000001', email: 'admin@school.edu', last_login: '2025-01-18 16:30', status: '正常', created_at: '2024-01-01', login_count: 328 },
     { id: 'u2', username: 'director1', real_name: '陈主任', role: '教学主任', role_code: 'director', department: '教学部', phone: '13800000002', email: 'director@school.edu', last_login: '2025-01-18 14:00', status: '正常', created_at: '2024-01-02', login_count: 215 },
-    { id: 'u3', username: 'teacher1', real_name: '王老师', role: '班主任', role_code: 'class_teacher', department: '启智一班', phone: '13800000003', email: 'wang@school.edu', last_login: '2025-01-18 12:00', status: '正常', created_at: '2024-01-03', login_count: 186 },
+    { id: 'u3', username: 'teacher1', real_name: '王老师', role: '班主任', role_code: 'class_teacher', department: '特教一班', phone: '13800000003', email: 'wang@school.edu', last_login: '2025-01-18 12:00', status: '正常', created_at: '2024-01-03', login_count: 186 },
     { id: 'u4', username: 'teacher2', real_name: '李老师', role: '科任教师', role_code: 'teacher', department: '康复组', phone: '13800000004', email: 'li@school.edu', last_login: '2025-01-17 18:00', status: '正常', created_at: '2024-01-04', login_count: 142 },
     { id: 'u5', username: 'parent1', real_name: '王建国', role: '家长', role_code: 'parent', department: '', phone: '13800138001', email: '', last_login: '2025-01-18 14:30', status: '正常', created_at: '2024-06-01', login_count: 45 },
     { id: 'u6', username: 'viewer1', real_name: '张督导', role: '只读用户', role_code: 'viewer', department: '督导室', phone: '13800000005', email: 'supervisor@school.edu', last_login: '2025-01-15 10:00', status: '正常', created_at: '2024-03-01', login_count: 28 },
@@ -1390,7 +1390,7 @@ function AuditLogTab() {
 /* ------------------------------------------------------------------ */
 function SystemSettingsTab() {
   const [settings, setSettings] = useState({
-    school_name: '启智特殊教育学校',
+    school_name: '特教特殊教育学校',
     school_address: '北京市朝阳区教育路100号',
     school_phone: '010-12345678',
     iep_cycle: '6个月',

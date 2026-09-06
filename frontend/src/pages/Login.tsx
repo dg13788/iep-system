@@ -74,7 +74,7 @@ export default function Login() {
               <div className="w-12 h-12 rounded-full bg-primary-500 flex items-center justify-center">
                 <Brain className="w-7 h-7 text-white" />
               </div>
-              <span className="text-2xl font-bold text-primary-800">启智 IEP</span>
+              <span className="text-2xl font-bold text-primary-800">特教 IEP</span>
             </div>
 
             <h1 className="text-4xl xl:text-5xl font-bold text-primary-900 leading-tight mb-6">
@@ -84,7 +84,7 @@ export default function Login() {
             </h1>
 
             <p className="text-lg text-[#64748B] leading-relaxed mb-8">
-              启智 IEP 管理系统，专为特殊教育学校设计的个别化教育计划管理平台。
+              特教 IEP 管理系统，专为特殊教育学校设计的个别化教育计划管理平台。
               让每一份教育计划都精准到位，让每一个孩子都被温柔以待。
             </p>
 
@@ -135,7 +135,7 @@ export default function Login() {
             <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center">
               <Brain className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-primary-800">启智 IEP</span>
+            <span className="text-xl font-bold text-primary-800">特教 IEP</span>
           </div>
 
           <h2 className="text-2xl font-bold text-[#1E293B] mb-2">欢迎回来</h2>

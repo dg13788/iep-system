@@ -1055,7 +1055,7 @@ export default function IEPDetail({
                 className="max-w-lg mx-auto"
               >
                 <div className="text-center mb-6">
-                  <h3 className="text-lg font-semibold text-[#1E293B]">启智特殊教育学校</h3>
+                  <h3 className="text-lg font-semibold text-[#1E293B]">特教特殊教育学校</h3>
                   <p className="text-sm text-[#64748B] mt-1">IEP 计划签名确认</p>
                 </div>
 

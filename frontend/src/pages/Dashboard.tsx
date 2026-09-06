@@ -47,16 +47,16 @@ import { getDataScopeConfig, filterByDataScope, isReadOnly } from '@/utils/dataS
 
 // Student reference data for data scope filtering
 const allStudents = [
-  { id: 's1', name: '王小明', class: '启智一班', classId: 'c1' },
-  { id: 's2', name: '李小红', class: '启智一班', classId: 'c1' },
-  { id: 's3', name: '张小刚', class: '启智二班', classId: 'c2' },
-  { id: 's4', name: '刘小美', class: '启智二班', classId: 'c2' },
-  { id: 's5', name: '陈小军', class: '启智三班', classId: 'c3' },
-  { id: 's6', name: '赵小芳', class: '启智三班', classId: 'c3' },
-  { id: 's7', name: '孙小亮', class: '启智一班', classId: 'c1' },
-  { id: 's8', name: '周小静', class: '启智二班', classId: 'c2' },
-  { id: 's9', name: '吴小强', class: '启智一班', classId: 'c1' },
-  { id: 's10', name: '马小丽', class: '启智三班', classId: 'c3' },
+  { id: 's1', name: '王小明', class: '特教一班', classId: 'c1' },
+  { id: 's2', name: '李小红', class: '特教一班', classId: 'c1' },
+  { id: 's3', name: '张小刚', class: '特教二班', classId: 'c2' },
+  { id: 's4', name: '刘小美', class: '特教二班', classId: 'c2' },
+  { id: 's5', name: '陈小军', class: '特教三班', classId: 'c3' },
+  { id: 's6', name: '赵小芳', class: '特教三班', classId: 'c3' },
+  { id: 's7', name: '孙小亮', class: '特教一班', classId: 'c1' },
+  { id: 's8', name: '周小静', class: '特教二班', classId: 'c2' },
+  { id: 's9', name: '吴小强', class: '特教一班', classId: 'c1' },
+  { id: 's10', name: '马小丽', class: '特教三班', classId: 'c3' },
 ];
 
 // Compute scope-aware stat cards
@@ -130,9 +130,9 @@ const iepTrendData = [
 
 // Bar chart data - class IEP completion
 const classIepData = [
-  { class: '启智一班', total: 42, completed: 35, inProgress: 7 },
-  { class: '启智二班', total: 38, completed: 30, inProgress: 8 },
-  { class: '启智三班', total: 35, completed: 28, inProgress: 7 },
+  { class: '特教一班', total: 42, completed: 35, inProgress: 7 },
+  { class: '特教二班', total: 38, completed: 30, inProgress: 8 },
+  { class: '特教三班', total: 35, completed: 28, inProgress: 7 },
   { class: '康复一班', total: 30, completed: 22, inProgress: 8 },
   { class: '学前融合班', total: 25, completed: 20, inProgress: 5 },
   { class: '生活技能班', total: 19, completed: 15, inProgress: 4 },
@@ -170,7 +170,7 @@ const reviewReminders = [
 // Recent activity data
 const recentActivity = [
   { time: '10分钟前', user: '张老师', action: '完成了', object: '王小明的认知评估', type: 'evaluation' },
-  { time: '30分钟前', user: '李老师', action: '创建了', object: '启智一班的新IEP计划', type: 'iep' },
+  { time: '30分钟前', user: '李老师', action: '创建了', object: '特教一班的新IEP计划', type: 'iep' },
   { time: '1小时前', user: '王老师', action: '更新了', object: '李小红的生活自理目标', type: 'update' },
   { time: '2小时前', user: '赵家长', action: '签名确认', object: '张小明的IEP计划', type: 'signature' },
   { time: '3小时前', user: '陈老师', action: '录入', object: '康复一班的运动评估', type: 'record' },
@@ -194,10 +194,10 @@ const pendingTasks = [
 
 // Recent students data
 const recentStudents = [
-  { name: '王小明', id: 'XH2023001', class: '启智一班', updateTime: '10分钟前', updateAction: '认知评估完成', status: '在读' },
-  { name: '李小红', id: 'XH2023002', class: '启智二班', updateTime: '1小时前', updateAction: 'IEP目标更新', status: '在读' },
+  { name: '王小明', id: 'XH2023001', class: '特教一班', updateTime: '10分钟前', updateAction: '认知评估完成', status: '在读' },
+  { name: '李小红', id: 'XH2023002', class: '特教二班', updateTime: '1小时前', updateAction: 'IEP目标更新', status: '在读' },
   { name: '张小明', id: 'XH2023003', class: '康复一班', updateTime: '2小时前', updateAction: '家长已签名', status: '在读' },
-  { name: '陈小华', id: 'XH2023004', class: '启智一班', updateTime: '昨天', updateAction: '教学记录录入', status: '在读' },
+  { name: '陈小华', id: 'XH2023004', class: '特教一班', updateTime: '昨天', updateAction: '教学记录录入', status: '在读' },
   { name: '刘小芳', id: 'XH2023005', class: '学前融合班', updateTime: '昨天', updateAction: '评估记录创建', status: '在读' },
 ];
 
@@ -236,9 +236,9 @@ export default function Dashboard() {
       if (a.object.includes(name)) return true;
     }
     // For class-level activities, show if user has class access
-    if (a.object.includes('启智一班') && dataScopeConfig.classIds?.includes('c1')) return true;
-    if (a.object.includes('启智二班') && dataScopeConfig.classIds?.includes('c2')) return true;
-    if (a.object.includes('启智三班') && dataScopeConfig.classIds?.includes('c3')) return true;
+    if (a.object.includes('特教一班') && dataScopeConfig.classIds?.includes('c1')) return true;
+    if (a.object.includes('特教二班') && dataScopeConfig.classIds?.includes('c2')) return true;
+    if (a.object.includes('特教三班') && dataScopeConfig.classIds?.includes('c3')) return true;
     return false;
   });
 
@@ -495,7 +495,7 @@ export default function Dashboard() {
           <div className="h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dataScopeConfig.type === 'all' ? classIepData : classIepData.filter((d) => {
-                const classMap: Record<string, string> = { '启智一班': 'c1', '启智二班': 'c2', '启智三班': 'c3' };
+                const classMap: Record<string, string> = { '特教一班': 'c1', '特教二班': 'c2', '特教三班': 'c3' };
                 const cid = classMap[d.class];
                 return cid && dataScopeConfig.classIds.includes(cid);
               })} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>

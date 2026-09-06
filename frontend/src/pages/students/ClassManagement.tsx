@@ -336,7 +336,7 @@ export default function ClassManagement({
                       <Input
                         value={form.name || ''}
                         onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                        placeholder="如：启智一班"
+                        placeholder="如：特教一班"
                         className={inputClass}
                       />
                       {errors.name && <p className="text-danger-500 text-xs mt-1">{errors.name}</p>}

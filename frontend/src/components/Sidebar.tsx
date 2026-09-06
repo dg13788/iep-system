@@ -79,7 +79,7 @@ export default function Sidebar({ collapsed }: SidebarProps) {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden whitespace-nowrap"
               >
-                <span className="text-lg font-bold text-white">启智 IEP</span>
+                <span className="text-lg font-bold text-white">特教 IEP</span>
               </motion.div>
             )}
           </AnimatePresence>

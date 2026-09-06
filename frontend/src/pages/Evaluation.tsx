@@ -88,9 +88,9 @@ function DataScopeBadge() {
 
 /* ─── Class Name Mapping ─── */
 const classNameToId: Record<string, string> = {
-  '启智一班': 'c1',
-  '启智二班': 'c2',
-  '启智三班': 'c3',
+  '特教一班': 'c1',
+  '特教二班': 'c2',
+  '特教三班': 'c3',
 };
 
 /* ─── Types ─── */
@@ -335,36 +335,36 @@ function getTemplateMaxScore(templateId: string): number {
 /* ─── Mock Data: Students ─── */
 
 const students: Student[] = [
-  { id: 's1', name: '王小明', studentNo: '2024001', className: '启智一班', disabilityType: '智力发育迟缓' },
-  { id: 's2', name: '李小红', studentNo: '2024002', className: '启智一班', disabilityType: '自闭症谱系障碍' },
-  { id: 's3', name: '张小刚', studentNo: '2024003', className: '启智二班', disabilityType: '唐氏综合征' },
-  { id: 's4', name: '刘小美', studentNo: '2024004', className: '启智二班', disabilityType: '智力发育迟缓' },
-  { id: 's5', name: '陈小军', studentNo: '2024005', className: '启智三班', disabilityType: '脑瘫' },
-  { id: 's6', name: '赵小芳', studentNo: '2024006', className: '启智三班', disabilityType: '自闭症谱系障碍' },
-  { id: 's7', name: '孙小亮', studentNo: '2024007', className: '启智一班', disabilityType: '语言发育迟缓' },
-  { id: 's8', name: '周小静', studentNo: '2024008', className: '启智二班', disabilityType: '智力发育迟缓' },
-  { id: 's9', name: '吴小强', studentNo: '2024009', className: '启智一班', disabilityType: '注意力缺陷' },
-  { id: 's10', name: '马小丽', studentNo: '2024010', className: '启智三班', disabilityType: '唐氏综合征' },
+  { id: 's1', name: '王小明', studentNo: '2024001', className: '特教一班', disabilityType: '智力发育迟缓' },
+  { id: 's2', name: '李小红', studentNo: '2024002', className: '特教一班', disabilityType: '自闭症谱系障碍' },
+  { id: 's3', name: '张小刚', studentNo: '2024003', className: '特教二班', disabilityType: '唐氏综合征' },
+  { id: 's4', name: '刘小美', studentNo: '2024004', className: '特教二班', disabilityType: '智力发育迟缓' },
+  { id: 's5', name: '陈小军', studentNo: '2024005', className: '特教三班', disabilityType: '脑瘫' },
+  { id: 's6', name: '赵小芳', studentNo: '2024006', className: '特教三班', disabilityType: '自闭症谱系障碍' },
+  { id: 's7', name: '孙小亮', studentNo: '2024007', className: '特教一班', disabilityType: '语言发育迟缓' },
+  { id: 's8', name: '周小静', studentNo: '2024008', className: '特教二班', disabilityType: '智力发育迟缓' },
+  { id: 's9', name: '吴小强', studentNo: '2024009', className: '特教一班', disabilityType: '注意力缺陷' },
+  { id: 's10', name: '马小丽', studentNo: '2024010', className: '特教三班', disabilityType: '唐氏综合征' },
 ];
 
 /* ─── Mock Data: Evaluation Records ─── */
 
 const initialRecords: EvaluationRecord[] = [
-  { id: 'e1', studentId: 's1', studentName: '王小明', studentNo: '2024001', className: '启智一班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-15', assessor: '张老师', totalScore: 68, maxScore: 85, status: 'completed', scores: {}, notes: {}, recommendations: '建议加强注意力训练和逻辑思维能力培养。' },
-  { id: 'e2', studentId: 's2', studentName: '李小红', studentNo: '2024002', className: '启智一班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-14', assessor: '李老师', totalScore: 42, maxScore: 75, status: 'completed', scores: {}, notes: {}, recommendations: '需要加强语言表达和理解训练，建议每日进行语言互动练习。' },
-  { id: 'e3', studentId: 's3', studentName: '张小刚', studentNo: '2024003', className: '启智二班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-13', assessor: '王老师', totalScore: 55, maxScore: 80, status: 'completed', scores: {}, notes: {} },
-  { id: 'e4', studentId: 's4', studentName: '刘小美', studentNo: '2024004', className: '启智二班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-12', assessor: '张老师', totalScore: 38, maxScore: 70, status: 'completed', scores: {}, notes: {} },
-  { id: 'e5', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '启智三班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-11', assessor: '赵老师', totalScore: 45, maxScore: 65, status: 'completed', scores: {}, notes: {} },
-  { id: 'e6', studentId: 's6', studentName: '赵小芳', studentNo: '2024006', className: '启智三班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-10', assessor: '张老师', totalScore: 35, maxScore: 85, status: 'in_progress', scores: {}, notes: {} },
-  { id: 'e7', studentId: 's7', studentName: '孙小亮', studentNo: '2024007', className: '启智一班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-09', assessor: '李老师', totalScore: 50, maxScore: 75, status: 'completed', scores: {}, notes: {} },
-  { id: 'e8', studentId: 's8', studentName: '周小静', studentNo: '2024008', className: '启智二班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-08', assessor: '王老师', totalScore: 62, maxScore: 80, status: 'completed', scores: {}, notes: {} },
-  { id: 'e9', studentId: 's9', studentName: '吴小强', studentNo: '2024009', className: '启智一班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-07', assessor: '张老师', totalScore: 28, maxScore: 70, status: 'draft', scores: {}, notes: {} },
-  { id: 'e10', studentId: 's10', studentName: '马小丽', studentNo: '2024010', className: '启智三班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-06', assessor: '赵老师', totalScore: 52, maxScore: 65, status: 'completed', scores: {}, notes: {} },
-  { id: 'e11', studentId: 's1', studentName: '王小明', studentNo: '2024001', className: '启智一班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-05', assessor: '张老师', totalScore: 48, maxScore: 70, status: 'completed', scores: {}, notes: {} },
-  { id: 'e12', studentId: 's2', studentName: '李小红', studentNo: '2024002', className: '启智一班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-04', assessor: '李老师', totalScore: 55, maxScore: 85, status: 'completed', scores: {}, notes: {} },
-  { id: 'e13', studentId: 's3', studentName: '张小刚', studentNo: '2024003', className: '启智二班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-03', assessor: '李老师', totalScore: 30, maxScore: 75, status: 'in_progress', scores: {}, notes: {} },
-  { id: 'e14', studentId: 's4', studentName: '刘小美', studentNo: '2024004', className: '启智二班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-02', assessor: '赵老师', totalScore: 40, maxScore: 65, status: 'completed', scores: {}, notes: {} },
-  { id: 'e15', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '启智三班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-01', assessor: '王老师', totalScore: 48, maxScore: 80, status: 'completed', scores: {}, notes: {} },
+  { id: 'e1', studentId: 's1', studentName: '王小明', studentNo: '2024001', className: '特教一班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-15', assessor: '张老师', totalScore: 68, maxScore: 85, status: 'completed', scores: {}, notes: {}, recommendations: '建议加强注意力训练和逻辑思维能力培养。' },
+  { id: 'e2', studentId: 's2', studentName: '李小红', studentNo: '2024002', className: '特教一班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-14', assessor: '李老师', totalScore: 42, maxScore: 75, status: 'completed', scores: {}, notes: {}, recommendations: '需要加强语言表达和理解训练，建议每日进行语言互动练习。' },
+  { id: 'e3', studentId: 's3', studentName: '张小刚', studentNo: '2024003', className: '特教二班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-13', assessor: '王老师', totalScore: 55, maxScore: 80, status: 'completed', scores: {}, notes: {} },
+  { id: 'e4', studentId: 's4', studentName: '刘小美', studentNo: '2024004', className: '特教二班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-12', assessor: '张老师', totalScore: 38, maxScore: 70, status: 'completed', scores: {}, notes: {} },
+  { id: 'e5', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '特教三班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-11', assessor: '赵老师', totalScore: 45, maxScore: 65, status: 'completed', scores: {}, notes: {} },
+  { id: 'e6', studentId: 's6', studentName: '赵小芳', studentNo: '2024006', className: '特教三班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-10', assessor: '张老师', totalScore: 35, maxScore: 85, status: 'in_progress', scores: {}, notes: {} },
+  { id: 'e7', studentId: 's7', studentName: '孙小亮', studentNo: '2024007', className: '特教一班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-09', assessor: '李老师', totalScore: 50, maxScore: 75, status: 'completed', scores: {}, notes: {} },
+  { id: 'e8', studentId: 's8', studentName: '周小静', studentNo: '2024008', className: '特教二班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-08', assessor: '王老师', totalScore: 62, maxScore: 80, status: 'completed', scores: {}, notes: {} },
+  { id: 'e9', studentId: 's9', studentName: '吴小强', studentNo: '2024009', className: '特教一班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-07', assessor: '张老师', totalScore: 28, maxScore: 70, status: 'draft', scores: {}, notes: {} },
+  { id: 'e10', studentId: 's10', studentName: '马小丽', studentNo: '2024010', className: '特教三班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-06', assessor: '赵老师', totalScore: 52, maxScore: 65, status: 'completed', scores: {}, notes: {} },
+  { id: 'e11', studentId: 's1', studentName: '王小明', studentNo: '2024001', className: '特教一班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-05', assessor: '张老师', totalScore: 48, maxScore: 70, status: 'completed', scores: {}, notes: {} },
+  { id: 'e12', studentId: 's2', studentName: '李小红', studentNo: '2024002', className: '特教一班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-04', assessor: '李老师', totalScore: 55, maxScore: 85, status: 'completed', scores: {}, notes: {} },
+  { id: 'e13', studentId: 's3', studentName: '张小刚', studentNo: '2024003', className: '特教二班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-03', assessor: '李老师', totalScore: 30, maxScore: 75, status: 'in_progress', scores: {}, notes: {} },
+  { id: 'e14', studentId: 's4', studentName: '刘小美', studentNo: '2024004', className: '特教二班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-02', assessor: '赵老师', totalScore: 40, maxScore: 65, status: 'completed', scores: {}, notes: {} },
+  { id: 'e15', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '特教三班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-01', assessor: '王老师', totalScore: 48, maxScore: 80, status: 'completed', scores: {}, notes: {} },
 ];
 
 /* ─── Data Scope Filtering ─── */

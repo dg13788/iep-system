@@ -34,7 +34,7 @@ export default function Topbar() {
     <header className="sticky top-0 z-20 h-14 bg-white border-b border-[#E2E8F0] flex items-center justify-between px-6">
       {/* Breadcrumb */}
       <nav className="flex items-center text-sm">
-        <span className="text-[#64748B]">启智 IEP</span>
+        <span className="text-[#64748B]">特教 IEP</span>
         <span className="mx-2 text-[#CBD5E1]">/</span>
         <span className="text-[#1E293B] font-medium">{breadcrumb}</span>
       </nav>

@@ -154,7 +154,7 @@ export function exportIEPDetailToPDF(plan: any, goals: any[], filename: string):
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
-    doc.text(`启智IEP管理系统  —  第 ${i} / ${pageCount} 页`, margin, doc.internal.pageSize.getHeight() - 20);
+    doc.text(`特教IEP管理系统  —  第 ${i} / ${pageCount} 页`, margin, doc.internal.pageSize.getHeight() - 20);
   }
 
   doc.save(`${filename}.pdf`);
@@ -338,7 +338,7 @@ export function exportEvaluationToPDF(
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(180, 180, 180);
-    doc.text(`启智IEP管理系统  —  第 ${i} / ${pageCount} 页`, margin, doc.internal.pageSize.getHeight() - 20);
+    doc.text(`特教IEP管理系统  —  第 ${i} / ${pageCount} 页`, margin, doc.internal.pageSize.getHeight() - 20);
   }
 
   doc.save(`${filename}.pdf`);
@@ -388,7 +388,7 @@ export function exportIEPDetailToWord(plan: any, goals: any[], filename: string)
 <body>
   <div class="header">
     <h1>个别化教育计划 (IEP)</h1>
-    <p style="margin:4px 0 0 0;font-size:10pt;">启智IEP管理系统  |  生成日期: ${now}</p>
+    <p style="margin:4px 0 0 0;font-size:10pt;">特教IEP管理系统  |  生成日期: ${now}</p>
   </div>
 
   <h2>基本信息</h2>
@@ -411,7 +411,7 @@ export function exportIEPDetailToWord(plan: any, goals: any[], filename: string)
   </table>
 
   <div class="footer">
-    <p>本文件由启智IEP管理系统自动生成，仅供教育参考使用。</p>
+    <p>本文件由特教IEP管理系统自动生成，仅供教育参考使用。</p>
   </div>
 </body>
 </html>`;
@@ -480,7 +480,7 @@ export function exportEvaluationToWord(
 <body>
   <div class="header">
     <h1>评估报告</h1>
-    <p style="margin:4px 0 0 0;font-size:10pt;">启智IEP管理系统  |  生成日期: ${now}</p>
+    <p style="margin:4px 0 0 0;font-size:10pt;">特教IEP管理系统  |  生成日期: ${now}</p>
   </div>
 
   <h2>基本信息</h2>
@@ -511,7 +511,7 @@ export function exportEvaluationToWord(
   </table>
 
   <div class="footer">
-    <p>本文件由启智IEP管理系统自动生成，仅供教育参考使用。</p>
+    <p>本文件由特教IEP管理系统自动生成，仅供教育参考使用。</p>
   </div>
 </body>
 </html>`;
