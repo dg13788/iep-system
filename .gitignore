@@ -51,3 +51,6 @@ docs/screenshots/
 *.user
 .DS_Store
 Thumbs.db
+
+# 演示文稿（内部临时，不对外）
+ppt/
