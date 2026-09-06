@@ -1,0 +1,4 @@
+# 禁止通过 Web 访问配置与密钥文件
+<RequireAll>
+    Require all denied
+</RequireAll>

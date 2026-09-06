@@ -1,0 +1,53 @@
+# ============================================================
+# IEP System - .gitignore (Open Source Release)
+# ============================================================
+
+# ===== Node / Frontend =====
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+*.tsbuildinfo
+frontend/build.log
+frontend/npm_install.log
+frontend/vite_dev.log
+
+# ===== Backend runtime & secrets =====
+backend/logs/
+backend/config/jwt.secret
+backend/api/_io_probe_pg.php
+backend/api/_io_probe_pg2.php
+
+# ===== Environment files (keep .env.example) =====
+.env
+.env.*
+*.env
+*.env.local
+!.env.example
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Local backtest tools (not part of deliverable) =====
+tools/
+
+# ===== Internal docs (not for open source release) =====
+docs/IEP前端架构与质量审计报告.md
+docs/IEP后端安全与架构审计报告.md
+docs/IEP系统_全面回测报告_20260830.md
+docs/IEP系统_全面回测报告_20260901.md
+docs/IEP系统_导入导出回归测试日志_*.md
+docs/IEP系统_导入导出回测报告_*.md
+docs/IEP系统_教学成果奖参评评价报告.*
+docs/plan_*.md
+docs/换机交接与继续开发说明.md
+docs/screenshots/
+
+# ===== IDE / OS =====
+.idea/
+.vscode/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
