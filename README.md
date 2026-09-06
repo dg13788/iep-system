@@ -2,6 +2,17 @@
 AIGC:
     Label: "1"
     ContentProducer: 001191440300708461136T1XGW3
+    ProduceID: f1d3afed55c6dae22e7f096a5ad1b1bb_764f828aa99411f1aed8525400dcc5b3
+    ReservedCode1: Puj0QdG1J829IhR4hhCInxIseTbfFeCd0rzX/Ofh1cxSYwvD6070KWOgHROKLeCe74NdXL1oC4HFQS13Ycsp3Bc5LeJHeIEXsZKXgWFppZ/JRhVIgYEoG+Tuy/MyymiQ6Iy6/fqcGkMgvF+UzpadQoyuNK7u1LHqSpk1gVZyxkdnxGiQy4vftwsjZGE=
+    ContentPropagator: 001191440300708461136T1XGW3
+    PropagateID: f1d3afed55c6dae22e7f096a5ad1b1bb_764f828aa99411f1aed8525400dcc5b3
+    ReservedCode2: Puj0QdG1J829IhR4hhCInxIseTbfFeCd0rzX/Ofh1cxSYwvD6070KWOgHROKLeCe74NdXL1oC4HFQS13Ycsp3Bc5LeJHeIEXsZKXgWFppZ/JRhVIgYEoG+Tuy/MyymiQ6Iy6/fqcGkMgvF+UzpadQoyuNK7u1LHqSpk1gVZyxkdnxGiQy4vftwsjZGE=
+---
+
+---
+AIGC:
+    Label: "1"
+    ContentProducer: 001191440300708461136T1XGW3
     ProduceID: f1d3afed55c6dae22e7f096a5ad1b1bb_87bb933ea99111f1bf99525400e6dd8f
     ReservedCode1: RLsKP6fZ57EsEBuTPRzcbVgf2Ym6fbKve9kbZQAHwgGVu5lzZFybrOfxpqO3yLT22HemFhaN822G2TBpTyzGq2SwOcwqN/G6C0pxWyuut7l3Cu4nouwUGzh7FBWInGG08hotOEVSvZtoPd6/Hri6TytER5tpDXISgxUtYO2nhQ0mhopqVrtrL8kmJcU=
     ContentPropagator: 001191440300708461136T1XGW3
@@ -143,5 +154,6 @@ npm run build   # 产物在 frontend/dist
 
 ## 开源协议
 
-本项目采用 [MIT License](LICENSE)。Copyright (c) 2026 启智IEP团队。
+本项目采用 [MIT License](LICENSE)。Copyright (c) 2026 特教IEP。
+*（内容由AI生成，仅供参考）*
 *（内容由AI生成，仅供参考）*
