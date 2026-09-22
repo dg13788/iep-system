@@ -11,8 +11,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import type { Student, ClassItem } from './data';
 import { statusBadgeClass, disabilityBadgeColors } from './data';
+import SafetyTab from './SafetyTab';
+import CommunicationTab from './CommunicationTab';
+import InterventionTab from './InterventionTab';
 
 interface StudentDetailDrawerProps {
   open: boolean;
@@ -33,6 +37,9 @@ export default function StudentDetailDrawer({
 }: StudentDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState('basic');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // P3-1 修复：补充 Esc 关闭能力
+  useDrawerA11y(open, onClose);
 
   if (!student) return null;
 
@@ -66,6 +73,9 @@ export default function StudentDetailDrawer({
               exit={{ x: '100%' }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
               className="fixed right-0 top-0 h-full w-full sm:w-[720px] bg-[#F7F6F4] z-50 flex flex-col overflow-hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`学生详情 - ${student?.name ?? ''}`}
             >
               {/* Header */}
               <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E2E8F0] flex-shrink-0">
@@ -143,6 +153,9 @@ export default function StudentDetailDrawer({
                       <TabsTrigger value="other" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">其他信息</TabsTrigger>
                       <TabsTrigger value="attachments" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">附件管理</TabsTrigger>
                       <TabsTrigger value="parents" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">关联家长</TabsTrigger>
+                      <TabsTrigger value="safety" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">安全档案</TabsTrigger>
+                      <TabsTrigger value="communication" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">沟通方式</TabsTrigger>
+                      <TabsTrigger value="intervention" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">行为干预</TabsTrigger>
                     </TabsList>
 
                     {/* Tab 1: Basic Info */}
@@ -373,6 +386,48 @@ export default function StudentDetailDrawer({
                               )}
                             </div>
                           </div>
+                        </motion.div>
+                      </TabsContent>
+
+                      {/* Tab 7: 安全档案（v4 特教内核 6.4） */}
+                      <TabsContent value="safety" className="mt-0">
+                        <motion.div
+                          key="safety"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className={tabContentClass}
+                        >
+                          <SafetyTab studentId={Number(student.id)} studentName={student.name} />
+                        </motion.div>
+                      </TabsContent>
+
+                      {/* Tab 8: 沟通方式（v4 特教内核 6.5） */}
+                      <TabsContent value="communication" className="mt-0">
+                        <motion.div
+                          key="communication"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className={tabContentClass}
+                        >
+                          <CommunicationTab studentId={Number(student.id)} />
+                        </motion.div>
+                      </TabsContent>
+
+                      {/* Tab 9: 行为干预 BIP（v4 特教内核 6.5） */}
+                      <TabsContent value="intervention" className="mt-0">
+                        <motion.div
+                          key="intervention"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className={tabContentClass}
+                        >
+                          <InterventionTab studentId={Number(student.id)} studentName={student.name} />
                         </motion.div>
                       </TabsContent>
                     </AnimatePresence>

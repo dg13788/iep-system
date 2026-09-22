@@ -38,15 +38,27 @@ export interface ImportResult {
   errors?: string[];
 }
 
-function buildQuery(params?: Record<string, unknown>): string {
-  if (!params) return '';
+/**
+ * 把过滤参数追加到已有的 URL 上。
+ *
+ * 修复说明(P1-1)：原实现 buildQuery() 返回形如 `?id=1` 的串，
+ * 而调用处把它直接拼在 `?format=pdf` 之后，最终 URL 变成：
+ *     /api/assessments/export?format=pdf?id=1
+ * 后端收到的 format 是 "pdf?id=1"，直接报「不支持的导出格式」。
+ * 后果是：评估报告导出、学生名单导出等**所有带参数的导出全部失败**。
+ *
+ * 现改为按 URL 规范拼接：已有 query 用 & 连接，没有则用 ? 连接。
+ */
+function appendQuery(baseUrl: string, params?: Record<string, unknown>): string {
+  if (!params) return baseUrl;
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === '') return;
     search.append(key, String(value));
   });
   const qs = search.toString();
-  return qs ? `?${qs}` : '';
+  if (!qs) return baseUrl;
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${qs}`;
 }
 
 /** 生成带时间戳的下载文件名，避免同名覆盖 */
@@ -71,7 +83,7 @@ export async function ioExportDownload(
   params?: Record<string, unknown>,
   filenameBase = '导出数据',
 ): Promise<void> {
-  const url = `${API_BASE}/${module}/export?format=${format}${buildQuery(params)}`;
+  const url = appendQuery(`${API_BASE}/${module}/export?format=${format}`, params);
   const token = getToken();
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;

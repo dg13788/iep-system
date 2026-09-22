@@ -24,7 +24,7 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
 } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { getDataScopeConfig, filterByDataScope, filterParentData, isReadOnly } from '@/utils/dataScope';
+import { useDataScopeConfig, useIsReadOnly, filterByDataScope, filterParentData } from '@/utils/dataScope';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import {
   fetchParents,
@@ -50,11 +50,18 @@ const studentNameToId: Record<string, string> = {
   '周小强': 's8',
 };
 
-const readOnly = isReadOnly();
-const dataScopeConfig = getDataScopeConfig();
+/**
+ * 修复说明(P0-2)：原先此处为
+ *     const readOnly = isReadOnly();
+ *     const dataScopeConfig = getDataScopeConfig();
+ * 写在**模块顶层**，模块在应用启动（尚未登录）时求值一次即永久冻结为 true，
+ * 导致超管登录后「新增家长账号 / 发送签名 / 新建沟通记录 / 发布通知」等
+ * 写操作按钮全部消失。现改为在各 Tab 组件内部通过 useIsReadOnly() 订阅求值。
+ */
 
 function DataScopeBadge() {
-  const config = getDataScopeConfig();
+  // P0-2 修复：改用 hook 订阅 authStore，避免登录状态变化后徽标不刷新
+  const config = useDataScopeConfig();
   if (config.type === 'all') return null;
   const labels: Record<string, string> = {
     class_only: '班级视图',
@@ -194,9 +201,15 @@ const studentIdToClass: Record<string, string> = {
   's5': 'c3', 's6': 'c3', 's7': 'c1', 's8': 'c2',
 };
 
-// Filter parent accounts by data scope (custom: student_ids is an array)
-const scopedParents = ((): ParentAccount[] => {
-  const config = getDataScopeConfig();
+/**
+ * Filter parent accounts by data scope (custom: student_ids is an array)
+ *
+ * 修复说明(P0-2)：原本是一个在**模块顶层**立即执行的 IIFE，
+ * 应用启动时用户尚未登录，getDataScopeConfig().type 恒为 'none'，
+ * 于是顶层常量被永久冻结为空数组 —— 登录成功后家长账号列表依旧一片空白。
+ * 现改为接收 config 的纯函数，由组件在订阅到权限后调用。
+ */
+function getScopedParents(config: ReturnType<typeof useDataScopeConfig>): ParentAccount[] {
   if (config.type === 'all') return INITIAL_PARENTS;
   if (config.type === 'none') return [];
   if (config.type === 'class_only') {
@@ -212,14 +225,10 @@ const scopedParents = ((): ParentAccount[] => {
     (p) => p.student_ids[0],
     (p) => studentIdToClass[p.student_ids[0]],
   );
-})();
+}
 
-// Filter signatures by parent data scope
-const scopedSignatures = filterParentData(
-  INITIAL_SIGNATURES,
-  (sig) => studentNameToId[sig.student_name],
-  (sig) => sig.parent_name,
-);
+// 修复（三维度回测 0919 · P1-2）：原「按数据范围过滤的 mock 签名」常量已删除。
+// 家长签名只能来自后端真实记录，任何本地伪造都会在法律效力环节造成误导。
 
 // Filter communications by data scope
 const scopedCommunications = filterByDataScope(
@@ -267,6 +276,7 @@ const PRIORITY_CONFIG: Record<string, string> = {
 /*  Tab 1: Parent Accounts                                             */
 /* ------------------------------------------------------------------ */
 function ParentAccountsTab() {
+  const readOnly = useIsReadOnly();
   const [parents, setParents] = useState<ParentAccount[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -276,6 +286,10 @@ function ParentAccountsTab() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailParent, setDetailParent] = useState<ParentAccount | null>(null);
 
+  // P0-2 修复：在组件内订阅权限，避免顶层冻结导致回退列表恒为空
+  const dataScopeConfig = useDataScopeConfig();
+  const scopedParents = useMemo(() => getScopedParents(dataScopeConfig), [dataScopeConfig]);
+
   const loadParents = useCallback(async () => {
     try {
       const res = await fetchParents({ page: 1, pageSize: 200 });
@@ -284,7 +298,7 @@ function ParentAccountsTab() {
       // 后端不可用时回退本地 mock
       setParents(scopedParents);
     }
-  }, []);
+  }, [scopedParents]);
 
   useEffect(() => {
     loadParents();
@@ -601,6 +615,7 @@ function ParentDetailDrawer({ open, onClose, parent }: { open: boolean; onClose:
 /*  Tab 2: Signature Management                                        */
 /* ------------------------------------------------------------------ */
 function SignatureManagementTab() {
+  const readOnly = useIsReadOnly();
   const [signatures, setSignatures] = useState<SignatureRecord[]>([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -608,10 +623,14 @@ function SignatureManagementTab() {
   const loadSignatures = useCallback(async () => {
     try {
       const list = await fetchSignatures();
-      // 后端无签名记录时回退本地 mock，保证界面有内容
-      setSignatures(list.length > 0 ? list : scopedSignatures);
+      // 修复（三维度回测 0919 · P1-2 家长签名 mock 污染）：
+      // 家长电子签名是具法律效力的环节。原实现在后端返回空时回退本地 mock，
+      // 界面会显示「王建国 等已签名」这类根本不存在的签署记录，
+      // 足以误导审批判断与合规审查。此处改为如实呈现空态。
+      setSignatures(Array.isArray(list) ? list : []);
     } catch {
-      setSignatures(scopedSignatures);
+      // 后端不可用同样不得伪造，保持空态由界面提示加载失败。
+      setSignatures([]);
     }
   }, []);
 
@@ -730,6 +749,7 @@ function SignatureManagementTab() {
 /*  Tab 3: Communication Records                                       */
 /* ------------------------------------------------------------------ */
 function CommunicationTab() {
+  const readOnly = useIsReadOnly();
   const [communications, setCommunications] = useState<CommunicationRecord[]>([]);
   const [studentIdMap, setStudentIdMap] = useState<Record<string, number>>({});
   const [search, setSearch] = useState('');
@@ -994,6 +1014,7 @@ function CommDetailDrawer({ open, onClose, record }: { open: boolean; onClose: (
 /*  Tab 4: Notification Center                                         */
 /* ------------------------------------------------------------------ */
 function NotificationTab() {
+  const readOnly = useIsReadOnly();
   const [notifications, setNotifications] = useState<NotificationRecord[]>(INITIAL_NOTIFICATIONS);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [search, setSearch] = useState('');

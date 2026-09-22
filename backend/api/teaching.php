@@ -33,7 +33,8 @@ switch ($action) {
 
         try {
             $pdo = getDB();
-            $where = ['tr.deleted_at IS NULL'];
+            // 修复(P2-7)：软删学生的历史教学记录不再出现在列表里（防孤儿数据外泄）
+            $where = ['tr.deleted_at IS NULL', 's.deleted_at IS NULL'];
             $params = [];
 
             if ($studentId > 0) {
@@ -343,12 +344,18 @@ switch ($action) {
 
         try {
             $pdo = getDB();
-            $stmt = $pdo->query(
+
+            // 安全修复(P0-2)：本端点原为无参数全表查询（$pdo->query 无任何 WHERE 范围条件），
+            // 教师/家长均可通过它拿到全校 19 名残障儿童名单。
+            // 现统一复用 applyStudentScope()，并改为参数化查询。
+            [$scopeSql, $scopeParams] = applyStudentScope('s');
+            $stmt = $pdo->prepare(
                 'SELECT s.id, s.name, s.gender, sc.name AS class_name 
                  FROM students s 
                  LEFT JOIN student_classes sc ON s.class_id = sc.id 
-                 WHERE s.deleted_at IS NULL AND s.status = "在读" ORDER BY s.name'
+                 WHERE s.deleted_at IS NULL AND s.status = ? AND ' . $scopeSql . ' ORDER BY s.name'
             );
+            $stmt->execute(array_merge(['在读'], $scopeParams));
             $options = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $options, 'message' => '获取成功']);
         } catch (PDOException $e) {
@@ -376,7 +383,8 @@ switch ($action) {
             $startDate = isset($_GET['start_date']) ? trim($_GET['start_date']) : '';
             $endDate = isset($_GET['end_date']) ? trim($_GET['end_date']) : '';
 
-            $where = ['r.deleted_at IS NULL'];
+            // 修复(P2-7)：软删学生的历史教学记录不再出现在导出里（防孤儿数据外泄）
+            $where = ['r.deleted_at IS NULL', 's.deleted_at IS NULL'];
             $params = [];
             if ($studentId > 0) { $where[] = 'r.student_id = ?'; $params[] = $studentId; }
             if (!empty($sessionType)) { $where[] = 'r.session_type = ?'; $params[] = $sessionType; }

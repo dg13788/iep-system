@@ -34,7 +34,8 @@ switch ($action) {
 
         try {
             $pdo = getDB();
-            $where = ['a.deleted_at IS NULL'];
+            // 修复(P2-7)：软删学生的历史评估不再出现在列表里（防孤儿数据外泄）
+            $where = ['a.deleted_at IS NULL', 's.deleted_at IS NULL'];
             $params = [];
 
             if ($studentId > 0) {
@@ -483,7 +484,8 @@ switch ($action) {
             $status = isset($_GET['status']) ? trim($_GET['status']) : '';
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-            $where = ['a.deleted_at IS NULL'];
+            // 修复(P2-7)：软删学生的历史评估不再出现在列表里（防孤儿数据外泄）
+            $where = ['a.deleted_at IS NULL', 's.deleted_at IS NULL'];
             $params = [];
             if ($id > 0) { $where[] = 'a.id = ?'; $params[] = $id; }
             if ($studentId > 0) { $where[] = 'a.student_id = ?'; $params[] = $studentId; }

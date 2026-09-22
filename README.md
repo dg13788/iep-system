@@ -2,7 +2,10 @@
 
 基于 **React 19 + TypeScript + PHP 8 + MySQL 8** 的前后端分离个别化教育计划（Individualized Education Program, IEP）管理系统，面向特殊教育学校（培智学校）的多角色协作场景，覆盖 IEP 全生命周期管理。
 
-> 本项目为开源发布版。默认演示账号仅用于本地演示，任何生产 / 公网部署前请务必修改默认密码。
+> 本项目为**开源骨架版**：仓库只保留可复现系统所必需的源码、数据库脚本与部署文档，
+> 密钥、日志、数据库备份、演示数据包、内部过程文档与构建产物一律不入库。
+>
+> 默认演示账号仅用于本地演示，任何生产 / 公网部署前请务必修改默认密码。
 
 ## 功能特性
 
@@ -28,18 +31,20 @@
 
 ```
 iep/
-├── frontend/                前端项目（React 19 + Vite）
-│   ├── src/                 源代码
-│   ├── public/              静态资源
-│   └── package.json         依赖配置
-├── backend/                 后端项目（PHP 8 + MySQL 8）
-│   ├── api/                 RESTful API 接口（含公共配置 config.php）
-│   ├── config/              JWT 密钥目录（jwt.secret 不纳入版本控制）
-│   ├── logs/                运行日志（不纳入版本控制）
-│   └── sql/                 数据库初始化脚本（init.sql / update_v3.sql）
-├── docs/                    技术文档与部署手册
-└── tools/                   本地开发 / 回测工具（不纳入版本控制）
+├── README.md
+├── LICENSE
+├── .env.example              环境变量样例（真实 .env 不入库）
+├── .gitignore
+├── server_router.php         PHP 内置服务器路由（本地一键运行）
+├── frontend/                 前端项目（React 19 + Vite）
+│   ├── src/                  源代码
+│   └── package.json          依赖配置
+├── backend/                  后端项目（PHP 8 + MySQL 8）
+│   ├── api/                  RESTful API 接口（含公共配置 config.php）
+│   ├── config/               密钥目录（jwt.secret 不入库，首次运行自动生成）
+│   └── sql/                  数据库脚本（init.sql + update_v3~v6.sql）
 ```
+> 注：完整开发技术文档（数据库设计 / API 规范 / 权限体系）为专有资产，不随开源仓库发布。
 
 ## 快速开始
 
@@ -51,9 +56,24 @@ iep/
 
 ### 1. 初始化数据库
 
+全新安装：先执行建表基线，再按序执行增量迁移（迁移脚本均幂等，可重复执行）：
+
 ```bash
 mysql -u root -p < backend/sql/init.sql
+mysql -u root -p iep_system < backend/sql/update_v3.sql
+mysql -u root -p iep_system < backend/sql/update_v4.sql
+mysql -u root -p iep_system < backend/sql/update_v5.sql
+mysql -u root -p iep_system < backend/sql/update_v6.sql
 ```
+
+| 脚本 | 说明 |
+|------|------|
+| `init.sql` | 建库基线：31 张表 + 角色 / 权限组 / 默认账号 |
+| `update_v3.sql` | 权限组管理改造（硬编码角色 → 后台可配置权限组） |
+| `update_v4.sql` | 特教专业内核：短期目标达成记录、安置形式、相关服务、GB/T 26341 残疾等级、安全档案 |
+| `update_v5.sql` | 深度审查遗留项整改 |
+| `update_v6.sql` | 管理控制台权限（权限组 1 追加 `admin` 菜单） |
+| `init_demo_minimal.sql` | 可选：最小演示数据集（管理控制台「初始化演示数据」调用） |
 
 ### 2. 配置后端环境变量
 
@@ -97,6 +117,17 @@ npm run build   # 产物在 frontend/dist
 
 `frontend/dist` 与 `node_modules` 不纳入版本控制（见 `.gitignore`），部署时自行构建或由 CI 生成。
 
+### 5. 本地一键运行（可选）
+
+用 PHP 内置服务器同时托管 API 与前端构建产物：
+
+```bash
+cd frontend && npm run build && cd ..
+php -S 0.0.0.0:8080 server_router.php
+```
+
+访问 `http://localhost:8080` 即可（`/api/*` 自动转发到 `backend/api/index.php`，其余路径回落到 SPA）。
+
 ## 默认账号（仅限本地演示）
 
 | 账号 | 密码 | 角色 |
@@ -110,12 +141,59 @@ npm run build   # 产物在 frontend/dist
 
 > 安全提醒：上述账号种子化于 `backend/sql/init.sql`，仅用于本地功能演示。任何公网 / 生产部署后必须立即修改默认密码并启用强密码策略。
 
+## 开源骨架版说明
+
+以下内容属于运行产物或内部过程资产，已通过 `.gitignore` 排除，**不在开源范围内**：
+
+| 类别 | 排除内容 |
+|------|----------|
+| 密钥与环境变量 | `.env`、`backend/config/jwt.secret` |
+| 运行日志与审计脚本 | `backend/logs/` |
+| 数据库备份（含真实数据） | `backend/backups/` |
+| 依赖与构建产物 | `node_modules/`、`frontend/dist/` |
+| 演示数据包与生成脚本 | `demo_data/`、`backend/tools/`、`backend/sql/seed_demo_v4.py` |
+| 内部过程文档 | 审计 / 回测 / 审查 / 整改 / 补齐 / 参评 / 交付说明 / 计划 / 截图 |
+| 二进制派生文档 | `docs/*.docx`（以同名 Markdown 为准） |
+| 过时部署手册 | `docs/IEP系统*部署手册.md`（早期 FlyEnv / 宝塔版，与环境变量方案不一致） |
+| 完整开发技术文档 | `docs/iep_technical_doc_v101.md`（数据库 / API / 权限设计蓝图，作为专有资产不公开） |
+| 本地安装脚本与临时日志 | `install_iep_local.bat`、`build_log.txt`、`run_*.txt` 等 |
+
+> 若你的本地仓库中这些文件已被 Git 跟踪，开源前请执行 `git rm -r --cached <路径>` 将其从索引中移除（不会删除磁盘文件）。
+
 ## 部署说明
 
-- 本地部署：`docs/IEP系统本地部署手册.md`
-- 虚拟主机部署：`docs/IEP系统_虚拟主机部署手册.md`
-- 云服务器部署：`docs/IEP系统_云服务器部署手册.md`
-- 完整技术文档：`docs/iep_technical_doc_v101.md`
+- 本地演示：见上文「5. 本地一键运行（可选）」
+
+> 旧版 FlyEnv / 虚拟主机 / 宝塔部署手册未包含在骨架版中：它们描述的是
+> 早期 `iep-backend/` 目录结构与在 `config.php` 中改写 `define('DB_PASS')` 的做法，
+> 与当前「环境变量注入」方案不一致，故不作为开源内容发布。
+> 完整开发技术文档（`docs/iep_technical_doc_v101.md`）为专有资产，不随开源仓库发布。
+
+### 生产部署要点
+
+生产环境建议使用 **Nginx + PHP-FPM**（PHP 内置服务器为单进程串行模型，仅供本地演示，
+且无法启用 HTTPS，不适用于公网）：
+
+1. 将 `backend/api/` 部署为 `/api` 路径，将 `frontend/dist/` 作为站点根目录；
+2. SPA 路由需配置回落到 `index.html`（`try_files $uri $uri/ /index.html`）；
+3. 通过 PHP-FPM 进程池注入环境变量，后端 `config.php` 会自动读取：
+
+```ini
+; /etc/php/8.3/fpm/pool.d/iep.conf
+[iep]
+user  = www-data
+group = www-data
+listen = /run/php/php8.3-fpm.sock
+
+env[DB_HOST]    = localhost
+env[DB_NAME]    = iep_system
+env[DB_USER]    = iep_app
+env[DB_PASS]    = <你的数据库密码>
+env[JWT_SECRET] = <32 位以上随机字符串>
+env[IEP_DEBUG]  = false
+```
+
+4. 为学生敏感数据启用 HTTPS，并配置 `audit_logs` 表定期归档。
 
 ## 安全设计
 
@@ -128,7 +206,8 @@ npm run build   # 产物在 frontend/dist
 
 | 版本 | 日期 | 主要更新 |
 |------|------|---------|
-| V1.01 | 2026-05 | 数据权限 v4 重构、科任教师 IEP 参与、权限组配置、PDF/Word 导出、安全修复 |
+| V1.00 | 2025-01-15 | 初始版本：8 大功能模块、RBAC 角色权限（6 角色 / 42 项权限）、JWT 认证、Canvas 电子签名 |
+| V1.01 | 2025-02-20 | 数据权限与安全增强版：Data Scope V2、科任教师 IEP 参与 V3、权限组可配置 V3、SHA256 签名防篡改 |
 
 ## 开源协议
 

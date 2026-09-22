@@ -17,9 +17,14 @@ if ($debugMode) {
     error_reporting(0);
     ini_set('display_errors', '0');
     ini_set('display_startup_errors', '0');
-    ini_set('log_errors', '1');
-    ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 }
+
+// 修复（对应报告 7.3「让错误可观测」）：原先仅在生产分支配置 error_log，
+// 导致开发模式下所有 error_log() 写到了 stderr（内置服务器下几乎看不到），
+// 而大量 catch 块又只返回泛化文案 —— 排障只能靠反推 SQL。
+// 现在无论何种模式都统一落盘，保证 PDOException 的真实原因始终可查。
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/../logs/php_errors.log');
 
 // ============================================================
 // Database Configuration - Read from environment variables
@@ -29,7 +34,10 @@ if ($debugMode) {
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_NAME', getenv('DB_NAME') ?: 'iep_system');
 define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: 'your_password');
+// 修复(P1)：原写法 `getenv('DB_PASS') ?: 'your_password'` 会把「合法但为空」的密码
+// （本机 Laragon / 部分容器环境的 root 空密码）误判为未配置，从而兜底成 'your_password'
+// 导致连不上库。现改为区分「环境变量未设置」与「显式设置为空字符串」。
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : 'your_password');
 define('DB_CHARSET', 'utf8mb4');
 
 // ============================================================
@@ -169,7 +177,15 @@ function getDB(): PDO {
 // ============================================================
 // JSON Response Helper
 // ============================================================
-function jsonResponse(array $data): void {
+// 修复(P1-1)：原签名只有 1 个形参，但代码中有 10 处按
+// `jsonResponse($data, 403)` 传入 HTTP 状态码。PHP 对用户自定义函数的
+// 多余实参静默丢弃，导致全系统永远返回 HTTP 200 —— 401/403/404 全部伪装成
+// 成功响应，前端 api.ts / App.tsx 中写好的全局 401 拦截器成为死代码，
+// Token 过期无法统一登出。现增加 $statusCode 形参并真正下发状态码。
+function jsonResponse(array $data, int $statusCode = 200): void {
+    if (!headers_sent()) {
+        http_response_code($statusCode);
+    }
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
@@ -213,18 +229,37 @@ function jwtDecode(string $token): ?array {
 // Get Current User from JWT Bearer Token
 // ============================================================
 function getCurrentUser(): ?array {
-    $token = '';
+    // 修复(P2-9)：原实现的取值顺序有缺陷——
+    //   1) elseif function_exists('getallheaders') 在 Apache/Nginx 下恒真，
+    //      其后的 HTTP_X_AUTHORIZATION 分支永远不可达（死代码）；
+    //   2) str_replace('Bearer ', ...) 大小写敏感，客户端发 "bearer xxx" 即解析失败。
+    // 改为依次收集所有来源、统一剥离大小写不敏感的 Bearer 前缀。
+    $candidates = [];
     if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        $token = str_replace('Bearer ', '', $_SERVER['HTTP_AUTHORIZATION']);
-    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-        $token = str_replace('Bearer ', '', $_SERVER['REDIRECT_HTTP_AUTHORIZATION']);
-    } elseif (function_exists('getallheaders')) {
+        $candidates[] = $_SERVER['HTTP_AUTHORIZATION'];
+    }
+    if (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $candidates[] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+    if (function_exists('getallheaders')) {
         $headers = getallheaders();
-        if (isset($headers['Authorization'])) {
-            $token = str_replace('Bearer ', '', $headers['Authorization']);
+        foreach (['Authorization', 'authorization'] as $k) {
+            if (isset($headers[$k])) {
+                $candidates[] = $headers[$k];
+                break;
+            }
         }
-    } elseif (isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
-        $token = str_replace('Bearer ', '', $_SERVER['HTTP_X_AUTHORIZATION']);
+    }
+    if (isset($_SERVER['HTTP_X_AUTHORIZATION'])) {
+        $candidates[] = $_SERVER['HTTP_X_AUTHORIZATION'];
+    }
+
+    $token = '';
+    foreach ($candidates as $candidate) {
+        $candidate = trim((string)$candidate);
+        if ($candidate === '') { continue; }
+        $token = preg_replace('/^bearer\s+/i', '', $candidate);
+        if ($token !== '') { break; }
     }
 
     if (empty($token)) return null;
@@ -321,7 +356,11 @@ function validateUserAgainstDB(array $payload): ?array {
 function requireAuth(): array {
     $user = getCurrentUser();
     if (!$user) {
-        jsonResponse(['success' => false, 'message' => '未登录或Token已过期']);
+        // 补齐(P1-1)：上一轮修复给 jsonResponse 补了 $statusCode 形参，
+        // 并把 requirePermission 改成了 403，但 requireAuth 这处遗漏了，
+        // 导致「未登录」虽能阻断业务，HTTP 仍是 200 —— 前端 request.ts 的
+        // 401 拦截器依旧收不到信号，Token 过期无法触发统一登出。现在补齐。
+        jsonResponse(['success' => false, 'message' => '未登录或Token已过期', 'code' => 401], 401);
     }
     return $user;
 }
@@ -379,7 +418,84 @@ function checkPermission(string $permissionCode): bool {
 // ============================================================
 function requirePermission(string $permissionCode): void {
     if (!checkPermission($permissionCode)) {
-        jsonResponse(['success' => false, 'message' => '无权访问：缺少权限 ' . $permissionCode]);
+        // 修复(P1-1)：返回真正的 403
+        jsonResponse(['success' => false, 'message' => '无权访问：缺少权限 ' . $permissionCode, 'code' => 403], 403);
+    }
+}
+
+// ============================================================
+// Require System Administrator (permission_group_id = 1)
+// ============================================================
+/**
+ * 系统管理员专属守卫（2026-09-20 新增，用于「管理控制台」全部端点）。
+ *
+ * 与 requirePermission() 的区别：
+ *   - checkPermission() 对 pg=1 无条件放行，且权限可被 feature_permissions 配置；
+ *   - 「所有数据 / 初始化 / 一键备份」属高危运维能力，**不可**通过给非管理员
+ *     组配 feature 来获得，因此这里硬校验 permission_group_id === 1。
+ *
+ * fail-closed 行为：
+ *   - 未登录          → 401（由 requireAuth 抛出）
+ *   - 登录但非 pg=1   → 403，并写入审计日志（越权尝试可追溯）
+ *   - 用户上下文缺失  → 403
+ *
+ * @return array 通过校验的用户 payload
+ */
+function requireSystemAdmin(): array {
+    $user = requireAuth();
+
+    $pg = intval($user['permission_group_id'] ?? 0);
+    if ($pg !== 1) {
+        $deniedPg = $pg;
+        auditLog(
+            'denied',
+            'admin',
+            'system',
+            0,
+            '',
+            null,
+            ['permission_group_id' => $deniedPg],
+            '非系统管理员尝试访问管理控制台（已阻断）'
+        );
+        jsonResponse([
+            'success' => false,
+            'message' => '仅限系统管理员操作：当前账号权限组无权访问管理控制台',
+            'code'    => 403,
+        ], 403);
+    }
+
+    return $user;
+}
+
+/**
+ * 校验当前管理员的登录密码（用于初始化 / 恢复备份等不可逆操作前的二次确认）。
+ *
+ * 只信任数据库中的 password_hash，不接受任何前端传入的身份声明。
+ *
+ * @param array $user requireSystemAdmin() 返回的 payload
+ * @param string $password 前端传入的明文密码
+ * @return bool 校验通过返回 true
+ */
+function verifyCurrentAdminPassword(array $user, string $password): bool {
+    if ($password === '') {
+        return false;
+    }
+    $userId = intval($user['sub'] ?? 0);
+    if ($userId <= 0) {
+        return false;
+    }
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare('SELECT password_hash FROM users WHERE id = ? AND is_active = 1 LIMIT 1');
+        $stmt->execute([$userId]);
+        $hash = $stmt->fetchColumn();
+        if (!$hash) {
+            return false;
+        }
+        return password_verify($password, (string) $hash);
+    } catch (PDOException $e) {
+        error_log('verifyCurrentAdminPassword error: ' . $e->getMessage());
+        return false; // 数据库异常 fail-closed
     }
 }
 
@@ -394,19 +510,29 @@ function auditLog(
     string $targetName = '',
     $oldValue = null,
     $newValue = null,
-    string $changeSummary = ''
+    string $changeSummary = '',
+    ?array $actorOverride = null
 ): void {
     try {
-        $user = getCurrentUser();
-        $userId = $user ? intval($user['sub']) : 0;
-        $username = $user ? ($user['name'] ?? $user['username'] ?? '') : 'system';
-        $userType = 'user';
+        // 修复(P1-4)：登录等无 Token 场景下，getCurrentUser() 返回 null，
+        // 审计一律记成 user_id=0 / username='system'，登录事件完全不可追溯。
+        // 新增 $actorOverride：调用方显式传入 [user_id, username, user_type]。
+        if ($actorOverride !== null) {
+            $userId = intval($actorOverride['user_id'] ?? 0);
+            $username = (string)($actorOverride['username'] ?? 'system');
+            $userType = (string)($actorOverride['user_type'] ?? 'user');
+        } else {
+            $user = getCurrentUser();
+            $userId = $user ? intval($user['sub']) : 0;
+            $username = $user ? ($user['name'] ?? $user['username'] ?? '') : 'system';
+            $userType = 'user';
 
-        // Determine user type
-        if (isset($user['type']) && $user['type'] === 'parent') {
-            $userType = 'parent';
-        } elseif ($userId === 0) {
-            $userType = 'system';
+            // Determine user type
+            if (isset($user['type']) && $user['type'] === 'parent') {
+                $userType = 'parent';
+            } elseif ($userId === 0) {
+                $userType = 'system';
+            }
         }
 
         $ip = $_SERVER['REMOTE_ADDR'] ?? '';
@@ -559,30 +685,35 @@ function getDataScope(): array {
     // Own only: parent-like logic (users sees only their own records)
     if ($scopeType === 'own_only') {
         $studentIds = [];
+        $parentId = 0;
         try {
             $pdo = getDB();
-            // own_only 语义：仅可见与本人直接关联的学生。
-            // 系统内 users→students 的合法关联途径为：
-            //   1) 班主任（class_only，通过 student_classes.teacher_id）
-            //   2) 科任教师（teacher_related，通过 teacher_classes / iep_goals.responsible_teacher_id）
-            //   3) 家长（own_only，走 type='parent' 分支，通过 student_parents）
-            // 普通用户使用 own_only 时无上述任何关联，按最小权限原则返回空集（fail-closed）。
-            // 注意：原实现引用了不存在的 student_users 表，且 fallback 将 sp.parent_id 与 u.id 错误关联，已移除。
-            $stmt = $pdo->prepare('
-                SELECT sp.student_id
-                FROM student_parents sp
-                INNER JOIN parents p ON sp.parent_id = p.id
-                WHERE p.phone = (SELECT phone FROM users WHERE id = ? LIMIT 1)
-            ');
+            // 修复(P1-6)：原实现存在两类缺陷——
+            //   1) 用「手机号相等」做 users→parents 软关联：教师与家长手机号恰好相同
+            //      （教师子弟在校就读在培智学校并不罕见）即获得该生完整读写权；
+            //      家长换号后关联又静默断裂，家长什么都看不到且不报错。
+            //   2) 把 users.id 直接当 parents.id 返回（ID 空间混淆）：
+            //      users.id=6 会命中 parents.id=6 这个完全无关的人。
+            // 现改为显式外键 users.parent_ref_id（v5 迁移新增）；
+            // 无映射一律 fail-closed 返回空集，绝不回退到手机号猜测。
+            $stmt = $pdo->prepare('SELECT parent_ref_id FROM users WHERE id = ? LIMIT 1');
             $stmt->execute([$userId]);
-            $studentIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            $row = $stmt->fetch();
+            if ($row && !empty($row['parent_ref_id'])) {
+                $parentId = intval($row['parent_ref_id']);
+                $stmt = $pdo->prepare('SELECT student_id FROM student_parents WHERE parent_id = ?');
+                $stmt->execute([$parentId]);
+                $studentIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            }
         } catch (PDOException $e) {
             error_log('Data scope own_only error: ' . $e->getMessage());
+            $studentIds = [];
+            $parentId = 0;
         }
         return [
             'type' => 'parent',
             'teacher_id' => 0,
-            'parent_id' => $userId,
+            'parent_id' => $parentId,
             'class_ids' => [],
             'student_ids' => $studentIds
         ];
@@ -808,6 +939,290 @@ function requireTeachingInScope(int $recordId, ?array $scope = null): void {
 }
 
 /**
+ * 学生表专用的数据范围 SQL 片段（根因修复）
+ *
+ * 修复(P0-2)：此前「学生下拉数据源」等端点完全没有范围过滤，根因是
+ * 范围过滤逻辑被复制粘贴在 6 个 PHP 文件的各处 case 里，漏抄一处即全量泄露。
+ * 本函数把「学生表」的范围条件收敛为唯一实现，供 list / export / options
+ * 等所有读取学生名单的端点复用，杜绝再次漏写。
+ *
+ * 注意：不能直接用 applyDataScope()，该函数按「含 student_id 列的业务表」
+ * 生成条件（teacher/parent 分支用 student_id），而学生表的主键是 id，
+ * 直接套用会生成不存在的列导致 SQL 报错。
+ *
+ * @param string $alias 学生表别名，例如 's'
+ * @return array [0]=SQL 条件（不含 WHERE/AND），[1]=绑定参数
+ */
+function applyStudentScope(string $alias = 's'): array {
+    $scope = getDataScope();
+    $p = $alias !== '' ? $alias . '.' : '';
+    $type = $scope['type'] ?? 'viewer';
+
+    if ($type === 'all') {
+        return ['1=1', []];
+    }
+
+    // fail-closed：无关联班级/学生时一律拒绝
+    $classIds = array_map('intval', $scope['class_ids'] ?? []);
+    $studentIds = array_map('intval', $scope['student_ids'] ?? []);
+
+    if ($type === 'class_teacher') {
+        if (empty($classIds)) {
+            return [$p . 'id = -1', []];
+        }
+        $ph = implode(',', array_fill(0, count($classIds), '?'));
+        return [$p . 'class_id IN (' . $ph . ')', $classIds];
+    }
+
+    if ($type === 'teacher') {
+        $conds = [];
+        $params = [];
+        if (!empty($classIds)) {
+            $ph = implode(',', array_fill(0, count($classIds), '?'));
+            $conds[] = $p . 'class_id IN (' . $ph . ')';
+            $params = array_merge($params, $classIds);
+        }
+        if (!empty($studentIds)) {
+            $ph = implode(',', array_fill(0, count($studentIds), '?'));
+            $conds[] = $p . 'id IN (' . $ph . ')';
+            $params = array_merge($params, $studentIds);
+        }
+        if (empty($conds)) {
+            return [$p . 'id = -1', []];
+        }
+        return ['(' . implode(' OR ', $conds) . ')', $params];
+    }
+
+    if ($type === 'parent') {
+        if (empty($studentIds)) {
+            return [$p . 'id = -1', []];
+        }
+        $ph = implode(',', array_fill(0, count($studentIds), '?'));
+        return [$p . 'id IN (' . $ph . ')', $studentIds];
+    }
+
+    // viewer / none / 未知类型
+    return [$p . 'id = -1', []];
+}
+
+/**
+ * 断言指定 IEP 目标（iep_goals）所属学生在数据范围内，否则返回 403
+ *
+ * 修复(P0-5)：iep/progress 只校验了 goal_update 功能权限，
+ * 未校验目标所属学生是否在数据范围内，导致教师可对「读不到也改不了」的
+ * 他人学生 IEP 写入达成度数据，直接污染达成率统计。
+ */
+function requireGoalInScope(int $goalId, ?array $scope = null): void {
+    if ($goalId <= 0) {
+        jsonResponse(['success' => false, 'message' => '参数错误', 'code' => 400], 400);
+    }
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare(
+            'SELECT ig.iep_plan_id, iep.student_id
+             FROM iep_goals ig
+             INNER JOIN iep_plans iep ON ig.iep_plan_id = iep.id
+             WHERE ig.id = ? AND ig.deleted_at IS NULL AND iep.deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute([$goalId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log('requireGoalInScope error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '数据校验失败', 'code' => 500], 500);
+        return;
+    }
+    if (!$row) {
+        jsonResponse(['success' => false, 'message' => 'IEP目标不存在', 'code' => 404], 404);
+        return;
+    }
+    requireStudentInScope(intval($row['student_id']), $scope);
+}
+
+/**
+ * 断言指定的 IEP 目标 ID 存在且返回其计划 ID（供写操作复用）
+ */
+function getGoalPlanId(int $goalId): int {
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare('SELECT iep_plan_id FROM iep_goals WHERE id = ? AND deleted_at IS NULL LIMIT 1');
+        $stmt->execute([$goalId]);
+        return intval($stmt->fetchColumn());
+    } catch (PDOException $e) {
+        error_log('getGoalPlanId error: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * 断言指定「短期目标」(iep_objectives) 所属学生在数据范围内，否则 403
+ *
+ * v4：短期目标是 iep/progress 之外的第二条写入教学数据通路，
+ * 必须与长期目标走同一套范围校验，否则会成为新的越权入口。
+ */
+function requireObjectiveInScope(int $objectiveId, ?array $scope = null): void {
+    if ($objectiveId <= 0) {
+        jsonResponse(['success' => false, 'message' => '参数错误', 'code' => 400], 400);
+    }
+    try {
+        $pdo  = getDB();
+        $stmt = $pdo->prepare(
+            'SELECT iep.student_id
+             FROM iep_objectives o
+             INNER JOIN iep_plans iep ON o.iep_plan_id = iep.id
+             WHERE o.id = ? AND o.deleted_at IS NULL AND iep.deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute([$objectiveId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log('requireObjectiveInScope error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '数据校验失败', 'code' => 500], 500);
+        return;
+    }
+    if (!$row) {
+        jsonResponse(['success' => false, 'message' => '短期目标不存在', 'code' => 404], 404);
+        return;
+    }
+    requireStudentInScope(intval($row['student_id']), $scope);
+}
+
+/**
+ * 返回指定短期目标所属的 IEP 计划 ID（0 表示不存在）
+ */
+function getObjectivePlanId(int $objectiveId): int {
+    try {
+        $pdo  = getDB();
+        $stmt = $pdo->prepare(
+            'SELECT iep_plan_id FROM iep_objectives WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute([$objectiveId]);
+        return intval($stmt->fetchColumn());
+    } catch (PDOException $e) {
+        error_log('getObjectivePlanId error: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+/**
+ * 断言指定「行为干预计划」(behavior_intervention_plans) 所属学生在数据范围内，否则 403
+ */
+function requireBipInScope(int $bipId, ?array $scope = null): void {
+    if ($bipId <= 0) {
+        jsonResponse(['success' => false, 'message' => '参数错误', 'code' => 400], 400);
+    }
+    try {
+        $pdo  = getDB();
+        $stmt = $pdo->prepare(
+            'SELECT student_id FROM behavior_intervention_plans
+             WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute([$bipId]);
+        $studentId = intval($stmt->fetchColumn());
+    } catch (PDOException $e) {
+        error_log('requireBipInScope error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '数据校验失败', 'code' => 500], 500);
+        return;
+    }
+    if ($studentId <= 0) {
+        jsonResponse(['success' => false, 'message' => '行为干预计划不存在', 'code' => 404], 404);
+        return;
+    }
+    requireStudentInScope($studentId, $scope);
+}
+
+/**
+ * 判断当前用户是否可以查看指定学生的敏感字段（身份证号 / 监护人电话 / 住址 / 残疾证号）
+ *
+ * 修复(P0-6)：只读用户（督导、教研员）被配成 data_scope_type=all，
+ * 可见全校学生完整档案（身份证、监护人电话、住址），且具备 student_export
+ * 导出权限 —— 一旦账号泄露即为全校残障儿童敏感信息批量泄露。
+ *
+ * 设计取舍：只读用户「可见全校」本身是合理的（督导需做全校统计），
+ * 真正缺失的是「敏感字段分级」。因此保留其范围，但剥夺敏感字段明文。
+ *
+ * 放行规则：
+ *   1) 具备 student_view_sensitive 权限（管理员/主任/班主任/科任教师）
+ *   2) 家长本人查看自己的孩子
+ * 其余一律脱敏。
+ */
+function canViewSensitiveStudent(int $studentId): bool {
+    if ($studentId <= 0) {
+        return false;
+    }
+    $user = getCurrentUser();
+    if (!$user) {
+        return false;
+    }
+    if (checkPermission('student_view_sensitive')) {
+        return true;
+    }
+    // 家长看自己的孩子
+    if (($user['type'] ?? 'user') === 'parent') {
+        $scope = getDataScope();
+        $ids = array_map('intval', $scope['student_ids'] ?? []);
+        return in_array($studentId, $ids, true);
+    }
+    return false;
+}
+
+/**
+ * 对学生记录做敏感字段脱敏（保留业务可用性：班主任仍能联系家长？不 —— 无权限即不展示）
+ *
+ * 脱敏策略：
+ *   - 身份证号 id_card：保留前 6 位 + **** + 后 2 位
+ *   - 手机号 guardian_phone / emergency_phone：保留前 3 位 + **** + 后 4 位
+ *   - 姓名 guardian_name：保留姓 + *
+ *   - 住址 address、残疾证号 disability_card_no、健康/过敏信息：整段屏蔽
+ */
+function maskStudentSensitive(array $row): array {
+    $maskIdCard = function ($v) {
+        if (!is_string($v) || $v === '') return $v;
+        $len = strlen($v);
+        if ($len <= 8) return str_repeat('*', $len);
+        return substr($v, 0, 6) . str_repeat('*', max(0, $len - 8)) . substr($v, -2);
+    };
+    $maskPhone = function ($v) {
+        if (!is_string($v) || $v === '') return $v;
+        $len = strlen($v);
+        if ($len <= 7) return str_repeat('*', $len);
+        return substr($v, 0, 3) . '****' . substr($v, -4);
+    };
+    $maskName = function ($v) {
+        if (!is_string($v) || $v === '') return $v;
+        $first = mb_substr($v, 0, 1, 'UTF-8');
+        return $first . str_repeat('*', max(1, mb_strlen($v, 'UTF-8') - 1));
+    };
+
+    foreach (['id_card', 'disability_card_no'] as $f) {
+        if (array_key_exists($f, $row)) $row[$f] = $maskIdCard((string) $row[$f]);
+    }
+    foreach (['guardian_phone', 'emergency_phone'] as $f) {
+        if (array_key_exists($f, $row)) $row[$f] = $maskPhone((string) $row[$f]);
+    }
+    if (array_key_exists('guardian_name', $row)) {
+        $row['guardian_name'] = $maskName((string) $row['guardian_name']);
+    }
+    foreach (['address', 'health_info', 'allergy_info', 'medical_history', 'family_info'] as $f) {
+        if (array_key_exists($f, $row) && $row[$f] !== null && $row[$f] !== '') {
+            $row[$f] = '[敏感信息已脱敏]';
+        }
+    }
+    $row['_sensitive_masked'] = true;
+    return $row;
+}
+
+/**
+ * 批量按权限脱敏学生列表
+ */
+function maskStudentList(array $rows): array {
+    $out = [];
+    foreach ($rows as $r) {
+        $sid = intval($r['id'] ?? 0);
+        $out[] = canViewSensitiveStudent($sid) ? $r : maskStudentSensitive($r);
+    }
+    return $out;
+}
+
+/**
  * Log data scope access for auditing
  */
 function logDataScopeAccess(string $module, string $scopeType, int $recordCount): void {
@@ -828,6 +1243,105 @@ function logDataScopeAccess(string $module, string $scopeType, int $recordCount)
         ]);
     } catch (PDOException $e) {
         error_log('Data scope log error: ' . $e->getMessage());
+    }
+}
+
+// ============================================================
+// 登录失败限流（暴力破解防护）
+// ============================================================
+// 修复(P1-3)：原实现无任何登录失败限流，可对任意账号无限次撞库
+// （实测连续 12 次错误密码全部返回 200，无锁定、无告警）。
+// 现按「账号 + 来源IP」双维度统计：15 分钟内失败 10 次即锁定 15 分钟，
+// 返回 HTTP 429 与 Retry-After。计数器落盘于 logs/ratelimit/，
+// 该目录同时写入 .htaccess 拒绝 Web 访问。
+function iepRateLimitDir(): string {
+    $dir = __DIR__ . '/../logs/ratelimit';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0750, true);
+    }
+    if (is_dir($dir) && !is_file($dir . '/.htaccess')) {
+        @file_put_contents($dir . '/.htaccess', "# 禁止通过 Web 访问限流计数文件\n<RequireAll>\n    Require all denied\n</RequireAll>\n");
+    }
+    return $dir;
+}
+
+function iepRateLimitFile(string $scope, string $identity): string {
+    return iepRateLimitDir() . '/' . $scope . '_' . md5($identity) . '.json';
+}
+
+/**
+ * 检查登录是否被限流
+ * @return array [是否允许, 还需等待秒数]
+ */
+function checkLoginRateLimit(string $username): array {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $now = time();
+    $retryAfter = 0;
+    foreach ([
+        iepRateLimitFile('login_u', strtolower($username)),
+        iepRateLimitFile('login_ip', $ip),
+    ] as $file) {
+        if (!is_file($file)) {
+            continue;
+        }
+        $data = json_decode((string) @file_get_contents($file), true);
+        if (!is_array($data)) {
+            continue;
+        }
+        $until = intval($data['locked_until'] ?? 0);
+        if ($until > $now) {
+            $retryAfter = max($retryAfter, $until - $now);
+        }
+    }
+    return [$retryAfter === 0, $retryAfter];
+}
+
+/**
+ * 记录一次登录失败，达到阈值则锁定
+ */
+function recordLoginFailure(string $username): void {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    $window = 900;      // 统计窗口 15 分钟
+    $maxFail = 10;      // 窗口内最大失败次数
+    $lockSeconds = 900; // 锁定 15 分钟
+    $now = time();
+
+    foreach ([
+        iepRateLimitFile('login_u', strtolower($username)),
+        iepRateLimitFile('login_ip', $ip),
+    ] as $file) {
+        $data = ['fails' => [], 'locked_until' => 0];
+        if (is_file($file)) {
+            $existing = json_decode((string) @file_get_contents($file), true);
+            if (is_array($existing)) {
+                $data = $existing;
+            }
+        }
+        $fails = array_values(array_filter(
+            (array) ($data['fails'] ?? []),
+            function ($t) use ($now, $window) { return intval($t) > $now - $window; }
+        ));
+        $fails[] = $now;
+        $data['fails'] = $fails;
+        if (count($fails) >= $maxFail) {
+            $data['locked_until'] = $now + $lockSeconds;
+        }
+        @file_put_contents($file, json_encode($data), LOCK_EX);
+    }
+}
+
+/**
+ * 登录成功后清空失败计数
+ */
+function clearLoginFailures(string $username): void {
+    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    foreach ([
+        iepRateLimitFile('login_u', strtolower($username)),
+        iepRateLimitFile('login_ip', $ip),
+    ] as $file) {
+        if (is_file($file)) {
+            @unlink($file);
+        }
     }
 }
 

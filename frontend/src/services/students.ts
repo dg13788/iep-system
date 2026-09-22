@@ -404,3 +404,139 @@ export async function fetchStudentOptions(status = '在读'): Promise<StudentOpt
     gender: r?.gender ?? null,
   }));
 }
+
+/* ============================================================
+ * v4 特教专业内核：教学现场安全档案 / 紧急卡 / 沟通方式（6.4 / 6.5）
+ * 契约来源：backend/api/students.php（safety / safety_save /
+ * emergency_card / communication / communication_save）
+ * ============================================================ */
+
+/** student_safety_profiles 行 */
+export interface SafetyProfile {
+  id?: number;
+  student_id?: number;
+  has_epilepsy?: number;
+  seizure_type?: string | null;
+  seizure_first_aid?: string | null;
+  rescue_medication?: string | null;
+  allergens?: string | null; // JSON 数组字符串
+  allergy_reaction?: string | null;
+  anaphylaxis_action?: string | null;
+  epipen_location?: string | null;
+  diet_texture?: string | null;
+  swallowing_precaution?: string | null;
+  food_taboo?: string | null;
+  aggression_trigger?: string | null;
+  deescalation?: string | null;
+  crisis_procedure?: string | null;
+  prohibited_response?: string | null;
+  wandering_risk?: string | null;
+  wandering_response?: string | null;
+  toilet_independence?: string | null;
+  mobility_aid?: string | null;
+  supervision_level?: string | null;
+  emergency_updated_at?: string | null;
+}
+
+export const DIET_TEXTURES = ['普食', '软食', '糊状', '流质', '鼻饲', '其他'] as const;
+export const WANDERING_RISKS: Record<string, string> = {
+  none: '无风险', low: '低风险', medium: '中风险', high: '高风险',
+};
+export const TOILET_LEVELS: Record<string, string> = {
+  independent: '独立如厕', verbal_prompt: '语言提示', physical_prompt: '身体辅助', full_assistance: '完全协助',
+};
+export const SUPERVISION_LEVELS = ['独立活动', '视线监护', '一对一陪护'] as const;
+
+/** GET /students/safety?student_id= —— 无档案时返回 null */
+export async function fetchSafetyProfile(studentId: number | string): Promise<SafetyProfile | null> {
+  const res = await api.get<SafetyProfile | null>('/students/safety', { student_id: num(studentId, 0) });
+  if (!res.success) return null;
+  return res.data ?? null;
+}
+
+/** POST /students/safety_save —— 有则更新，无则创建 */
+export async function saveSafetyProfile(payload: Partial<SafetyProfile> & { student_id: number }): Promise<void> {
+  const res = await api.post('/students/safety_save', payload);
+  if (!res.success) throw new Error(res.message || '保存失败');
+}
+
+/** 紧急卡：students + safety_profile 联查（含脱敏处理），可直接打印 */
+export interface EmergencyCard extends Record<string, unknown> {
+  id: number;
+  name: string;
+  gender?: string | null;
+  birth_date?: string | null;
+  class_name?: string | null;
+  disability_type_name?: string | null;
+  disability_level_name?: string | null;
+  guardian_name?: string | null;
+  guardian_phone?: string | null;
+  emergency_contact?: string | null;
+  emergency_phone?: string | null;
+  communication_methods?: string | null;
+  communication_notes?: string | null;
+  aac_device?: string | null;
+}
+
+export async function fetchEmergencyCard(studentId: number | string): Promise<EmergencyCard | null> {
+  const res = await api.get<EmergencyCard>('/students/emergency_card', { student_id: num(studentId, 0) });
+  if (!res.success) throw new Error(res.message || '获取失败');
+  return res.data ?? null;
+}
+
+/** 学生沟通方式（students 表上的 5 个 v4 字段） */
+export interface CommunicationProfile {
+  communication_methods: string[]; // 已按字典校验的 code 数组
+  communication_notes: string;
+  aac_device: string;
+  receptive_level: string;
+  expressive_level: string;
+}
+
+export async function fetchCommunication(studentId: number | string): Promise<CommunicationProfile> {
+  const res = await api.get<Record<string, unknown>>('/students/communication', {
+    student_id: num(studentId, 0),
+  });
+  const d = (res.data ?? {}) as Record<string, unknown>;
+  let methods: string[] = [];
+  const raw = d.communication_methods;
+  if (Array.isArray(raw)) {
+    methods = raw.map(String);
+  } else if (typeof raw === 'string' && raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      methods = Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      methods = [];
+    }
+  }
+  return {
+    communication_methods: methods,
+    communication_notes: str(d.communication_notes),
+    aac_device: str(d.aac_device),
+    receptive_level: str(d.receptive_level),
+    expressive_level: str(d.expressive_level),
+  };
+}
+
+export async function saveCommunication(
+  payload: { student_id: number } & Partial<CommunicationProfile>,
+): Promise<void> {
+  const res = await api.post('/students/communication_save', payload);
+  if (!res.success) throw new Error(res.message || '保存失败');
+}
+
+/** GB/T 26341 残疾分级字典 */
+export interface DisabilityLevelItem {
+  id: number;
+  code: string;
+  name: string;
+  degree?: string | null;
+  description?: string | null;
+}
+
+export async function fetchDisabilityLevels(): Promise<DisabilityLevelItem[]> {
+  const res = await api.get<DisabilityLevelItem[]>('/students/disability_levels');
+  if (!res.success) return [];
+  return Array.isArray(res.data) ? res.data : [];
+}

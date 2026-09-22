@@ -1,7 +1,7 @@
 {
-  "name": "my-app",
+  "name": "iep-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -84,5 +84,7 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
-  }
+  },
+  "description": "IEP 特教个别化教育计划管理系统 - 前端",
+  "license": "MIT"
 }

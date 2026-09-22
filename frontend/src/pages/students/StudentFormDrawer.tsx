@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,6 +78,9 @@ export default function StudentFormDrawer({
   const isEdit = !!student;
   const [form, setForm] = useState<Omit<Student, 'id' | 'age'>>({ ...emptyStudent, student_no: generateStudentNo() });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // P3-1 修复：补充 Esc 关闭能力
+  useDrawerA11y(open, onClose);
 
   useEffect(() => {
     if (student) {
@@ -201,6 +205,9 @@ export default function StudentFormDrawer({
             exit={{ x: '100%' }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
             className="fixed right-0 top-0 h-full w-full sm:w-[640px] bg-[#F7F6F4] z-50 flex flex-col overflow-hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label={isEdit ? '编辑学生档案' : '新增学生档案'}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E2E8F0] flex-shrink-0">

@@ -52,7 +52,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { filterByDataScope, isReadOnly, getDataScopeConfig } from '@/utils/dataScope';
+import { useIsReadOnly, useDataScopeConfig } from '@/utils/dataScope';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { ioExportDownload } from '@/utils/ioExport';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import {
@@ -65,7 +66,8 @@ import { fetchStudents as fetchStudentsList } from '@/services/students';
 
 /* ─── Data Scope Badge ─── */
 function DataScopeBadge() {
-  const config = getDataScopeConfig();
+  // P0-2 修复：改用 hook 订阅 authStore，避免登录状态变化后徽标不刷新
+  const config = useDataScopeConfig();
   if (config.type === 'all') return null;
   const labels: Record<string, string> = {
     class_only: '班级视图',
@@ -85,13 +87,6 @@ function DataScopeBadge() {
     </span>
   );
 }
-
-/* ─── Class Name Mapping ─── */
-const classNameToId: Record<string, string> = {
-  '特教一班': 'c1',
-  '特教二班': 'c2',
-  '特教三班': 'c3',
-};
 
 /* ─── Types ─── */
 
@@ -367,20 +362,17 @@ const initialRecords: EvaluationRecord[] = [
   { id: 'e15', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '特教三班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-01', assessor: '王老师', totalScore: 48, maxScore: 80, status: 'completed', scores: {}, notes: {} },
 ];
 
-/* ─── Data Scope Filtering ─── */
-const scopedRecords = filterByDataScope(
-  initialRecords,
-  (r) => r.studentId,
-  (r) => classNameToId[r.className],
-);
+/* Data scope filtering is now applied server-side; these module-level consts were dead code
+   (filterByDataScope is pass-through). Initial state below uses the raw mock arrays as skeletons
+   and is replaced by fetched data on mount. */
 
-const scopedStudents = filterByDataScope(
-  students,
-  (s) => s.id,
-  (s) => classNameToId[s.className],
-);
-
-const readOnly = isReadOnly();
+/**
+ * 修复说明(P0-2)：原先此处为 `const readOnly = isReadOnly();`，
+ * 写在**模块顶层**。模块在应用启动（用户尚未登录）时被求值一次即永久冻结为
+ * true，导致超管登录后「录入评估」「继续评估」「编辑/删除」按钮全部消失，
+ * 评估页只剩一个「导出」按钮。
+ * 现改为在 Evaluation 组件内部通过 useIsReadOnly() 订阅 authStore 求值。
+ */
 
 /* ─── Helpers ─── */
 
@@ -425,8 +417,15 @@ function getGradeLabel(pct: number): { label: string; color: string } {
 /* ─── Main Component ─── */
 
 export default function Evaluation() {
+  /* P0-2 修复：在组件内订阅 authStore 求值，避免模块顶层冻结为只读 */
+  const readOnly = useIsReadOnly();
+
   /* List state */
-  const [records, setRecords] = useState<EvaluationRecord[]>(scopedRecords);
+  // 修复（三维度回测 0919 · P1-3 评估记录 mock 初始态）：
+  // 原实现以本地 mock 数组作为初始 state，后端尚未返回甚至加载失败时，
+  // 界面会持续展示「刘小美 / 生活自理评估 / 2025-01-02」这类根本不存在的档案，
+  // 特教老师极可能把它当成真实评估记录。改为空态，由接口数据填充。
+  const [records, setRecords] = useState<EvaluationRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [studentFilter, setStudentFilter] = useState('all');
@@ -440,6 +439,9 @@ export default function Evaluation() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<'new' | 'detail'>('new');
   const [activeRecord, setActiveRecord] = useState<EvaluationRecord | null>(null);
+  // P3-1 修复：自研抽屉支持 Esc 关闭
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  useDrawerA11y(drawerOpen, closeDrawer);
 
   /* New assessment flow state */
   const [currentStep, setCurrentStep] = useState(1);
@@ -458,7 +460,8 @@ export default function Evaluation() {
 
   /* Student search */
   const [studentSearch, setStudentSearch] = useState('');
-  const [studentOptions, setStudentOptions] = useState<Student[]>(scopedStudents);
+  // 同上：学生下拉同样不得以本地 mock 学生列表作为初始态，避免出现假学生可选。
+  const [studentOptions, setStudentOptions] = useState<Student[]>([]);
   const filteredStudents = useMemo(() => {
     if (!studentSearch) return studentOptions;
     return studentOptions.filter((s) => s.name.includes(studentSearch) || s.studentNo.includes(studentSearch));
@@ -764,7 +767,7 @@ export default function Evaluation() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部学生</SelectItem>
-              {scopedStudents.map((s) => (
+              {studentOptions.map((s) => (
                 <SelectItem key={s.id} value={s.id}>{s.name} ({s.studentNo})</SelectItem>
               ))}
             </SelectContent>
@@ -995,6 +998,9 @@ export default function Evaluation() {
               exit={{ x: '100%' }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
               className="fixed right-0 top-0 h-full w-[800px] max-w-[95vw] bg-white z-50 shadow-xl overflow-y-auto"
+              role="dialog"
+              aria-modal="true"
+              aria-label={drawerMode === 'new' ? '录入评估' : '评估详情'}
             >
               {drawerMode === 'new' ? (
                 <NewAssessmentDrawer
@@ -1052,6 +1058,7 @@ export default function Evaluation() {
                   <DetailDrawer
                     record={activeRecord}
                     onClose={() => setDrawerOpen(false)}
+                    history={records}
                   />
                 )
               )}
@@ -1497,20 +1504,119 @@ function NewAssessmentDrawer({
 interface DetailDrawerProps {
   record: EvaluationRecord;
   onClose: () => void;
+  /** 同学生的历史评估记录，用于计算「与上期对比」 */
+  history: EvaluationRecord[];
 }
 
-const comparisonData = [
-  { dimension: '认知能力', current: 65, previous: 55, change: +10 },
-  { dimension: '语言能力', current: 48, previous: 42, change: +6 },
-  { dimension: '社交技能', current: 72, previous: 68, change: +4 },
-  { dimension: '生活自理', current: 80, previous: 70, change: +10 },
-  { dimension: '运动能力', current: 60, previous: 58, change: +2 },
-];
+/**
+ * 修复说明(P2-2)：原实现是一份**写死的对比数据**
+ * （认知能力 65/55、语言能力 48/42、社交技能 72/68 ……），
+ * 与当前打开的评估记录毫无关系 —— 任何学生、任何模板、任何日期的评估，
+ * 详情抽屉里都显示同一组数字。老师若据此判断「孩子进步了 10 分」，
+ * 得到的其实是编造出来的结论，属于会造成实际教学误判的假数据。
+ *
+ * 现改为真实计算：
+ *   1) 「当前得分」按各维度实际得分 / 该维度满分 换算为百分制；
+ *   2) 「上期得分」取同一学生、日期更早且已完成的**最近一次**评估；
+ *      仅当上期与本期使用同一模板时才做维度级对比，否则不给维度级数字；
+ *   3) 找不到上期记录时 previous 为 null，界面显示「—」，**绝不编造数字**。
+ */
+interface ComparisonRow {
+  dimension: string;
+  current: number;
+  previous: number | null;
+  change: number;
+}
 
-function DetailDrawer({ record, onClose }: DetailDrawerProps) {
+/** 按维度计算百分制得分区 */
+function dimensionPercent(
+  record: EvaluationRecord,
+  template: AssessmentTemplate | undefined,
+): Array<{ name: string; percent: number }> {
+  if (!template) return [];
+  return template.dimensions.map((d) => {
+    const dimScores = record.scores?.[d.id] ?? {};
+    const maxOfDim = d.items.reduce((s, i) => s + (i.maxScore || 0), 0);
+    const got = d.items.reduce((s, i) => {
+      const v = dimScores[i.id];
+      return s + (typeof v === 'number' ? v : 0);
+    }, 0);
+    return { name: d.name, percent: maxOfDim > 0 ? Math.round((got / maxOfDim) * 100) : 0 };
+  });
+}
+
+function buildComparisonData(
+  record: EvaluationRecord,
+  template: AssessmentTemplate | undefined,
+  history: EvaluationRecord[],
+): ComparisonRow[] {
+  const dims = dimensionPercent(record, template);
+  // 历史记录未保存维度明细时，退化为整体得分，不编造维度拆分
+  const rows: Array<{ name: string; current: number }> =
+    dims.length > 0
+      ? dims.map((d) => ({ name: d.name, current: d.percent }))
+      : [
+          {
+            name: '总体得分',
+            current: record.maxScore > 0 ? Math.round((record.totalScore / record.maxScore) * 100) : 0,
+          },
+        ];
+
+  const overallPct = (r: EvaluationRecord) =>
+    r.maxScore > 0 ? Math.round((r.totalScore / r.maxScore) * 100) : 0;
+
+  // 上期 = 同一学生、日期更早、状态为已完成的最近一条
+  const prevRecord = history
+    .filter(
+      (r) =>
+        r.id !== record.id &&
+        r.studentId === record.studentId &&
+        r.status === 'completed' &&
+        r.assessmentDate < record.assessmentDate,
+    )
+    .sort((a, b) => b.assessmentDate.localeCompare(a.assessmentDate))[0];
+
+  if (!prevRecord) {
+    return rows.map((r) => ({ dimension: r.name, current: r.current, previous: null, change: 0 }));
+  }
+
+  // 仅当上期使用同一模板时，维度名称才具备可比性
+  const prevDims = prevRecord.templateId === record.templateId ? dimensionPercent(prevRecord, template) : [];
+  const prevMap = new Map(prevDims.map((d) => [d.name, d.percent]));
+  const isSingleOverall = rows.length === 1;
+
+  return rows.map((r) => {
+    let previous: number | null = null;
+    if (prevMap.has(r.name)) {
+      previous = prevMap.get(r.name) as number;
+    } else if (isSingleOverall) {
+      previous = overallPct(prevRecord);
+    }
+    return {
+      dimension: r.name,
+      current: r.current,
+      previous,
+      change: previous === null ? 0 : r.current - previous,
+    };
+  });
+}
+
+function DetailDrawer({ record, onClose, history }: DetailDrawerProps) {
   const template = templateMap.get(record.templateId);
   const pct = record.maxScore > 0 ? Math.round((record.totalScore / record.maxScore) * 100) : 0;
   const grade = getGradeLabel(pct);
+
+  // P2-2 修复：对比数据由本条记录与历史记录真实计算得出
+  const comparisonData = useMemo(
+    () => buildComparisonData(record, template, history),
+    [record, template, history],
+  );
+  const hasPrevious = comparisonData.some((r) => r.previous !== null);
+  // 无上期数据时把 previous 置为 undefined，避免 recharts 画出一根 0 高度的假柱
+  const chartData = useMemo(
+    () => comparisonData.map((r) => ({ ...r, previous: r.previous ?? undefined })),
+    [comparisonData],
+  );
 
   const exportSingleReport = async (fmt: 'pdf' | 'docx') => {
     try {
@@ -1660,25 +1766,32 @@ function DetailDrawer({ record, onClose }: DetailDrawerProps) {
                   >
                     <td className="px-4 py-3 text-sm font-medium text-[#1E293B]">{item.dimension}</td>
                     <td className="px-4 py-3 text-sm font-semibold text-[#977653]">{item.current}</td>
-                    <td className="px-4 py-3 text-sm text-[#64748B]">{item.previous}</td>
+                    <td className="px-4 py-3 text-sm text-[#64748B]">
+                      {item.previous === null ? '—' : item.previous}
+                    </td>
                     <td className="px-4 py-3">
-                      <span className="flex items-center gap-1">
-                        {item.change > 0 ? (
-                          <TrendingUp className="w-4 h-4 text-[#10B981]" />
-                        ) : item.change < 0 ? (
-                          <TrendingDown className="w-4 h-4 text-[#EF4444]" />
-                        ) : (
-                          <Minus className="w-4 h-4 text-[#94A3B8]" />
-                        )}
-                        <span className={cn(
-                          'text-sm font-medium',
-                          item.change > 0 ? 'text-[#10B981]' :
-                          item.change < 0 ? 'text-[#EF4444]' :
-                          'text-[#94A3B8]'
-                        )}>
-                          {item.change > 0 ? `+${item.change}` : item.change}
+                      {item.previous === null ? (
+                        // 无上期可比记录时明确显示「—」，不编造变化量
+                        <span className="text-sm text-[#94A3B8]">—</span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          {item.change > 0 ? (
+                            <TrendingUp className="w-4 h-4 text-[#10B981]" />
+                          ) : item.change < 0 ? (
+                            <TrendingDown className="w-4 h-4 text-[#EF4444]" />
+                          ) : (
+                            <Minus className="w-4 h-4 text-[#94A3B8]" />
+                          )}
+                          <span className={cn(
+                            'text-sm font-medium',
+                            item.change > 0 ? 'text-[#10B981]' :
+                            item.change < 0 ? 'text-[#EF4444]' :
+                            'text-[#94A3B8]'
+                          )}>
+                            {item.change > 0 ? `+${item.change}` : item.change}
+                          </span>
                         </span>
-                      </span>
+                      )}
                     </td>
                   </motion.tr>
                 ))}
@@ -1689,7 +1802,7 @@ function DetailDrawer({ record, onClose }: DetailDrawerProps) {
           {/* Comparison Bar Chart */}
           <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={comparisonData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
                 <XAxis
                   dataKey="dimension"
@@ -1727,13 +1840,16 @@ function DetailDrawer({ record, onClose }: DetailDrawerProps) {
                     </span>
                   )}
                 />
-                <Bar
-                  dataKey="previous"
-                  name="previous"
-                  fill="#CBD5E1"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={40}
-                />
+                {/* 仅当存在可比对的上期记录时才画「上期」柱，避免凭空出现 0 分柱 */}
+                {hasPrevious && (
+                  <Bar
+                    dataKey="previous"
+                    name="previous"
+                    fill="#CBD5E1"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={40}
+                  />
+                )}
                 <Bar
                   dataKey="current"
                   name="current"

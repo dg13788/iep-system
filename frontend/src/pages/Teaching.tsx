@@ -27,7 +27,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { filterByDataScope, isReadOnly, getDataScopeConfig } from '@/utils/dataScope';
+import { filterByDataScope, useIsReadOnly, useDataScopeConfig } from '@/utils/dataScope';
 import ImportExportActions from '@/components/io/ImportExportActions';
 
 /* ------------------------------------------------------------------ */
@@ -81,54 +81,11 @@ const IEP_GOALS = [
 const SUBJECTS = ['语言训练', '社交训练', '生活自理', '认知训练', '感觉统合', '精细动作', '音乐治疗', '美术创作'];
 const SESSION_TYPES: Array<'个训' | '小组' | '集体' | '生活实践'> = ['个训', '小组', '集体', '生活实践'];
 
-function generateMockRecords(): TeachingRecord[] {
-  const records: TeachingRecord[] = [];
-  const contents = [
-    '通过图片卡片进行名词认知训练，学生能正确指认常见动物图片，反应速度较上周有提升。',
-    '使用情景模拟进行社交对话练习，在教师提示下能完成简单问候对话。',
-    '进行穿脱外套训练，能独立完成拉链操作，扣纽扣仍需辅助。',
-    '通过串珠活动锻炼手部精细动作，能完成大珠子串线，小珠子需要辅助。',
-    '情绪脸谱图卡认知，能识别开心、难过、生气三种基本表情。',
-    '注意力训练游戏，使用积木堆叠保持专注时间达到8分钟。',
-    '数与量配对练习，能正确完成1-5的数量对应。',
-    '平衡木行走训练，能独立完成直线行走，转弯仍需辅助。',
-    '音乐律动活动，能跟随节奏做简单拍手动作，对欢快音乐反应积极。',
-    '涂鸦与色彩认知，能正确指认红、黄、蓝三种颜色，涂色时边界意识增强。',
-    '使用PECS沟通板进行需求表达，能主动拿取「我要喝水」图卡。',
-    '小组合作游戏「传球」，能等待轮流并尝试将球传给同伴。',
-    '生活实践：在食堂独立取餐，能排队等待并说出菜名。',
-    '认知训练：分类游戏，能按颜色和形状进行简单分类。',
-    '语言训练：三字词组仿说，正确率达80%以上。',
-  ];
+// 修复（三维度回测 0919 · P2-1）：此处原有的本地 mock 数据生成函数（仅声明、从未渲染）已整体删除，避免被误读为真实数据源。
+// 用户 / 审计日志 / 教学记录一律来自后端真实接口。
 
-  for (let i = 0; i < 18; i++) {
-    const date = new Date(2025, 0, 5 + Math.floor(i / 2) * 3 + (i % 2));
-    records.push({
-      id: `tr-${i + 1}`,
-      date: date.toISOString().split('T')[0],
-      student_id: `s-${(i % 8) + 1}`,
-      student_name: STUDENTS[i % 8],
-      iep_goal: IEP_GOALS[i % 8],
-      teacher: TEACHERS[i % 4],
-      session_type: SESSION_TYPES[i % 4],
-      subject: SUBJECTS[i % 8],
-      teaching_content: contents[i % contents.length],
-      teaching_method: ['示范教学', '游戏教学', '情景教学', '任务分解'][i % 4],
-      student_performance: ['表现积极，配合度高', '需要适当引导，整体良好', '偶有分心，但能及时回归', '完成度较高，值得鼓励'][i % 4],
-      difficulties: ['注意力维持时间较短', '部分指令理解有困难', '手部精细动作需加强', '社交互动主动性不足'][i % 4],
-      adjustments: ['增加感官提示', '简化指令步骤', '提供更多正向激励', '延长练习时间'][i % 4],
-      materials_used: ['图片卡片、实物教具', '积木、拼图', 'PECS沟通板', '音乐播放器'][i % 4],
-      homework: ['在家复习动物名称', '练习穿脱外套', '与家长进行角色扮演', '完成涂色作业'][i % 4],
-      next_plan: ['继续词组扩展训练', '增加句子长度要求', '引入新的自理技能', '提高分类难度'][i % 4],
-      effectiveness_score: (i % 5) + 1,
-      duration_minutes: 30 + (i % 3) * 15,
-      is_key_record: i % 5 === 0,
-    });
-  }
-  return records;
-}
-
-const MOCK_RECORDS = generateMockRecords();
+// 修复（三维度回测 0919 · P2-1）：此处原有一份本地假教学记录常量（仅声明、从未渲染），
+// 易被误读为真实数据源，已删除。教学记录一律来自后端真实接口。
 
 const SESSION_TYPE_CONFIG: Record<string, { label: string; className: string }> = {
   '个训': { label: '个训', className: 'bg-primary-50 text-primary-700' },
@@ -1058,8 +1015,9 @@ function RecordDetailDrawer({
 /*  Main Teaching Page                                                 */
 /* ------------------------------------------------------------------ */
 export default function Teaching() {
-  const config = getDataScopeConfig();
-  const readOnly = isReadOnly();
+  // P0-2 修复：改为订阅 authStore，登录/权限变化后自动刷新
+  const config = useDataScopeConfig();
+  const readOnly = useIsReadOnly();
 
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [records, setRecords] = useState<TeachingRecord[]>([]);

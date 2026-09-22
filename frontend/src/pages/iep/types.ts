@@ -111,6 +111,14 @@ export interface IEPPlan {
   teaching_adaptations: string;
   assistive_tech: string;
   transition_plan: string;
+  /** v4 特教内核（6.2）：教育安置形式与 IEP 会议要件（后端 p.* 直接透传） */
+  placement_type?: string;
+  placement_notes?: string;
+  regular_class_hours?: number | null;
+  resource_room_hours?: number | null;
+  meeting_date?: string;
+  meeting_place?: string;
+  next_review_date?: string;
   created_at: string;
   updated_at: string;
 }

@@ -48,15 +48,18 @@ import {
 import type { IEPPlan, GoalStatus, IEPGoal, ProgressRecord } from './types';
 import { STATUS_COLORS, GOAL_AREA_COLORS, GOAL_STATUS_COLORS } from './types';
 import SignaturePad from './SignaturePad';
-import { getDataScopeConfig } from '@/utils/dataScope';
+import { useDataScopeConfig } from '@/utils/dataScope';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { exportIEPDetailToPDF, exportIEPDetailToWord } from '@/utils/documentExport';
-import { approveIEP, fetchIEP, signIEP } from '@/services/iep';
+import { approveIEP, fetchIEP, signIEP, updateIEP, fetchIEPMeta } from '@/services/iep';
 import type { ApprovalDecision } from '@/services/iep';
 import type { IEPLevel } from '@/store/authStore';
+import ObjectivesPanel from './ObjectivesPanel';
+import ServicesMeetingPanel from './ServicesMeetingPanel';
 
-type DetailTab = '基本信息' | '长短期目标' | '进度追踪' | '审批记录' | '家长签名';
+type DetailTab = '基本信息' | '长短期目标' | '短期目标' | '进度追踪' | '服务与会议' | '审批记录' | '家长签名';
 
-const tabs: DetailTab[] = ['基本信息', '长短期目标', '进度追踪', '审批记录', '家长签名'];
+const tabs: DetailTab[] = ['基本信息', '长短期目标', '短期目标', '进度追踪', '服务与会议', '审批记录', '家长签名'];
 
 const actionIcons: Record<string, React.ReactNode> = {
   '提交草稿': <FileText className="w-4 h-4" />,
@@ -110,7 +113,10 @@ export default function IEPDetail({
   onRefresh,
   onPlanProgress,
 }: IEPDetailProps) {
-  const config = getDataScopeConfig();
+  // P0-2 修复：改为订阅 authStore，登录/权限变化后自动刷新
+  const config = useDataScopeConfig();
+  // P3-1 修复：自研详情抽屉补充 Esc 关闭（window 级监听，交给最上层原生 dialog 处理）
+  useDrawerA11y(true, onClose);
 
   const isNone = iepLevel === 'none';
   const isView = iepLevel === 'view';
@@ -288,10 +294,13 @@ export default function IEPDetail({
 
   const selectedGoal = allGoals.find((g) => g.id === selectedGoalId);
 
+  // P3-1 修复：进度更新子抽屉补充 Esc 关闭（仅在子抽屉打开时生效）
+  useDrawerA11y(progressSheetOpen && !!selectedGoal, () => setProgressSheetOpen(false));
+
   // iepLevel 'none': show permission denied
   if (isNone) {
     return (
-      <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="权限提示">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -321,7 +330,7 @@ export default function IEPDetail({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={`IEP 详情 - ${currentPlan?.student_name ?? ''}`}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -559,6 +568,13 @@ export default function IEPDetail({
                   <InfoRow label="目标数量" value={`${currentPlan.goals_count} 个`} />
                 </div>
 
+                {/* v4 特教内核（6.2）：教育安置形式与 IEP 会议要件 */}
+                <PlacementMeetingCard
+                  plan={currentPlan}
+                  canEdit={!readOnly}
+                  onSaved={loadDetail}
+                />
+
                 {/* Current Levels Preview */}
                 <div>
                   <h4 className="text-sm font-semibold text-[#1E293B] mb-3">学生现况描述</h4>
@@ -701,6 +717,35 @@ export default function IEPDetail({
                     );
                   })
                 )}
+              </motion.div>
+            )}
+
+            {activeTab === '短期目标' && (
+              <motion.div
+                key="objectives"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ObjectivesPanel
+                  planId={Number(plan.id)}
+                  goals={allGoals}
+                  canEdit={!readOnly}
+                  onChanged={loadDetail}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === '服务与会议' && (
+              <motion.div
+                key="services-meeting"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <ServicesMeetingPanel planId={Number(plan.id)} canEdit={!readOnly} />
               </motion.div>
             )}
 
@@ -1168,6 +1213,10 @@ export default function IEPDetail({
                 exit={{ x: '100%' }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
                 className="relative w-full max-w-[480px] h-full bg-white shadow-xl flex flex-col z-10"
+                role="dialog"
+                aria-modal="true"
+                aria-label="更新目标进度"
+                data-state="open"
               >
                 {/* Sheet Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
@@ -1333,6 +1382,177 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-xs text-[#94A3B8] mb-0.5">{label}</div>
       <div className="text-sm text-[#1E293B] font-medium">{value}</div>
+    </div>
+  );
+}
+
+/**
+ * v4 特教内核（6.2）：教育安置形式与 IEP 会议要件。
+ * 展示优先用详情接口返回的最新值；可编辑时提供就地修改，
+ * 安置形式为提交审核的法定必填项（后端 submit 强制校验）。
+ */
+function PlacementMeetingCard({
+  plan,
+  canEdit,
+  onSaved,
+}: {
+  plan: IEPPlan;
+  canEdit: boolean;
+  onSaved: () => Promise<void> | void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [placementTypes, setPlacementTypes] = useState<string[]>([]);
+  const [placementType, setPlacementType] = useState(plan.placement_type ?? '');
+  const [placementNotes, setPlacementNotes] = useState(plan.placement_notes ?? '');
+  const [meetingDate, setMeetingDate] = useState(plan.meeting_date ?? '');
+  const [meetingPlace, setMeetingPlace] = useState(plan.meeting_place ?? '');
+  const [nextReviewDate, setNextReviewDate] = useState(plan.next_review_date ?? '');
+
+  // 切换计划时同步本地表单
+  useEffect(() => {
+    setPlacementType(plan.placement_type ?? '');
+    setPlacementNotes(plan.placement_notes ?? '');
+    setMeetingDate(plan.meeting_date ?? '');
+    setMeetingPlace(plan.meeting_place ?? '');
+    setNextReviewDate(plan.next_review_date ?? '');
+    setEditing(false);
+  }, [plan.id, plan.placement_type, plan.placement_notes, plan.meeting_date, plan.meeting_place, plan.next_review_date]);
+
+  useEffect(() => {
+    let alive = true;
+    fetchIEPMeta()
+      .then((m) => { if (alive) setPlacementTypes(m.placement_types); })
+      .catch(() => { /* 字典加载失败时回退为自由输入 */ });
+    return () => { alive = false; };
+  }, []);
+
+  const handleSave = async () => {
+    if (!placementType) {
+      toast.error('教育安置形式为必填项');
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateIEP(plan.id, {
+        placement_type: placementType,
+        placement_notes: placementNotes || undefined,
+        meeting_date: meetingDate || undefined,
+        meeting_place: meetingPlace || undefined,
+        next_review_date: nextReviewDate || undefined,
+      });
+      toast.success('安置与会议信息已保存');
+      setEditing(false);
+      await onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border border-[#E2E8F0] rounded-lg p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-[#1E293B]">教育安置与 IEP 会议</h4>
+        {canEdit && !editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs text-[#977653] hover:underline cursor-pointer"
+          >
+            编辑
+          </button>
+        )}
+      </div>
+
+      {!editing ? (
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+          <InfoRow
+            label="教育安置形式"
+            value={plan.placement_type || '—（提交审核前必填）'}
+          />
+          <InfoRow label="安置说明" value={plan.placement_notes || '—'} />
+          <InfoRow label="IEP 会议日期" value={plan.meeting_date || '—'} />
+          <InfoRow label="会议地点" value={plan.meeting_place || '—'} />
+          <InfoRow label="下次评估日期" value={plan.next_review_date || '—'} />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">教育安置形式 *</label>
+              {placementTypes.length > 0 ? (
+                <Select value={placementType} onValueChange={setPlacementType}>
+                  <SelectTrigger className="h-9"><SelectValue placeholder="请选择" /></SelectTrigger>
+                  <SelectContent>
+                    {placementTypes.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <input
+                  value={placementType}
+                  onChange={(e) => setPlacementType(e.target.value)}
+                  className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">IEP 会议日期</label>
+              <input
+                type="date"
+                value={meetingDate}
+                onChange={(e) => setMeetingDate(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">会议地点</label>
+              <input
+                value={meetingPlace}
+                onChange={(e) => setMeetingPlace(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">下次评估日期</label>
+              <input
+                type="date"
+                value={nextReviewDate}
+                onChange={(e) => setNextReviewDate(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">安置说明</label>
+            <input
+              value={placementNotes}
+              onChange={(e) => setPlacementNotes(e.target.value)}
+              placeholder="如：每周二/四下午在资源教室接受补救教学"
+              className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="h-8 px-3 rounded-md border border-[#CBD5E1] text-xs font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
+            >
+              取消
+            </button>
+            <button
+              onClick={() => void handleSave()}
+              disabled={saving}
+              className="flex items-center gap-1 h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+            >
+              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {saving ? '保存中...' : '保存'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

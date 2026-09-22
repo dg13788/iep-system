@@ -74,6 +74,13 @@ export interface RawIEPPlan {
   assistive_tech?: string | null;
   transition_plan?: string | null;
   progress_summary?: string | null;
+  placement_type?: string | null;
+  placement_notes?: string | null;
+  regular_class_hours?: number | string | null;
+  resource_room_hours?: number | string | null;
+  meeting_date?: string | null;
+  meeting_place?: string | null;
+  next_review_date?: string | null;
   goals?: RawIEPGoal[];
   approval_logs?: RawApprovalLog[];
   signatures?: RawSignature[];
@@ -329,6 +336,14 @@ export function adaptPlan(raw: RawIEPPlan): IEPPlan {
     teaching_adaptations: str(raw.adaptations),
     assistive_tech: str(raw.assistive_tech),
     transition_plan: str(raw.transition_plan),
+    // v4：安置与会议要件（p.* 透传）
+    placement_type: str(raw.placement_type),
+    placement_notes: str(raw.placement_notes),
+    regular_class_hours: raw.regular_class_hours == null ? null : num(raw.regular_class_hours, 0),
+    resource_room_hours: raw.resource_room_hours == null ? null : num(raw.resource_room_hours, 0),
+    meeting_date: str(raw.meeting_date),
+    meeting_place: str(raw.meeting_place),
+    next_review_date: str(raw.next_review_date),
     created_at: str(raw.created_at),
     updated_at: str(raw.updated_at),
   };
@@ -580,6 +595,14 @@ export interface UpdateIEPPayload {
   team_members?: string[] | string;
   status?: IEPStatus | string;
   progress_summary?: string;
+  // v4 特教内核（6.2）
+  placement_type?: string;
+  placement_notes?: string;
+  regular_class_hours?: number;
+  resource_room_hours?: number;
+  meeting_date?: string;
+  meeting_place?: string;
+  next_review_date?: string;
 }
 
 /** POST /iep/update */
@@ -776,4 +799,282 @@ export async function fetchGoalsForPlans(planIds: Array<number | string>, limit 
     }),
   );
   return results.flat();
+}
+
+/* ============================================================
+ * v4 特教专业内核：短期目标 / 任务分析 / 试次记录（6.1）
+ * ============================================================ */
+
+/** iep_objectives 行（含 v_iep_objective_progress 汇总与挂载的步骤） */
+export interface ObjectiveStep {
+  id: number;
+  step_no: number;
+  title: string;
+  description?: string | null;
+  teaching_prompt?: string | null;
+  is_critical: number;
+}
+
+export interface IEPObjective {
+  id: number;
+  iep_plan_id: number;
+  goal_id: number;
+  objective_code: string;
+  seq_no: number;
+  title: string;
+  target_behavior?: string | null;
+  criteria?: string | null;
+  measurement_method?: string | null;
+  baseline_level?: string | null;
+  target_level?: string | null;
+  mastery_pct: number;
+  start_date?: string | null;
+  target_date?: string | null;
+  status: string;
+  teaching_strategy?: string | null;
+  sort_order: number;
+  record_count: number;
+  total_trials: number;
+  total_success: number;
+  overall_pct: number;
+  latest_pct?: number | null;
+  latest_prompt_level?: string | null;
+  last_record_date?: string | null;
+  steps: ObjectiveStep[];
+}
+
+export interface ObjectiveRecord {
+  id: number;
+  objective_id: number;
+  step_id?: number | null;
+  step_title?: string | null;
+  record_date: string;
+  session_type?: string | null;
+  context?: string | null;
+  trial_count: number;
+  success_count: number;
+  achievement_pct: number;
+  prompt_level: string;
+  is_generalized: number;
+  duration_minutes?: number | null;
+  notes?: string | null;
+  recorder_name?: string | null;
+}
+
+export const OBJECTIVE_STATUS_CN: Record<string, string> = {
+  not_started: '未开始',
+  in_progress: '进行中',
+  mastered: '已掌握',
+  not_mastered: '未掌握',
+  discontinued: '已终止',
+};
+
+export const PROMPT_LEVEL_CN: Record<string, string> = {
+  independent: '独立完成',
+  gesture: '手势提示',
+  verbal: '语言提示',
+  model: '示范提示',
+  physical: '身体辅助',
+};
+
+/** GET /iep/objectives?plan_id= —— 计划的全部短期目标（含步骤与进度汇总） */
+export async function fetchObjectives(planId: number | string): Promise<IEPObjective[]> {
+  const res = await api.get<IEPObjective[]>('/iep/objectives', { plan_id: num(planId, 0) });
+  const data = unwrap(res) ?? [];
+  return Array.isArray(data) ? data : [];
+}
+
+export interface ObjectiveSavePayload {
+  id?: number;
+  goal_id?: number;
+  title: string;
+  target_behavior?: string;
+  criteria?: string;
+  measurement_method?: string;
+  baseline_level?: string;
+  target_level?: string;
+  mastery_pct?: number;
+  start_date?: string;
+  target_date?: string;
+  status?: string;
+  teaching_strategy?: string;
+  steps?: Array<{
+    title: string;
+    description?: string;
+    teaching_prompt?: string;
+    is_critical?: boolean;
+  }>;
+}
+
+/** POST /iep/objective_save —— id>0 走更新，否则新建；步骤全量替换 */
+export async function saveObjective(payload: ObjectiveSavePayload): Promise<number> {
+  const res = await api.post<{ id?: number }>('/iep/objective_save', payload);
+  const data = unwrap(res) ?? {};
+  return num(data.id, 0);
+}
+
+/** POST /iep/objective_delete */
+export async function deleteObjective(id: number): Promise<void> {
+  const res = await api.post('/iep/objective_delete', { id });
+  unwrap(res);
+}
+
+/** GET /iep/objective_records?objective_id= */
+export async function fetchObjectiveRecords(objectiveId: number): Promise<ObjectiveRecord[]> {
+  const res = await api.get<ObjectiveRecord[]>('/iep/objective_records', { objective_id: objectiveId });
+  const data = unwrap(res) ?? [];
+  return Array.isArray(data) ? data : [];
+}
+
+export interface ObjectiveRecordPayload {
+  objective_id: number;
+  step_id?: number | null;
+  record_date?: string;
+  session_type?: string;
+  context?: string;
+  trial_count: number;
+  success_count: number;
+  prompt_level: string;
+  is_generalized?: boolean;
+  duration_minutes?: number;
+  notes?: string;
+}
+
+/** POST /iep/objective_record_add —— 达成率由后端生成列计算，连续达标自动判定已掌握 */
+export async function addObjectiveRecord(
+  payload: ObjectiveRecordPayload,
+): Promise<{ achievement_pct: number; objective_status?: string | null }> {
+  const res = await api.post<{ achievement_pct?: number; objective_status?: string | null }>(
+    '/iep/objective_record_add',
+    payload,
+  );
+  const data = unwrap(res) ?? {};
+  return {
+    achievement_pct: num(data.achievement_pct, 0),
+    objective_status: data.objective_status ?? null,
+  };
+}
+
+/** POST /iep/goal_rollup —— 由 trial 数据反推长期目标进度与状态
+ *  后端返回 { updated: [{ goal_id, objective_count, mastered_count, avg_pct, suggested_status }] }
+ *  兼容早期约定的 count 字段。 */
+export async function rollupGoals(planId: number | string): Promise<number> {
+  const res = await api.post<{ count?: number; updated?: unknown[] }>('/iep/goal_rollup', {
+    plan_id: num(planId, 0),
+  });
+  const data = unwrap(res) ?? {};
+  if (Array.isArray(data.updated)) return data.updated.length;
+  return num(data.count, 0);
+}
+
+/* ============================================================
+ * v4 相关服务台账 / IEP 会议参与人（6.2）
+ * ============================================================ */
+
+export interface RelatedService {
+  id: number;
+  iep_plan_id: number;
+  service_code?: string | null;
+  service_name: string;
+  provider?: string | null;
+  provider_role?: string | null;
+  frequency_per_week: number;
+  minutes_per_session: number;
+  planned_sessions: number;
+  completed_sessions: number;
+  location?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: string;
+  remark?: string | null;
+}
+
+export const SERVICE_STATUS_CN: Record<string, string> = {
+  planned: '待开始',
+  active: '进行中',
+  completed: '已完成',
+  suspended: '已暂停',
+};
+
+export async function fetchRelatedServices(planId: number | string): Promise<RelatedService[]> {
+  const res = await api.get<RelatedService[]>('/iep/related_services', { plan_id: num(planId, 0) });
+  const data = unwrap(res) ?? [];
+  return Array.isArray(data) ? data : [];
+}
+
+export type RelatedServicePayload = Partial<RelatedService> & { plan_id: number; service_name: string };
+
+export async function saveRelatedService(payload: RelatedServicePayload): Promise<number> {
+  const res = await api.post<{ id?: number }>('/iep/related_service_save', payload);
+  const data = unwrap(res) ?? {};
+  return num(data.id, 0);
+}
+
+export async function deleteRelatedService(planId: number | string, id: number): Promise<void> {
+  const res = await api.post('/iep/related_service_delete', { plan_id: num(planId, 0), id });
+  unwrap(res);
+}
+
+export interface MeetingParticipant {
+  id: number;
+  iep_plan_id: number;
+  participant_type: string;
+  user_id?: number | null;
+  parent_id?: number | null;
+  name: string;
+  role?: string | null;
+  attendance: string;
+  proxy_note?: string | null;
+  signed_at?: string | null;
+  remark?: string | null;
+}
+
+export const PARTICIPANT_TYPE_CN: Record<string, string> = {
+  school: '学校人员',
+  parent: '家长',
+  student: '学生本人',
+  specialist: '专业人员',
+  external: '校外人员',
+};
+
+export const ATTENDANCE_CN: Record<string, string> = {
+  present: '出席',
+  proxy: '委托出席',
+  absent: '缺席',
+};
+
+export async function fetchMeetingParticipants(planId: number | string): Promise<MeetingParticipant[]> {
+  const res = await api.get<MeetingParticipant[]>('/iep/meeting_participants', {
+    plan_id: num(planId, 0),
+  });
+  const data = unwrap(res) ?? [];
+  return Array.isArray(data) ? data : [];
+}
+
+export type MeetingParticipantPayload = Partial<MeetingParticipant> & { plan_id: number; name: string };
+
+export async function saveMeetingParticipant(payload: MeetingParticipantPayload): Promise<number> {
+  const res = await api.post<{ id?: number }>('/iep/meeting_participant_save', payload);
+  const data = unwrap(res) ?? {};
+  return num(data.id, 0);
+}
+
+/* ============================================================
+ * v4 字典：GET /iep/meta（安置形式 / 相关服务 / 沟通方式）
+ * ============================================================ */
+
+export interface IEPMeta {
+  placement_types: string[];
+  related_services: Array<{ code: string; name: string; category?: string | null; description?: string | null }>;
+  communication_methods: Array<{ code: string; name: string; value?: string | null }>;
+}
+
+export async function fetchIEPMeta(): Promise<IEPMeta> {
+  const res = await api.get<IEPMeta>('/iep/meta');
+  const data = unwrap(res);
+  return {
+    placement_types: data?.placement_types ?? [],
+    related_services: data?.related_services ?? [],
+    communication_methods: data?.communication_methods ?? [],
+  };
 }

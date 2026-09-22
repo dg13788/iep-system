@@ -150,8 +150,27 @@ export const useAuthStore = create<AuthState>()(
           user?: Record<string, unknown>;
           permissions?: Record<string, unknown>;
         }>('/auth/me');
-        if (data.success && data.data?.user) {
-          const u = data.data.user as Record<string, unknown>;
+
+        /**
+         * 修复说明(P0-1)：刷新页面即掉登录态
+         *
+         * 后端 /api/auth/me 返回的是**扁平结构**：
+         *   { success: true, data: { id, username, real_name, ..., permissions } }
+         * 而 /api/auth/login 返回的是**嵌套结构**：
+         *   { success: true, data: { token, user: {...}, permissions: {...} } }
+         *
+         * 原实现仅按 login 的嵌套结构取值（data.data?.user），对 /auth/me 恒为
+         * undefined，于是每次刷新都走进 else 分支执行 clearToken()，
+         * 导致「刷新即被踢回登录页」。
+         *
+         * 现同时兼容两种结构：优先取 user 字段，缺失时回退到 data 本身。
+         */
+        const payload = data.data as unknown as Record<string, unknown> | undefined;
+        const rawUser = ((payload?.user ?? payload) ?? {}) as Record<string, unknown>;
+        const rawPerms = (payload?.permissions ?? rawUser?.permissions) as Record<string, unknown> | undefined;
+
+        if (data.success && rawUser && Object.keys(rawUser).length > 0) {
+          const u = rawUser;
           set({
             isAuthenticated: true,
             token,
@@ -165,7 +184,7 @@ export const useAuthStore = create<AuthState>()(
               permissionGroupId: Number(u.permission_group_id ?? 0) || undefined,
               permission_group_name: String(u.permission_group_name ?? u.role_name ?? ''),
             },
-            permissions: extractPermissions(data.data.permissions),
+            permissions: extractPermissions(rawPerms),
             restoring: false,
           });
         } else {

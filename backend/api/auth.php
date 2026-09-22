@@ -29,7 +29,18 @@ switch ($action) {
         $password = isset($input['password']) ? $input['password'] : '';
 
         if (empty($username) || empty($password)) {
-            jsonResponse(['success' => false, 'message' => '账号和密码不能为空']);
+            jsonResponse(['success' => false, 'message' => '账号和密码不能为空', 'code' => 400], 400);
+        }
+
+        // 安全修复(P1-3)：登录失败限流，防暴力破解
+        [$allowed, $retryAfter] = checkLoginRateLimit($username);
+        if (!$allowed) {
+            header('Retry-After: ' . $retryAfter);
+            jsonResponse([
+                'success' => false,
+                'message' => '登录失败次数过多，请于 ' . $retryAfter . ' 秒后重试',
+                'code' => 429
+            ], 429);
         }
 
         try {
@@ -42,14 +53,23 @@ switch ($action) {
             $user = $stmt->fetch();
 
             if (!$user) {
-                jsonResponse(['success' => false, 'message' => '账号或密码错误']);
+                recordLoginFailure($username);
+                jsonResponse(['success' => false, 'message' => '账号或密码错误', 'code' => 401], 401);
             }
             if (!$user['is_active']) {
-                jsonResponse(['success' => false, 'message' => '账号已被禁用']);
+                recordLoginFailure($username);
+                auditLog('login_denied', 'auth', 'user', intval($user['id']), $username, null, null, '登录被拒：账号已禁用');
+                jsonResponse(['success' => false, 'message' => '账号已被禁用', 'code' => 403], 403);
             }
             if (!password_verify($password, $user['password_hash'])) {
-                jsonResponse(['success' => false, 'message' => '账号或密码错误']);
+                recordLoginFailure($username);
+                // 修复(P1)：登录失败此前完全不落审计，无法发现撞库行为
+                auditLog('login_failed', 'auth', 'user', intval($user['id']), $username, null, null, '登录失败：密码错误');
+                jsonResponse(['success' => false, 'message' => '账号或密码错误', 'code' => 401], 401);
             }
+
+            // 登录成功：清空失败计数
+            clearLoginFailures($username);
 
             // Get permission group info (v3)
             $pgId = intval($user['permission_group_id'] ?? $user['role_id'] ?? 0);
@@ -84,7 +104,11 @@ switch ($action) {
             $featurePerms = json_decode($pg['feature_permissions'] ?? '[]', true) ?: [];
 
             // Record audit log
-            auditLog('login', 'auth', 'user', $user['id'], $user['username'], null, null, '用户登录系统');
+            // 修复(P1-4残留)：登录成功发生在签发 Token 之前，auditLog 内部
+            // getCurrentUser() 必为 null，300 条登录记录全部记成 username='system'。
+            // 显式传入操作人，登录事件从此可追溯。
+            auditLog('login', 'auth', 'user', $user['id'], $user['username'], null, null, '用户登录系统',
+                ['user_id' => intval($user['id']), 'username' => $user['username'], 'user_type' => 'user']);
 
             jsonResponse([
                 'success' => true,
@@ -189,7 +213,18 @@ switch ($action) {
         $password = isset($input['password']) ? $input['password'] : '';
 
         if (empty($phone) || empty($password)) {
-            jsonResponse(['success' => false, 'message' => '手机号和密码不能为空']);
+            jsonResponse(['success' => false, 'message' => '手机号和密码不能为空', 'code' => 400], 400);
+        }
+
+        // 安全修复(P1-3)：家长端登录同样限流
+        [$allowedP, $retryAfterP] = checkLoginRateLimit($phone);
+        if (!$allowedP) {
+            header('Retry-After: ' . $retryAfterP);
+            jsonResponse([
+                'success' => false,
+                'message' => '登录失败次数过多，请于 ' . $retryAfterP . ' 秒后重试',
+                'code' => 429
+            ], 429);
         }
 
         try {
@@ -202,14 +237,25 @@ switch ($action) {
             $parent = $stmt->fetch();
 
             if (!$parent) {
-                jsonResponse(['success' => false, 'message' => '手机号或密码错误']);
+                recordLoginFailure($phone);
+                jsonResponse(['success' => false, 'message' => '手机号或密码错误', 'code' => 401], 401);
             }
             if (!$parent['is_active']) {
-                jsonResponse(['success' => false, 'message' => '账号已被禁用']);
+                recordLoginFailure($phone);
+                // 修复(P1-4残留)：家长账号被禁用的登录尝试此前完全不落审计
+                auditLog('login_denied', 'auth', 'parent', intval($parent['id']), $parent['name'], null, null, '家长登录被拒：账号已禁用',
+                    ['user_id' => 0, 'username' => $parent['name'] . '(' . $phone . ')', 'user_type' => 'parent']);
+                jsonResponse(['success' => false, 'message' => '账号已被禁用', 'code' => 403], 403);
             }
             if (!password_verify($password, $parent['password_hash'])) {
-                jsonResponse(['success' => false, 'message' => '手机号或密码错误']);
+                recordLoginFailure($phone);
+                auditLog('login_failed', 'auth', 'parent', intval($parent['id']), $parent['name'], null, null, '家长登录失败：密码错误',
+                    ['user_id' => 0, 'username' => $parent['name'] . '(' . $phone . ')', 'user_type' => 'parent']);
+                jsonResponse(['success' => false, 'message' => '手机号或密码错误', 'code' => 401], 401);
             }
+
+            // 登录成功：清空失败计数
+            clearLoginFailures($phone);
 
             // Update login info
             $updateStmt = $pdo->prepare('UPDATE parents SET last_login_at = NOW(), login_ip = ? WHERE id = ?');
@@ -235,6 +281,11 @@ switch ($action) {
             $pg = $pgStmt->fetch(PDO::FETCH_ASSOC);
             $menuPerms = json_decode($pg['menu_permissions'] ?? '[]', true) ?: [];
             $featurePerms = json_decode($pg['feature_permissions'] ?? '[]', true) ?: [];
+
+            // 修复(P1-4残留)：家长登录成功此前一条审计都没有——
+            // 家长端恰恰是权限最小的入口，谁家的谁登录过必须可查。
+            auditLog('login', 'auth', 'parent', intval($parent['id']), $parent['name'], null, null, '家长登录系统',
+                ['user_id' => 0, 'username' => $parent['name'] . '(' . $phone . ')', 'user_type' => 'parent']);
 
             jsonResponse([
                 'success' => true,

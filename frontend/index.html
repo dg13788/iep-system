@@ -4,9 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>特教 IEP - 个别化教育计划管理系统</title>
+    <!--
+      修复(P2-3)：原写法 <link rel="stylesheet" href="https://fonts.googleapis.com/..."> 是
+      首屏渲染阻塞资源。学校内网 / 离线环境下 DNS 解析失败会导致长时间白屏。
+      改造为 media="print" + onload 切换的非阻塞加载：浏览器以最低优先级、不阻塞渲染地下载，
+      下载完成后再切换为 all 生效；noscript 分支保证禁用 JS 时仍可用。
+      font-display=swap 已在 URL 参数中，未就绪时先用 index.css 里的本地兜底字体栈渲染。
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" media="print" onload="this.media='all'; this.onload=null;"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
+    <noscript>
+      <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap">
+    </noscript>
   </head>
   <body>
     <div id="root"></div>

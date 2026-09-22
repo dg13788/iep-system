@@ -5,7 +5,7 @@ import StudentFormDrawer from './students/StudentFormDrawer';
 import StudentDetailDrawer from './students/StudentDetailDrawer';
 import ClassManagement from './students/ClassManagement';
 import type { Student, ClassItem, StudentStatus } from './students/data';
-import { isReadOnly } from '@/utils/dataScope';
+import { useIsReadOnly } from '@/utils/dataScope';
 import {
   fetchStudents,
   fetchClasses,
@@ -18,7 +18,8 @@ import { fetchTeacherOptions, type TeacherOption } from '@/services/iep';
 
 export default function Students() {
   // 只读判断来自后端下发的 IEP 参与级别（不再按用户名硬编码猜测）
-  const readOnly = isReadOnly();
+  // P0-2 修复：改为订阅 authStore，登录/权限变化后自动刷新
+  const readOnly = useIsReadOnly();
 
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<ClassItem[]>([]);

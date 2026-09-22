@@ -379,45 +379,11 @@ const DEFAULT_ROLE_PERMS: Record<string, Record<string, Set<number>>> = {
   viewer: Object.fromEntries(Object.keys(OLD_PERMISSIONS).map((m) => [m, new Set([0])])),
 };
 
-function generateMockData() {
-  const users: SystemUser[] = [
-    { id: 'u1', username: 'admin', real_name: '系统管理员', role: '超级管理员', role_code: 'super_admin', department: '信息中心', phone: '13800000001', email: 'admin@school.edu', last_login: '2025-01-18 16:30', status: '正常', created_at: '2024-01-01', login_count: 328 },
-    { id: 'u2', username: 'director1', real_name: '陈主任', role: '教学主任', role_code: 'director', department: '教学部', phone: '13800000002', email: 'director@school.edu', last_login: '2025-01-18 14:00', status: '正常', created_at: '2024-01-02', login_count: 215 },
-    { id: 'u3', username: 'teacher1', real_name: '王老师', role: '班主任', role_code: 'class_teacher', department: '特教一班', phone: '13800000003', email: 'wang@school.edu', last_login: '2025-01-18 12:00', status: '正常', created_at: '2024-01-03', login_count: 186 },
-    { id: 'u4', username: 'teacher2', real_name: '李老师', role: '科任教师', role_code: 'teacher', department: '康复组', phone: '13800000004', email: 'li@school.edu', last_login: '2025-01-17 18:00', status: '正常', created_at: '2024-01-04', login_count: 142 },
-    { id: 'u5', username: 'parent1', real_name: '王建国', role: '家长', role_code: 'parent', department: '', phone: '13800138001', email: '', last_login: '2025-01-18 14:30', status: '正常', created_at: '2024-06-01', login_count: 45 },
-    { id: 'u6', username: 'viewer1', real_name: '张督导', role: '只读用户', role_code: 'viewer', department: '督导室', phone: '13800000005', email: 'supervisor@school.edu', last_login: '2025-01-15 10:00', status: '正常', created_at: '2024-03-01', login_count: 28 },
-  ];
+// 修复（三维度回测 0919 · P2-1）：此处原有的本地 mock 数据生成函数（仅声明、从未渲染）已整体删除，避免被误读为真实数据源。
+// 用户 / 审计日志 / 教学记录一律来自后端真实接口。
 
-  const auditLogs: AuditLog[] = [
-    { id: 'al1', timestamp: '2025-01-18 16:30:22', user_name: '系统管理员', user_role: '超级管理员', ip_address: '192.168.1.100', module: '系统管理', action: '登录', target: '系统', description: '用户登录系统', status: '成功' },
-    { id: 'al2', timestamp: '2025-01-18 16:25:10', user_name: '陈主任', user_role: '教学主任', ip_address: '192.168.1.101', module: 'IEP管理', action: '修改', target: 'IEP计划 #IEP-2025-001', description: '更新IEP目标设定', status: '成功' },
-    { id: 'al3', timestamp: '2025-01-18 16:20:05', user_name: '王老师', user_role: '班主任', ip_address: '192.168.1.102', module: '教学记录', action: '新增', target: '教学记录 #TR-2025-018', description: '录入新的教学记录', status: '成功' },
-    { id: 'al4', timestamp: '2025-01-18 16:15:33', user_name: '李老师', user_role: '科任教师', ip_address: '192.168.1.103', module: '评估管理', action: '查看', target: '评估报告 #EV-2025-005', description: '查看评估报告详情', status: '成功' },
-    { id: 'al5', timestamp: '2025-01-18 16:10:18', user_name: '王建国', user_role: '家长', ip_address: '218.78.45.12', module: '家校协作', action: '查看', target: 'IEP签名', description: '查看待签名IEP', status: '成功' },
-    { id: 'al6', timestamp: '2025-01-18 16:05:42', user_name: '系统管理员', user_role: '超级管理员', ip_address: '192.168.1.100', module: '用户管理', action: '修改', target: '用户 #u3', description: '重置王老师密码', status: '成功' },
-    { id: 'al7', timestamp: '2025-01-18 15:55:20', user_name: '陈主任', user_role: '教学主任', ip_address: '192.168.1.101', module: '学生管理', action: '查看', target: '学生档案 #s5', description: '查看学生详细信息', status: '成功' },
-    { id: 'al8', timestamp: '2025-01-18 15:50:11', user_name: '王老师', user_role: '班主任', ip_address: '192.168.1.102', module: '教学记录', action: '删除', target: '教学记录 #TR-2025-003', description: '删除错误的教学记录', status: '成功' },
-    { id: 'al9', timestamp: '2025-01-18 15:45:08', user_name: '李老师', user_role: '科任教师', ip_address: '192.168.1.103', module: '教学记录', action: '新增', target: '教学记录 #TR-2025-019', description: '录入感觉统合训练记录', status: '成功' },
-    { id: 'al10', timestamp: '2025-01-18 15:40:55', user_name: '系统管理员', user_role: '超级管理员', ip_address: '192.168.1.100', module: '系统设置', action: '修改', target: '通知设置', description: '修改签名提醒间隔为7天', status: '成功' },
-    { id: 'al11', timestamp: '2025-01-18 15:35:30', user_name: '陈主任', user_role: '教学主任', ip_address: '192.168.1.101', module: '评估管理', action: '导出', target: '评估报告', description: '导出期末评估报告', status: '成功' },
-    { id: 'al12', timestamp: '2025-01-18 15:30:15', user_name: '王建国', user_role: '家长', ip_address: '218.78.45.12', module: '家校协作', action: '修改', target: 'IEP签名 #sig1', description: '完成IEP电子签名', status: '成功' },
-    { id: 'al13', timestamp: '2025-01-18 15:25:00', user_name: '张督导', user_role: '只读用户', ip_address: '192.168.1.104', module: '仪表盘', action: '查看', target: '数据概览', description: '查看系统统计数据', status: '成功' },
-    { id: 'al14', timestamp: '2025-01-18 15:20:45', user_name: '李老师', user_role: '科任教师', ip_address: '192.168.1.103', module: '学生管理', action: '查看', target: '学生列表', description: '查看所负责学生', status: '成功' },
-    { id: 'al15', timestamp: '2025-01-18 15:15:22', user_name: '系统管理员', user_role: '超级管理员', ip_address: '192.168.1.100', module: '角色权限', action: '修改', target: '角色 #r4', description: '修改科任教师权限配置', status: '成功' },
-    { id: 'al16', timestamp: '2025-01-18 15:10:18', user_name: '陈主任', user_role: '教学主任', ip_address: '192.168.1.101', module: 'IEP管理', action: '新增', target: 'IEP计划', description: '创建新学期IEP计划', status: '成功' },
-    { id: 'al17', timestamp: '2025-01-18 15:05:10', user_name: '王老师', user_role: '班主任', ip_address: '192.168.1.102', module: '家校协作', action: '新增', target: '沟通记录', description: '新增家校沟通记录', status: '成功' },
-    { id: 'al18', timestamp: '2025-01-18 15:00:05', user_name: '系统管理员', user_role: '超级管理员', ip_address: '192.168.1.100', module: '用户管理', action: '新增', target: '用户 #u7', description: '新增家长用户账号', status: '成功' },
-    { id: 'al19', timestamp: '2025-01-18 14:55:33', user_name: '王建国', user_role: '家长', ip_address: '218.78.45.12', module: '家校协作', action: '登录', target: '系统', description: '家长端登录', status: '成功' },
-    { id: 'al20', timestamp: '2025-01-18 14:50:20', user_name: '系统管理员', user_role: '超级管理员', ip_address: '192.168.1.100', module: '审计日志', action: '导出', target: '日志数据', description: '导出本月审计日志', status: '成功' },
-    { id: 'al21', timestamp: '2025-01-18 14:45:15', user_name: '李老师', user_role: '科任教师', ip_address: '192.168.1.103', module: '评估管理', action: '修改', target: '评估记录', description: '修改评估分数', status: '失败' },
-    { id: 'al22', timestamp: '2025-01-18 14:40:10', user_name: '陈主任', user_role: '教学主任', ip_address: '192.168.1.101', module: '模板管理', action: '查看', target: '评估模板', description: '查看可用模板列表', status: '成功' },
-  ];
-
-  return { users, auditLogs };
-}
-
-const { users: INITIAL_USERS, auditLogs: INITIAL_AUDIT_LOGS } = generateMockData();
+// 修复（三维度回测 0919 · P2-1）：原「假用户/假审计日志」mock 数据仅声明未渲染，
+// 易被误读为真实数据源，已删除。用户与审计日志一律来自后端真实接口。
 
 /* ------------------------------------------------------------------ */
 /*  Tab 1: User Management                                             */

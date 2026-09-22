@@ -10,6 +10,7 @@ import {
   Layers,
   Home,
   Settings,
+  ShieldAlert,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -26,6 +27,8 @@ const navItems = [
   { path: '/templates', label: '模板管理', icon: Layers },
   { path: '/parents', label: '家校协作', icon: Home },
   { path: '/system', label: '系统管理', icon: Settings },
+  // 管理控制台：菜单权限 key 为 admin，仅超级管理员组（pg=1）持有
+  { path: '/admin', label: '管理控制台', icon: ShieldAlert },
 ];
 
 // 路径到菜单权限key的映射
@@ -38,6 +41,7 @@ const pathToMenuKey: Record<string, string> = {
   '/templates': 'templates',
   '/parents': 'parents',
   '/system': 'system',
+  '/admin': 'admin',
 };
 
 interface SidebarProps {

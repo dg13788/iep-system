@@ -17,7 +17,48 @@
 if (defined('IO_ENGINE_LOADED')) { return; }
 define('IO_ENGINE_LOADED', true);
 
-define('IO_SIMHEI', 'C:/Windows/Fonts/simhei.ttf');
+// 修复(P1 + P2-3)：原实现硬编码常量 IO_SIMHEI = 'C:/Windows/Fonts/simhei.ttf'。
+//   1) 部署到 Linux/macOS 服务器时该路径必然不存在，io_build_pdf() 会静默 return null，
+//      中文 PDF 导出无声降级（用户只看到导出失败或兜底格式，日志里没有任何线索）；
+//   2) simhei 属微软商业字体，不宜随本项目（MIT）分发，路径也不应写死。
+// 现状（本次整改）：
+//   - 项目中随包分发的 frontend/public/fonts/simhei.ttf（9.7MB 且全仓无引用）已删除；
+//   - 常量 IO_SIMHEI 已移除，PDF 中文字体统一由下面的 io_pdf_font() 解析：
+//     环境变量 IEP_PDF_FONT 优先，其次按候选列表探测系统常见开源中文字体，
+//     全部缺失时返回 null 并写入错误日志（便于运维定位）。
+
+function io_pdf_font(): ?string {
+    static $resolved = null;
+    if ($resolved !== null) { return $resolved === '' ? null : $resolved; }
+
+    $env = getenv('IEP_PDF_FONT');
+    if (is_string($env) && $env !== '' && file_exists($env)) {
+        $resolved = $env;
+        return $resolved;
+    }
+
+    $candidates = [
+        'C:/Windows/Fonts/simhei.ttf',
+        'C:/Windows/Fonts/msyh.ttc',
+        '/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+        '/usr/share/fonts/truetype/arphic/uming.ttc',
+        '/System/Library/Fonts/PingFang.ttc',
+    ];
+    foreach ($candidates as $path) {
+        if (file_exists($path)) {
+            $resolved = $path;
+            return $resolved;
+        }
+    }
+
+    error_log('io_pdf_font: 未找到可用的中文字体，PDF 导出将降级。'
+        . '可通过环境变量 IEP_PDF_FONT 指定字体文件路径。');
+    $resolved = '';
+    return null;
+}
 
 /* ==================== 通用工具 ==================== */
 
@@ -162,10 +203,14 @@ function io_download($format, $filenameBase, $headers, $rows) {
     if ($content === null) {
         jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format]);
     }
-    // 表头默认带 BOM，避免 Excel 打开 CSV 中文乱码
-    $filename = preg_replace('/[\\\\\/:*?"<>|]/', '_', $filenameBase) . '.' . io_export_ext($format);
+    // 修复(P2-6)：原实现只过滤了 Windows 非法字符，未过滤 CR/LF（潜在 HTTP 头注入），
+    // 且中文文件名缺 filename*=UTF-8''（RFC 5987）参数，部分浏览器下载后乱码。
+    $filename = io_safe_filename($filenameBase) . '.' . io_export_ext($format);
+    // ASCII 兜底名：Content-Disposition 的 filename= 段仅保证 ASCII 安全
+    $asciiFallback = preg_replace('/[^A-Za-z0-9._-]+/', '_', $filename);
+    if ($asciiFallback === '' || $asciiFallback === '.') { $asciiFallback = 'export.' . io_export_ext($format); }
     header('Content-Type: ' . io_export_mime($format));
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header("Content-Disposition: attachment; filename=\"{$asciiFallback}\"; filename*=UTF-8''" . rawurlencode($filename));
     header('Content-Length: ' . strlen($content));
     header('X-Content-Type-Options: nosniff');
     echo $content;
@@ -492,8 +537,8 @@ function io_build_docx($headers, $rows) {
 
 function io_build_pdf($headers, $rows) {
     if (!function_exists('imagecreatetruecolor')) { return null; }
-    if (!file_exists(IO_SIMHEI)) { return null; }
-    $font = IO_SIMHEI;
+    $font = io_pdf_font();
+    if ($font === null) { return null; }
 
     $header = array_values($headers);
     $ncols = count($header);

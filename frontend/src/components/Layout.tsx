@@ -15,10 +15,26 @@ export default function Layout() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Set CSS variable for sidebar offset on desktop
+  /**
+   * 设置侧边栏让位宽度。
+   *
+   * 修复说明(P2-3)：原实现无条件把 --sidebar-offset 设为 240px/64px，
+   * 而侧边栏本身是 `hidden lg:flex`（<1024px 时隐藏）。
+   * 结果在手机/平板上下内容区仍被强行右移 240px，8 个页面全部横向溢出
+   * （实测 390px 视口下文档宽达 648~1095px），必须横向拖动才能看到内容。
+   *
+   * 现仅在桌面断点（>=1024px，与 Tailwind 的 lg 一致）才让位，
+   * 移动端偏移量为 0。
+   */
   useEffect(() => {
-    const offset = sidebarCollapsed ? '64px' : '240px';
-    document.documentElement.style.setProperty('--sidebar-offset', offset);
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = () => {
+      const offset = mq.matches ? (sidebarCollapsed ? '64px' : '240px') : '0px';
+      document.documentElement.style.setProperty('--sidebar-offset', offset);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
   }, [sidebarCollapsed]);
 
   return (
@@ -31,11 +47,11 @@ export default function Layout() {
 
       {/* Main Content Area */}
       <div
-        className="flex-1 flex flex-col min-h-[100dvh] transition-[margin] duration-350 ease-in-out"
-        style={{ marginLeft: 'var(--sidebar-offset, 240px)' }}
+        className="flex-1 flex flex-col min-h-[100dvh] min-w-0 transition-[margin] duration-350 ease-in-out"
+        style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}
       >
         <Topbar />
-        <main className="flex-1 px-6 py-6 overflow-y-auto bg-[#F7F6F4]">
+        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 min-w-0 overflow-y-auto bg-[#F7F6F4]">
           <Outlet />
         </main>
       </div>

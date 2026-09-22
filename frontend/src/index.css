@@ -1,4 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+/*
+ * 修复(P2-3)：此处原有一条 @import url('https://fonts.googleapis.com/...')。
+ * CSS 内的 @import 是「渲染阻塞 + 串行请求」的：浏览器必须先下载本文件、解析到 @import，
+ * 才会去请求 Google CDN。在校园内网 / 离线环境里 DNS 解析会长时间挂起，
+ * 首屏白屏可达数十秒。字体已改由 index.html 以非阻塞方式异步加载（见该文件注释），
+ * 并在此处的 font-family 栈里补齐开源中文字体兜底，保证离线可用性。
+ */
 
 @tailwind base;
 @tailwind components;
@@ -60,7 +66,11 @@
   }
 
   body {
-    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    /* 兜底栈覆盖：macOS(PingFang) / Windows(微软雅黑) / Linux发行版(Noto Sans CJK、文泉驿)
+       / 思源黑体。远端 CDN 不可用时仍能正常显示中文，不会出现豆腐块。 */
+    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei',
+                 'Noto Sans CJK SC', 'Source Han Sans SC', 'WenQuanYi Zen Hei',
+                 sans-serif;
     background-color: #F7F6F4;
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;

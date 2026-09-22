@@ -160,6 +160,68 @@ export function filterParentData<T>(
  * React Hook
  * ========================================================================== */
 
+import { useMemo } from 'react';
+
+/**
+ * 修复说明(P0-2)：模块顶层求值导致权限被「冻结」
+ *
+ * 原先多个页面在**模块顶层**写下：
+ *     const readOnly = isReadOnly();
+ * 模块在应用启动时（用户尚未登录）就被 import 并求值一次，
+ * 此时 authStore 中还没有用户与权限，isReadOnly() 恒返回 true，
+ * 且此后**永远不会重新计算** —— 即使登录成功、即使后端下发了
+ * 'full' 级别的 IEP 权限，页面里的新增/编辑/录入按钮依旧全部消失。
+ * 这就是「超管登录后录入评估、家长写操作、快捷操作整体消失」的根因。
+ *
+ * 正确做法：在组件内部、通过订阅 authStore 的方式求值，
+ * 这样登录状态或权限一变化，组件会自动重新渲染。
+ * 下面两个 hook 即为此提供，禁止再在模块顶层调用 isReadOnly()。
+ */
+
+/** 订阅 authStore，返回当前用户的数据范围配置（登录/权限变化会自动重渲染） */
+export function useDataScopeConfig(): DataScopeConfig {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const permissions = useAuthStore((s) => s.permissions);
+
+  return useMemo<DataScopeConfig>(() => {
+    if (!isAuthenticated || !permissions) {
+      return {
+        type: 'none',
+        classIds: [],
+        studentIds: [],
+        teacherId: null,
+        teacherName: null,
+        parentName: null,
+        parentPhone: null,
+        iepLevel: 'none',
+        readOnly: true,
+      };
+    }
+
+    const iepLevel = permissions.iep_level ?? 'none';
+    // 无 IEP 参与级别（督导等只读账号）或仅查看级别（家长）→ 只读
+    const readOnly = iepLevel === 'none' || iepLevel === 'view';
+
+    return {
+      type: permissions.data_scope ?? 'none',
+      classIds: [],
+      studentIds: [],
+      teacherId: user?.id ?? null,
+      teacherName: user?.name ?? null,
+      parentName: null,
+      parentPhone: null,
+      iepLevel,
+      readOnly,
+    };
+  }, [isAuthenticated, user, permissions]);
+}
+
+/** 订阅 authStore，返回当前是否只读 */
+export function useIsReadOnly(): boolean {
+  return useDataScopeConfig().readOnly;
+}
+
 export function useDataScopeFilter<T>(
   data: T[],
   _getStudentId?: IdGetter<T>,

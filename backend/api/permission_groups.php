@@ -19,6 +19,13 @@ switch ($method) {
     // GET - List or Detail
     // ============================================================
     case 'GET':
+        // 安全修复(P0-4)：原实现 GET 分支完全没有鉴权（POST/PUT/DELETE 都有
+        // requireAuth + requirePermission('role_manage')，唯独 GET 漏写），
+        // 任何人在不带 Token 的情况下即可拉取全部权限组的完整权限码矩阵，
+        // 相当于把系统的权限地图直接公开。
+        requireAuth();
+        requirePermission('role_manage');
+
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
         try {

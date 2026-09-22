@@ -304,6 +304,9 @@ switch ($action) {
     // ============================================================
     case 'students':
         requireAuth();
+        // 加固(P2)：原实现仅 requireAuth，任意登录账号可通过遍历 parent_id
+        // 反查「家长→孩子」对应关系。现要求具 parent_view 权限。
+        requirePermission('parent_view');
 
         $parentId = isset($_GET['parent_id']) ? intval($_GET['parent_id']) : 0;
         if ($parentId <= 0) {

@@ -9,6 +9,14 @@
 
 require_once __DIR__ . '/config.php';
 
+// 修复(P1-7/P2-10)：API 安全响应头。
+// server_router.php（内置服务器）已统一注入；此处再补一份，
+// 覆盖 Apache / PHP-FPM 直挂 backend/api 为 docroot 的部署形态。
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
+
 // Parse URL path
 $path = isset($_GET['path']) ? trim($_GET['path'], '/') : '';
 $parts = explode('/', $path);
@@ -31,6 +39,10 @@ $moduleFiles = [
     // 修复 P0-7：权限组管理模块此前未注册，导致 /api/permission_groups/*
     // 全部返回「未知的接口模块」，v4 权限组功能完全不可达。
     'permission_groups' => 'permission_groups.php',
+    // v4 特教专业内核：行为干预计划 BIP（6.5）
+    'intervention'      => 'intervention.php',
+    // 系统管理员控制台（所有数据 / 初始化 / 一键备份），权限组 1 专属
+    'admin'             => 'admin.php',
 ];
 
 // Handle module routing

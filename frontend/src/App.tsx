@@ -13,6 +13,7 @@ import Teaching from '@/pages/Teaching'
 import Templates from '@/pages/Templates'
 import Parents from '@/pages/Parents'
 import System from '@/pages/System'
+import AdminConsole from '@/pages/AdminConsole'
 
 /**
  * 认证守卫：未登录用户重定向到登录页
@@ -80,6 +81,8 @@ export default function App() {
           <Route path="templates" element={<RouteGuard menuKey="templates"><Templates /></RouteGuard>} />
           <Route path="parents" element={<RouteGuard menuKey="parents"><Parents /></RouteGuard>} />
           <Route path="system" element={<RouteGuard menuKey="system"><System /></RouteGuard>} />
+          {/* 管理控制台：仅权限组 1（超级管理员）的 menu_permissions 含 "admin" */}
+          <Route path="admin" element={<RouteGuard menuKey="admin"><AdminConsole /></RouteGuard>} />
         </Route>
       </Routes>
       <Toaster position="top-right" />

@@ -1,48 +1,79 @@
 # ============================================================
-# IEP System - .gitignore (Open Source Release)
+# IEP System - .gitignore (Open Source Skeleton Release)
+#
+# Encoding: UTF-8
+# Principle: the repository tracks the SOURCE SKELETON only.
+#   Runtime artifacts / secrets / logs / DB backups / demo data /
+#   internal process docs are never committed.
+# Chinese patterns below are UTF-8; keep this file UTF-8 encoded.
 # ============================================================
 
-# ===== Node / Frontend =====
-node_modules/
-frontend/node_modules/
-dist/
-frontend/dist/
-*.tsbuildinfo
-frontend/build.log
-frontend/npm_install.log
-frontend/vite_dev.log
-
-# ===== Backend runtime & secrets =====
-backend/logs/
-backend/config/jwt.secret
-backend/api/_io_probe_pg.php
-backend/api/_io_probe_pg2.php
-
-# ===== Environment files (keep .env.example) =====
+# ===== Secrets & environment (only .env.example is tracked) =====
 .env
 .env.*
 *.env
 *.env.local
 !.env.example
+backend/config/jwt.secret
 
-# ===== Logs =====
+# ===== Dependencies & build artifacts =====
+node_modules/
+dist/
+frontend/dist/
+build/
+*.tsbuildinfo
 *.log
+build.log
+npm_install.log
+vite_dev.log
+
+# ===== Runtime logs / audit scripts / temp probes =====
+backend/logs/
 logs/
+backend/api/_io_probe*.php
 
-# ===== Local backtest tools (not part of deliverable) =====
+# ===== Database backups (contain real data, never commit) =====
+backend/backups/
+*.sql.gz
+
+# ===== Local dev / backtest tools (not deliverables) =====
 tools/
+backend/tools/
+backend/sql/seed_demo_v4.py
+backend/sql/backfill_idcard_gen.py
 
-# ===== Internal docs (not for open source release) =====
-docs/IEP前端架构与质量审计报告.md
-docs/IEP后端安全与架构审计报告.md
-docs/IEP系统_全面回测报告_20260830.md
-docs/IEP系统_全面回测报告_20260901.md
-docs/IEP系统_导入导出回归测试日志_*.md
-docs/IEP系统_导入导出回测报告_*.md
-docs/IEP系统_教学成果奖参评评价报告.*
-docs/plan_*.md
-docs/换机交接与继续开发说明.md
-docs/screenshots/
+# ===== Demo data packages (generators + intermediates, not skeleton) =====
+demo_data/
+
+# ===== Docs: DENY-ALL (default-deny) =====
+# Enumerating internal doc names turned out to be fragile: every new audit /
+# backtest / promotion / evidence-pack file silently slipped through the net.
+# Default-deny — ALL docs are excluded from the public repo. This includes
+# iep_technical_doc_v101.md: it is the full design blueprint (DB schema, API
+# spec, permission model, security design) and is kept as a proprietary asset.
+docs/*
+
+# ===== Binary derivative docs (Markdown is the source of truth) =====
+# Already covered by docs/* above; kept as a note so the intent stays visible.
+# Also excluded for the same reason: the three pre-env-var deployment manuals
+# (local / shared-hosting / cloud-server) that instruct editing define('DB_PASS')
+# inside config.php. Current backend reads config from getenv().
+
+# ===== Release artifacts (the skeleton zip is deliverable, not source) =====
+*.zip
+
+# ===== Root-level temp files & local installer =====
+/build_log.txt
+/tsc_log.txt
+/vite_log.txt
+/run_*.txt
+/install_iep_local.bat
+/IEP系统本机本地部署详细指南.md
+*.tmp
+*.bak
+
+# ===== Internal slide decks =====
+ppt/
 
 # ===== IDE / OS =====
 .idea/
@@ -52,5 +83,11 @@ docs/screenshots/
 .DS_Store
 Thumbs.db
 
-# ��ʾ�ĸ壨�ڲ���ʱ�������⣩
-ppt/
+# ===== WorkBuddy workspace data =====
+.workbuddy/
+
+# ===== Copyright application materials (proprietary, never public) =====
+/软著申请/
+
+# ===== Skeleton staging copy (duplicate of repo root, never commit) =====
+/iep-system/

@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -90,6 +91,9 @@ export default function IEPWizard({
   onSave,
 }: IEPWizardProps) {
   const isParticipate = iepLevel === 'participate';
+
+  // P3-1 修复：裸抽屉补充 Esc 关闭能力
+  useDrawerA11y(true, onClose);
 
   /**
    * 教师姓名列表：优先使用后端返回的真实教师，
@@ -1028,6 +1032,10 @@ function GoalModal({ onClose, onAdd, isParticipate, currentUserName, currentUser
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
         className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-label="添加目标"
+        data-state="open"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
           <h3 className="text-lg font-semibold text-[#1E293B]">添加目标</h3>

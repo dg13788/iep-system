@@ -69,53 +69,11 @@ switch ($action) {
             $whereStr = implode(' AND ', $where);
 
             // Apply data scope filtering
+            // 重构（P0-2 根因治理）：范围条件原为逐文件复制粘贴，漏抄一处即全量泄露。
+            // 现统一调用 applyStudentScope()，与 options / export 共用同一实现。
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'class_teacher') {
-                // 安全修复(P0-2)：原实现在 class_ids 为空时不追加任何条件，
-                // 导致班主任在关联缺失/查询异常时可见全校学生（fail-open 越权）。
-                // 现改为 fail-closed：无关联班级即不可见任何数据。
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND s.class_id IN ($placeholders)";
-                    $scopeParams = $scope['class_ids'];
-                } else {
-                    $scopeClause = ' AND s.id = -1';
-                }
-
-            } elseif ($scope['type'] === 'teacher') {
-                $conditions = [];
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "s.class_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "s.id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) {
-                    $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')';
-                } else {
-                    $scopeClause = ' AND s.id = -1'; // No access
-                }
-            } elseif ($scope['type'] === 'parent') {
-                // 安全修复(P0-2)：同上，家长无关联学生时必须拒绝而非放行。
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $scopeClause = " AND s.id IN ($placeholders)";
-                    $scopeParams = $scope['student_ids'];
-                } else {
-                    $scopeClause = ' AND s.id = -1';
-                }
-            } elseif ($scope['type'] === 'viewer') {
-                $scopeClause = ' AND s.id = -1';
-            } elseif ($scope['type'] === 'none') {
-                // 安全加固：数据范围为 none 时一律拒绝（原实现缺少该分支，默认放行全表）
-                $scopeClause = ' AND s.id = -1';
-            }
+            [$scopeSql, $scopeParams] = applyStudentScope('s');
+            $scopeClause = ' AND ' . $scopeSql;
 
 
             // Merge scope params
@@ -140,6 +98,10 @@ switch ($action) {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($queryParams);
             $list = $stmt->fetchAll();
+
+            // 安全修复(P0-6)：无 student_view_sensitive 权限者（如只读督导账号）
+            // 不得获取学生身份证号、监护人姓名与电话的明文
+            $list = maskStudentList($list);
 
             // Audit log
             logDataScopeAccess('students', $scope['type'], $total);
@@ -203,6 +165,22 @@ switch ($action) {
             );
             $parStmt->execute([$id]);
             $student['parents'] = $parStmt->fetchAll();
+
+            // 安全修复(P0-6)：详情页含身份证、监护人电话、住址等全量敏感字段，
+            // 无 student_view_sensitive 权限者（只读督导 / 越权家长）一律脱敏
+            if (!canViewSensitiveStudent($id)) {
+                $student = maskStudentSensitive($student);
+                // 关联家长的联系信息同样脱敏
+                foreach ($student['parents'] as &$p) {
+                    if (isset($p['phone']) && $p['phone'] !== '') {
+                        $p['phone'] = substr($p['phone'], 0, 3) . '****' . substr($p['phone'], -4);
+                    }
+                    if (isset($p['email']) && $p['email'] !== '') {
+                        $p['email'] = '[敏感信息已脱敏]';
+                    }
+                }
+                unset($p);
+            }
 
             jsonResponse(['success' => true, 'data' => $student, 'message' => '获取成功']);
         } catch (PDOException $e) {
@@ -460,9 +438,26 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => '参数错误']);
         }
 
+        // 安全修复(P0-3)：改写班级前必须校验该班级在数据范围内。
+        // 原实现只校验 student_edit 功能权限，班主任即可把任意非本班班级的
+        // teacher_id 改成自己 —— 一次请求即可永久扩大自己的数据范围，
+        // 形成「自我扩权闭环」。实测 teacher1 成功改写班级 2。
+        requireClassInScope($id);
+
         $updatable = ['name', 'grade', 'teacher_id', 'assistant_teacher_id', 'capacity', 'description', 'is_active'];
         $updates = [];
         $values = [];
+
+        // 加固：变更班主任/配班教师归属属于人事调整，需 class_manage 权限，
+        // 不能由仅具 student_edit 的班主任自行操作（防止二次扩权）。
+        if ((array_key_exists('teacher_id', $input) || array_key_exists('assistant_teacher_id', $input))
+            && !checkPermission('class_manage')) {
+            jsonResponse([
+                'success' => false,
+                'message' => '无权变更班级班主任/配班教师归属：缺少权限 class_manage',
+                'code' => 403
+            ], 403);
+        }
 
         foreach ($updatable as $field) {
             if (!array_key_exists($field, $input)) {
@@ -523,6 +518,10 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => '参数错误']);
         }
 
+        // 安全修复(P0-3)：删除班级前必须校验该班级在数据范围内，
+        // 否则班主任可删除任意非本班班级（实测成功）。
+        requireClassInScope($id);
+
         try {
             $pdo = getDB();
             $cntStmt = $pdo->prepare(
@@ -562,6 +561,13 @@ switch ($action) {
                 $where .= ' AND s.status = ?';
                 $params[] = $status;
             }
+
+            // 安全修复(P0-2)：下拉数据源此前完全没有数据范围过滤，
+            // 家长仅能看到 1 名自己的孩子，却可通过本端点拿到全校 19 名
+            // 残障儿童的姓名与班级。现统一复用 applyStudentScope()。
+            [$scopeSql, $scopeParams] = applyStudentScope('s');
+            $where .= ' AND ' . $scopeSql;
+            $params = array_merge($params, $scopeParams);
 
             $stmt = $pdo->prepare(
                 'SELECT s.id, s.name, s.gender, sc.name AS class_name 
@@ -609,48 +615,21 @@ switch ($action) {
             if (!empty($status)) { $where[] = 's.status = ?'; $params[] = $status; }
             if ($disabilityTypeId > 0) { $where[] = 's.disability_type_id = ?'; $params[] = $disabilityTypeId; }
             // 按中文障碍类型名过滤（与前端筛选一致）
+            // 修复(P1-5)：原写法 s.disability_type = ? 引用了不存在的列（students 表只有
+            // disability_type_id 外键），一旦传入该参数整个导出必然 500。改为按字典表名称关联过滤。
             $disabilityType = isset($_GET['disability_type']) ? trim($_GET['disability_type']) : '';
-            if (!empty($disabilityType)) { $where[] = 's.disability_type = ?'; $params[] = $disabilityType; }
+            if (!empty($disabilityType)) { $where[] = 'ddt.name = ?'; $params[] = $disabilityType; }
 
             $whereStr = implode(' AND ', $where);
 
-            // 数据范围过滤（fail-closed），与 list 一致
+            // 数据范围过滤（fail-closed），与 list / options 统一复用同一实现
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'class_teacher') {
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND s.class_id IN ($placeholders)";
-                    $scopeParams = $scope['class_ids'];
-                } else { $scopeClause = ' AND s.id = -1'; }
-            } elseif ($scope['type'] === 'teacher') {
-                $conditions = [];
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "s.class_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "s.id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) { $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')'; }
-                else { $scopeClause = ' AND s.id = -1'; }
-            } elseif ($scope['type'] === 'parent') {
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $scopeClause = " AND s.id IN ($placeholders)";
-                    $scopeParams = $scope['student_ids'];
-                } else { $scopeClause = ' AND s.id = -1'; }
-            } elseif ($scope['type'] === 'viewer' || $scope['type'] === 'none') {
-                $scopeClause = ' AND s.id = -1';
-            }
+            [$scopeSql, $scopeParams] = applyStudentScope('s');
+            $scopeClause = ' AND ' . $scopeSql;
 
             $queryParams = array_merge($params, $scopeParams);
 
-            $sql = 'SELECT s.name, s.gender, s.birth_date, s.id_card, s.status,
+            $sql = 'SELECT s.id, s.name, s.gender, s.birth_date, s.id_card, s.status,
                            ddt.name AS disability_type_name, s.disability_level,
                            sc.name AS class_name, s.guardian_name, s.guardian_phone,
                            s.guardian_relation, s.address, s.enrollment_date, s.created_at
@@ -662,6 +641,11 @@ switch ($action) {
             $stmt = $pdo->prepare($sql);
             $stmt->execute($queryParams);
             $data = $stmt->fetchAll();
+
+            // 安全修复(P0-6)：导出是敏感信息批量外泄的最大出口。
+            // 只读督导账号具备 student_export 权限但无 student_view_sensitive，
+            // 导出的身份证号 / 监护人电话 / 住址一律脱敏。
+            $data = maskStudentList($data);
 
             logDataScopeAccess('students', $scope['type'], count($data));
 
@@ -723,6 +707,16 @@ switch ($action) {
         }
         $colIndex = $map['colIndex'];
 
+        // 修复(P2-4)：导入既无行数上限也无事务，10MB CSV（约 10 万行）逐行
+        // SELECT+INSERT 既是 DoS 面也是脏数据面。此处设 5000 行硬上限。
+        if (count($parsed['rows']) > 5000) {
+            jsonResponse([
+                'success' => false,
+                'message' => '单次导入最多 5000 行，当前 ' . count($parsed['rows']) . ' 行，请分批导入',
+                'code' => 400
+            ], 400);
+        }
+
         $pdo = getDB();
         $inserted = 0;
         $failed = 0;
@@ -731,6 +725,13 @@ switch ($action) {
 
         $validStatuses = ['在读', '休学', '毕业', '转衔'];
 
+        // 修复(P2-4续)：整批包事务——中途异常整体回滚，不再留下半批脏数据；
+        // 单行数据问题仍按行跳过（保留原有部分导入语义），但不提交任何半途状态。
+        $pdo->beginTransaction();
+
+        // 修复(P2-4续)：批次内身份证号去重 + 校验位校验
+        $seenIdCards = [];
+        try {
         foreach ($parsed['rows'] as $lineNo => $row) {
             $data = io_extract_row($row, $colIndex);
             if (trim($data['name']) === '') {
@@ -794,6 +795,34 @@ switch ($action) {
                 continue;
             }
 
+            // 修复(P2-4续)：身份证号校验——18 位格式 + GB 11643 校验位；
+            // 批次内重复的身份证号直接跳过，防止一次导入制造多条重复档案。
+            if ($data['id_card'] !== '') {
+                $idCard = strtoupper(trim($data['id_card']));
+                if (!preg_match('/^\d{17}[\dX]$/', $idCard)) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：身份证号「" . $data['id_card'] . "」格式错误（应为 18 位）";
+                    continue;
+                }
+                $sum = 0;
+                $weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+                $checkMap = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+                for ($i = 0; $i < 17; $i++) {
+                    $sum += intval($idCard[$i]) * $weights[$i];
+                }
+                if ($checkMap[$sum % 11] !== $idCard[17]) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：身份证号「" . $data['id_card'] . "」校验位错误";
+                    continue;
+                }
+                if (isset($seenIdCards[$idCard])) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：身份证号与本批次第 " . $seenIdCards[$idCard] . " 行重复，已跳过";
+                    continue;
+                }
+                $seenIdCards[$idCard] = $lineNo + 2;
+            }
+
             try {
                 $stmt = $pdo->prepare(
                     'INSERT INTO students (name, gender, birth_date, id_card, disability_type_id, disability_level,
@@ -824,11 +853,319 @@ switch ($action) {
             }
         }
 
+        // 整批提交（修复 P2-4：中途异常在 catch 中整体回滚）
+        $pdo->commit();
+        } catch (Throwable $batchError) {
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            error_log('students/import batch error: ' . $batchError->getMessage());
+            jsonResponse(['success' => false, 'message' => '导入过程中发生异常，本批数据已整体回滚', 'code' => 500], 500);
+        }
+
         jsonResponse([
             'success' => true,
             'data'    => ['inserted' => $inserted, 'failed' => $failed, 'total' => count($parsed['rows']), 'errors' => $errors],
             'message' => "导入完成：成功 $inserted 条，失败 $failed 条"
         ]);
+        break;
+
+    // ============================================================
+    // 6.3 GET /api/students/disability_levels - 国家残疾分级字典
+    // ============================================================
+    case 'disability_levels':
+        requireAuth();
+
+        try {
+            $pdo  = getDB();
+            $stmt = $pdo->query(
+                'SELECT id, code, name, degree, description FROM dict_disability_levels
+                 WHERE is_active = 1 ORDER BY sort_order, id'
+            );
+            jsonResponse(['success' => true, 'data' => $stmt->fetchAll(), 'message' => '获取成功']);
+        } catch (PDOException $e) {
+            error_log('students/disability_levels error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+        }
+        break;
+
+    // ============================================================
+    // 6.4 GET /api/students/safety - 教学现场安全档案
+    // ============================================================
+    case 'safety':
+        requireAuth();
+        requirePermission('student_view');
+
+        $sid = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
+        requireStudentInScope($sid);
+
+        try {
+            $pdo  = getDB();
+            $stmt = $pdo->prepare('SELECT * FROM student_safety_profiles WHERE student_id = ? AND deleted_at IS NULL LIMIT 1');
+            $stmt->execute([$sid]);
+            $row = $stmt->fetch();
+            jsonResponse(['success' => true, 'data' => $row ?: null, 'message' => '获取成功']);
+        } catch (PDOException $e) {
+            error_log('students/safety error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+        }
+        break;
+
+    // ============================================================
+    // 6.4 POST /api/students/safety_save - 保存安全档案
+    // ============================================================
+    case 'safety_save':
+        requireAuth();
+        requirePermission('student_edit');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            jsonResponse(['success' => false, 'message' => '请求方式错误', 'code' => 405], 405);
+        }
+
+        $input = getInput();
+        $user  = getCurrentUser();
+        $sid   = isset($input['student_id']) ? intval($input['student_id']) : 0;
+        requireStudentInScope($sid);
+
+        if (!$sid) {
+            jsonResponse(['success' => false, 'message' => '学生ID不能为空', 'code' => 400], 400);
+        }
+
+        // 枚举类字段白名单校验：避免非法值入库后被直接 JSON 吐给前端
+        $diet = $input['diet_texture'] ?? null;
+        if ($diet !== null && !in_array($diet, ['普食', '软食', '糊状', '流质', '鼻饲', '其他'], true)) {
+            jsonResponse(['success' => false, 'message' => '饮食性状取值非法', 'code' => 400], 400);
+        }
+        $wandering = $input['wandering_risk'] ?? null;
+        if ($wandering !== null && !in_array($wandering, ['none', 'low', 'medium', 'high'], true)) {
+            jsonResponse(['success' => false, 'message' => '走失风险取值非法', 'code' => 400], 400);
+        }
+        $toilet = $input['toilet_independence'] ?? null;
+        if ($toilet !== null && !in_array($toilet, ['independent', 'verbal_prompt', 'physical_prompt', 'full_assistance'], true)) {
+            jsonResponse(['success' => false, 'message' => '如厕依赖等级取值非法', 'code' => 400], 400);
+        }
+        $supervision = $input['supervision_level'] ?? null;
+        if ($supervision !== null && !in_array($supervision, ['独立活动', '视线监护', '一对一陪护'], true)) {
+            jsonResponse(['success' => false, 'message' => '看护等级取值非法', 'code' => 400], 400);
+        }
+        $allergens = null;
+        if (isset($input['allergens'])) {
+            $allergens = is_array($input['allergens'])
+                ? json_encode(array_values($input['allergens']), JSON_UNESCAPED_UNICODE)
+                : $input['allergens'];
+        }
+
+        try {
+            $pdo = getDB();
+            $chk = $pdo->prepare('SELECT id FROM student_safety_profiles WHERE student_id = ? AND deleted_at IS NULL LIMIT 1');
+            $chk->execute([$sid]);
+            $exists = intval($chk->fetchColumn());
+
+            if ($exists > 0) {
+                $stmt = $pdo->prepare(
+                    'UPDATE student_safety_profiles SET
+                        has_epilepsy = ?, seizure_type = ?, seizure_first_aid = ?, rescue_medication = ?,
+                        allergens = ?, allergy_reaction = ?, anaphylaxis_action = ?, epipen_location = ?,
+                        diet_texture = ?, swallowing_precaution = ?, food_taboo = ?,
+                        aggression_trigger = ?, deescalation = ?, crisis_procedure = ?, prohibited_response = ?,
+                        wandering_risk = ?, wandering_response = ?, toilet_independence = ?, mobility_aid = ?,
+                        supervision_level = ?, emergency_updated_at = NOW(), updated_by = ?, updated_at = NOW()
+                     WHERE id = ?'
+                );
+                $stmt->execute([
+                    !empty($input['has_epilepsy']) ? 1 : 0,
+                    $input['seizure_type'] ?? null, $input['seizure_first_aid'] ?? null, $input['rescue_medication'] ?? null,
+                    $allergens, $input['allergy_reaction'] ?? null, $input['anaphylaxis_action'] ?? null, $input['epipen_location'] ?? null,
+                    $diet, $input['swallowing_precaution'] ?? null, $input['food_taboo'] ?? null,
+                    $input['aggression_trigger'] ?? null, $input['deescalation'] ?? null,
+                    $input['crisis_procedure'] ?? null, $input['prohibited_response'] ?? null,
+                    $wandering, $input['wandering_response'] ?? null, $toilet,
+                    $input['mobility_aid'] ?? null, $supervision,
+                    intval($user['sub'] ?? 0) ?: null, $exists
+                ]);
+            } else {
+                $stmt = $pdo->prepare(
+                    'INSERT INTO student_safety_profiles
+                     (student_id, has_epilepsy, seizure_type, seizure_first_aid, rescue_medication,
+                      allergens, allergy_reaction, anaphylaxis_action, epipen_location,
+                      diet_texture, swallowing_precaution, food_taboo,
+                      aggression_trigger, deescalation, crisis_procedure, prohibited_response,
+                      wandering_risk, wandering_response, toilet_independence, mobility_aid,
+                      supervision_level, emergency_updated_at, updated_by)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)'
+                );
+                $stmt->execute([
+                    $sid,
+                    !empty($input['has_epilepsy']) ? 1 : 0,
+                    $input['seizure_type'] ?? null, $input['seizure_first_aid'] ?? null, $input['rescue_medication'] ?? null,
+                    $allergens, $input['allergy_reaction'] ?? null, $input['anaphylaxis_action'] ?? null, $input['epipen_location'] ?? null,
+                    $diet, $input['swallowing_precaution'] ?? null, $input['food_taboo'] ?? null,
+                    $input['aggression_trigger'] ?? null, $input['deescalation'] ?? null,
+                    $input['crisis_procedure'] ?? null, $input['prohibited_response'] ?? null,
+                    $wandering, $input['wandering_response'] ?? null, $toilet,
+                    $input['mobility_aid'] ?? null, $supervision,
+                    intval($user['sub'] ?? 0) ?: null
+                ]);
+            }
+
+            auditLog('safety_save', 'students', 'student_safety_profile', $sid, '', null, null, '保存学生安全档案');
+
+            jsonResponse(['success' => true, 'message' => '保存成功']);
+        } catch (PDOException $e) {
+            error_log('students/safety_save error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
+        }
+        break;
+
+    // ============================================================
+    // 6.4 GET /api/students/emergency_card - 紧急情况一览卡（可直接打印的一页纸）
+    // ============================================================
+    case 'emergency_card':
+        requireAuth();
+        requirePermission('student_view');
+
+        $sid = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
+        requireStudentInScope($sid);
+
+        try {
+            $pdo  = getDB();
+            $stmt = $pdo->prepare(
+                'SELECT s.id, s.name, s.gender, s.birth_date, sc.name AS class_name,
+                        ddt.name AS disability_type_name, dl.name AS disability_level_name,
+                        s.guardian_name, s.guardian_phone, s.emergency_contact, s.emergency_phone,
+                        s.communication_methods, s.communication_notes, s.aac_device,
+                        s.receptive_level, s.expressive_level,
+                        p.has_epilepsy, p.seizure_type, p.seizure_first_aid, p.rescue_medication,
+                        p.allergens, p.allergy_reaction, p.anaphylaxis_action, p.epipen_location,
+                        p.diet_texture, p.swallowing_precaution, p.food_taboo,
+                        p.aggression_trigger, p.deescalation, p.crisis_procedure, p.prohibited_response,
+                        p.wandering_risk, p.wandering_response, p.toilet_independence,
+                        p.mobility_aid, p.supervision_level, p.emergency_updated_at
+                 FROM students s
+                 LEFT JOIN student_classes sc        ON s.class_id = sc.id
+                 LEFT JOIN dict_disability_types ddt ON s.disability_type_id = ddt.id
+                 LEFT JOIN dict_disability_levels dl ON s.disability_level_id = dl.id
+                 LEFT JOIN student_safety_profiles p ON p.student_id = s.id AND p.deleted_at IS NULL
+                 WHERE s.id = ? AND s.deleted_at IS NULL LIMIT 1'
+            );
+            $stmt->execute([$sid]);
+            $row = $stmt->fetch();
+            if (!$row) {
+                jsonResponse(['success' => false, 'message' => '学生不存在', 'code' => 404], 404);
+            }
+
+            // 一览卡含癫痫/过敏/危机处置等高度敏感内容：无权查看敏感字段者，
+            // 监护人联系方式一并脱敏。代课教师拿这张卡是为了救命，
+            // 但不必同时拿到家长的家庭住址与证件号。
+            if (!canViewSensitiveStudent($sid)) {
+                $row = maskStudentSensitive($row);
+                unset($row['address'], $row['id_card'], $row['disability_card_no']);
+            }
+
+            jsonResponse(['success' => true, 'data' => $row, 'message' => '获取成功']);
+        } catch (PDOException $e) {
+            error_log('students/emergency_card error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+        }
+        break;
+
+    // ============================================================
+    // 6.5 GET /api/students/communication - 沟通方式档案
+    // ============================================================
+    case 'communication':
+        requireAuth();
+        requirePermission('student_view');
+
+        $sid = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
+        requireStudentInScope($sid);
+
+        try {
+            $pdo  = getDB();
+            $stmt = $pdo->prepare(
+                'SELECT id, name, communication_methods, communication_notes, aac_device,
+                        receptive_level, expressive_level
+                 FROM students WHERE id = ? AND deleted_at IS NULL LIMIT 1'
+            );
+            $stmt->execute([$sid]);
+            $row = $stmt->fetch();
+            if ($row && $row['communication_methods']) {
+                $decoded = json_decode($row['communication_methods'], true);
+                $row['communication_methods'] = is_array($decoded) ? $decoded : [$row['communication_methods']];
+            }
+            jsonResponse(['success' => true, 'data' => $row ?: null, 'message' => '获取成功']);
+        } catch (PDOException $e) {
+            error_log('students/communication error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+        }
+        break;
+
+    // ============================================================
+    // 6.5 POST /api/students/communication_save - 保存沟通方式档案
+    // ============================================================
+    case 'communication_save':
+        requireAuth();
+        requirePermission('student_edit');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            jsonResponse(['success' => false, 'message' => '请求方式错误', 'code' => 405], 405);
+        }
+
+        $input = getInput();
+        $sid   = isset($input['student_id']) ? intval($input['student_id']) : 0;
+        requireStudentInScope($sid);
+
+        if (!$sid) {
+            jsonResponse(['success' => false, 'message' => '学生ID不能为空', 'code' => 400], 400);
+        }
+
+        // 取值必须来自 dict_common.communication_method，杜绝自由字符串污染统计口径
+        $methods = $input['communication_methods'] ?? null;
+        if ($methods !== null) {
+            if (is_string($methods)) {
+                $maybe   = json_decode($methods, true);
+                $methods = is_array($maybe) ? $maybe : [$methods];
+            }
+            if (!is_array($methods)) {
+                jsonResponse(['success' => false, 'message' => '沟通方式格式错误', 'code' => 400], 400);
+            }
+            try {
+                $pdo  = getDB();
+                $dict = $pdo->query(
+                    "SELECT code FROM dict_common WHERE category = 'communication_method' AND is_active = 1"
+                )->fetchAll(PDO::FETCH_COLUMN);
+                foreach ($methods as $m) {
+                    if (!in_array($m, $dict, true)) {
+                        jsonResponse(['success' => false, 'message' => '未知的沟通方式: ' . $m, 'code' => 400], 400);
+                    }
+                }
+            } catch (PDOException $e) {
+                error_log('students/communication_save dict error: ' . $e->getMessage());
+                jsonResponse(['success' => false, 'message' => '字典校验失败', 'code' => 500], 500);
+            }
+            $methods = json_encode(array_values($methods), JSON_UNESCAPED_UNICODE);
+        }
+
+        try {
+            $pdo  = getDB();
+            $stmt = $pdo->prepare(
+                'UPDATE students SET communication_methods = ?, communication_notes = ?,
+                 aac_device = ?, receptive_level = ?, expressive_level = ?, updated_at = NOW()
+                 WHERE id = ? AND deleted_at IS NULL'
+            );
+            $stmt->execute([
+                $methods,
+                $input['communication_notes'] ?? null,
+                $input['aac_device'] ?? null,
+                $input['receptive_level'] ?? null,
+                $input['expressive_level'] ?? null,
+                $sid
+            ]);
+
+            auditLog('communication_save', 'students', 'student', $sid, '', null, null, '保存沟通方式档案');
+
+            jsonResponse(['success' => true, 'message' => '保存成功']);
+        } catch (PDOException $e) {
+            error_log('students/communication_save error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
+        }
         break;
 
     default:
