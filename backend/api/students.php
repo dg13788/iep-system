@@ -590,6 +590,12 @@ switch ($action) {
         requireAuth();
         requirePermission('student_export');
 
+        // v15：导入模板下载（template=1）——仅输出表头，列名与 io_import_column_map 同源，
+        // 保证「按模板填写 → 导入」不缺列。放在权限校验之后：下载模板同样受导出权限管控。
+        if (isset($_GET['template']) && $_GET['template'] === '1') {
+            io_download('csv', '学生导入模板', array_keys(io_import_column_map('students')), []);
+        }
+
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
             jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
@@ -684,22 +690,8 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => $parsed['error']]);
         }
 
-        $columnMap = [
-            '姓名'         => ['field' => 'name', 'required' => true],
-            '性别'         => ['field' => 'gender', 'required' => false],
-            '出生日期'     => ['field' => 'birth_date', 'required' => false],
-            '身份证号'     => ['field' => 'id_card', 'required' => false],
-            '学籍状态'     => ['field' => 'status', 'required' => false],
-            '障碍类型'     => ['field' => 'disability_type_name', 'required' => false],
-            '障碍等级'     => ['field' => 'disability_level', 'required' => false],
-            '班级'         => ['field' => 'class_name', 'required' => false],
-            '监护人'       => ['field' => 'guardian_name', 'required' => false],
-            '监护人电话'   => ['field' => 'guardian_phone', 'required' => false],
-            '监护人关系'   => ['field' => 'guardian_relation', 'required' => false],
-            '联系地址'     => ['field' => 'address', 'required' => false],
-            '入学日期'     => ['field' => 'enrollment_date', 'required' => false],
-            '备注'         => ['field' => 'remarks', 'required' => false],
-        ];
+        // 列映射唯一数据源：io_import_column_map()（导出模板 template=1 同源，勿在此另写一份）
+        $columnMap = io_import_column_map('students');
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
@@ -727,6 +719,10 @@ switch ($action) {
 
         // 修复(P2-4续)：整批包事务——中途异常整体回滚，不再留下半批脏数据；
         // 单行数据问题仍按行跳过（保留原有部分导入语义），但不提交任何半途状态。
+        // v15 预检（dry_run）：完整跑一遍校验与 INSERT，结尾 rollBack 不落库——
+        // 这样连「身份证号与库中现有数据重复」这类只有数据库知道的冲突也能在
+        // 预检阶段暴露，而不是等用户真导入才失败。
+        $dryRun = io_import_is_dry_run();
         $pdo->beginTransaction();
 
         // 修复(P2-4续)：批次内身份证号去重 + 校验位校验
@@ -820,6 +816,17 @@ switch ($action) {
                     $errors[] = "第 " . ($lineNo + 2) . " 行：身份证号与本批次第 " . $seenIdCards[$idCard] . " 行重复，已跳过";
                     continue;
                 }
+                // ADR-035：导入唯一性检查必须覆盖「库内已有数据」，不能只做批次内去重。
+                // students.id_card 无唯一约束，批次内去重拦不住「与库中现有档案重复」；
+                // 而预检（真事务回滚）的承诺就是连库内冲突也要暴露，故此处显式查库
+                // （与 parents 导入的手机号查重同口径：只查活跃行，软删不占用身份证）。
+                $dupStmt = $pdo->prepare('SELECT id FROM students WHERE id_card = ? AND deleted_at IS NULL LIMIT 1');
+                $dupStmt->execute([$idCard]);
+                if ($dupStmt->fetchColumn()) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：身份证号「" . $data['id_card'] . "」已存在于系统中，已跳过";
+                    continue;
+                }
                 $seenIdCards[$idCard] = $lineNo + 2;
             }
 
@@ -854,6 +861,11 @@ switch ($action) {
         }
 
         // 整批提交（修复 P2-4：中途异常在 catch 中整体回滚）
+        // v15：预检模式到此为止——回滚未提交的一切（含 auditLog），返回预检报告
+        if ($dryRun) {
+            $pdo->rollBack();
+            io_import_dry_run_response('students', $inserted, $failed, $errors);
+        }
         $pdo->commit();
         } catch (Throwable $batchError) {
             if ($pdo->inTransaction()) { $pdo->rollBack(); }

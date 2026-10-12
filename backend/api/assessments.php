@@ -594,6 +594,12 @@ switch ($action) {
         requireAuth();
         requirePermission('eval_export');
 
+        // v15：导入模板下载（template=1）——仅输出表头，列名与 io_import_column_map 同源，
+        // 保证「按模板填写 → 导入」不缺列。放在权限校验之后：下载模板同样受导出权限管控。
+        if (isset($_GET['template']) && $_GET['template'] === '1') {
+            io_download('csv', '评估导入模板', array_keys(io_import_column_map('assessments')), []);
+        }
+
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
             jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
@@ -713,15 +719,8 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => $parsed['error']]);
         }
 
-        $columnMap = [
-            '学生姓名'   => ['field' => 'student_name', 'required' => true],
-            '评估类型'   => ['field' => 'assessment_type', 'required' => true],
-            '评估日期'   => ['field' => 'assessment_date', 'required' => false],
-            '总分'       => ['field' => 'total_score', 'required' => false],
-            '满分'       => ['field' => 'max_score', 'required' => false],
-            '评估摘要'   => ['field' => 'summary', 'required' => false],
-            '康复建议'   => ['field' => 'recommendations', 'required' => false],
-        ];
+        // 列映射唯一数据源：io_import_column_map()（导出模板 template=1 同源，勿在此另写一份）
+        $columnMap = io_import_column_map('assessments');
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
@@ -749,6 +748,10 @@ switch ($action) {
             $importTypeLabels[$lr['code']] = $lr['name'];
             $importTypeCodes[$lr['name']] = $lr['code'];
         }
+
+        // v15 预检（dry_run）：整批包事务，结尾 rollBack 不落库
+        $dryRun = io_import_is_dry_run();
+        $pdo->beginTransaction();
 
         foreach ($parsed['rows'] as $lineNo => $row) {
             $data = io_extract_row($row, $colIndex);
@@ -814,6 +817,13 @@ switch ($action) {
                 $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
             }
         }
+
+        // v15：预检报告（此时库中没有任何新数据）
+        if ($dryRun) {
+            $pdo->rollBack();
+            io_import_dry_run_response('assessments', $inserted, $failed, $errors);
+        }
+        $pdo->commit();
 
         jsonResponse([
             'success' => true,

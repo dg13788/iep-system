@@ -81,11 +81,27 @@ if (!function_exists('adminReadableTables')) {
 /**
  * 初始化时要清空的业务表（按外键依赖顺序，先子后父）。
  * 刻意不含：users / roles / permissions / role_permissions / permission_groups /
- *           modules / dict_* —— 账号、权限与字典必须保留，否则系统将无法登录。
+ *           modules / dict_* / assessment_templates* / audit_logs / db_migrations
+ *           —— 账号、权限、字典、模板与迁移记录必须保留，否则系统将无法登录
+ *           或丢失配置；审计日志保留「谁执行过初始化」本身。
+ *
+ * v15 补充（回测发现）：iep_transition_goals / iep_transition_services /
+ * iep_intervention_adjustments / iep_decision_audit / iep_goal_drafts /
+ * parent_meeting_inputs 六张表此前不在清单中——界面承诺「清空全部业务数据」，
+ * 实测却有 158 行转衔/干预调整/决策审计/目标草稿/家长会议证据存活，
+ * 且 students 被 TRUNCATE 后这些表留下指向不存在学生的孤儿行。
  */
 if (!function_exists('adminResetTables')) {
     function adminResetTables(): array {
         return [
+            // v15 补充的六张（子表先行）
+            'iep_transition_services',
+            'iep_transition_goals',
+            'iep_intervention_adjustments',
+            'iep_decision_audit',
+            'iep_goal_drafts',
+            'parent_meeting_inputs',
+            // 原有清单
             'assessment_items',
             'assessments',
             'iep_objective_records',
@@ -814,8 +830,13 @@ function adminInit(): void {
         auditLog('denied', 'admin', 'init', 0, $mode, null, null, '系统初始化：密码校验失败');
         jsonResponse(['success' => false, 'message' => '登录密码校验失败，无法执行初始化'], 403);
     }
-    if ($confirm !== '初始化系统') {
-        jsonResponse(['success' => false, 'message' => '确认短语不正确，请输入「初始化系统」'], 400);
+    // v15：确认短语与页签名一致（「系统初始化」）。
+    // 原短语「初始化系统」与页签「系统初始化」用字相同顺序相反，实测管理员
+    // 按页签名输入后被静默拒绝（按钮无任何提示）——确认短语必须与界面
+    // 呈现给用户的字面一致，否则这道「 deliberate action 」减速带只会拦住
+    // 按提示操作的人，拦不住误操作，纯粹制造困惑。
+    if ($confirm !== '系统初始化') {
+        jsonResponse(['success' => false, 'message' => '确认短语不正确，请输入「系统初始化」'], 400);
     }
 
     // 铁律：初始化前必须先落地备份，备份失败即中止

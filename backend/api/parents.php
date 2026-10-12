@@ -747,6 +747,12 @@ switch ($action) {
         requireAuth();
         requirePermission('parent_export');
 
+        // v15：导入模板下载（template=1）——仅输出表头，列名与 io_import_column_map 同源，
+        // 保证「按模板填写 → 导入」不缺列。放在权限校验之后：下载模板同样受导出权限管控。
+        if (isset($_GET['template']) && $_GET['template'] === '1') {
+            io_download('csv', '家长导入模板', array_keys(io_import_column_map('parents')), []);
+        }
+
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
             jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
@@ -805,13 +811,8 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => $parsed['error']]);
         }
 
-        $columnMap = [
-            '姓名'     => ['field' => 'name', 'required' => true],
-            '手机号'   => ['field' => 'phone', 'required' => true],
-            '邮箱'     => ['field' => 'email', 'required' => false],
-            '关系'     => ['field' => 'relation', 'required' => false],
-            '联系地址' => ['field' => 'address', 'required' => false],
-        ];
+        // 列映射唯一数据源：io_import_column_map()（导出模板 template=1 同源，勿在此另写一份）
+        $columnMap = io_import_column_map('parents');
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
@@ -823,6 +824,10 @@ switch ($action) {
         $inserted = 0;
         $failed = 0;
         $errors = [];
+
+        // v15 预检（dry_run）：整批包事务，结尾 rollBack 不落库
+        $dryRun = io_import_is_dry_run();
+        $pdo->beginTransaction();
 
         foreach ($parsed['rows'] as $lineNo => $row) {
             $data = io_extract_row($row, $colIndex);
@@ -867,6 +872,13 @@ switch ($action) {
                 $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
             }
         }
+
+        // v15：预检报告（此时库中没有任何新数据）
+        if ($dryRun) {
+            $pdo->rollBack();
+            io_import_dry_run_response('parents', $inserted, $failed, $errors);
+        }
+        $pdo->commit();
 
         jsonResponse([
             'success' => true,

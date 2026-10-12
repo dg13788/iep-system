@@ -1346,6 +1346,12 @@ switch ($action) {
         requireAuth();
         requirePermission('iep_export');
 
+        // v15：导入模板下载（template=1）——仅输出表头，列名与 io_import_column_map 同源，
+        // 保证「按模板填写 → 导入」不缺列。放在权限校验之后：下载模板同样受导出权限管控。
+        if (isset($_GET['template']) && $_GET['template'] === '1') {
+            io_download('csv', 'IEP导入模板', array_keys(io_import_column_map('iep')), []);
+        }
+
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
             jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
@@ -1423,14 +1429,8 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => $parsed['error']]);
         }
 
-        $columnMap = [
-            '学生姓名'   => ['field' => 'student_name', 'required' => true],
-            '计划标题'   => ['field' => 'title', 'required' => true],
-            '学年'       => ['field' => 'academic_year', 'required' => false],
-            '学期'       => ['field' => 'semester', 'required' => false],
-            '开始日期'   => ['field' => 'start_date', 'required' => false],
-            '结束日期'   => ['field' => 'end_date', 'required' => false],
-        ];
+        // 列映射唯一数据源：io_import_column_map()（导出模板 template=1 同源，勿在此另写一份）
+        $columnMap = io_import_column_map('iep');
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
@@ -1447,6 +1447,9 @@ switch ($action) {
         $userName = $user['name'] ?? $user['username'] ?? '';
 
         $validStatuses = ['draft', 'reviewing', 'approved', 'rejected'];
+
+        // v15 预检（dry_run）：逐行走完插入与审批留痕，结尾 rollBack 不落库
+        $dryRun = io_import_is_dry_run();
 
         foreach ($parsed['rows'] as $lineNo => $row) {
             $data = io_extract_row($row, $colIndex);
@@ -1500,15 +1503,24 @@ switch ($action) {
                      VALUES (?, ?, "user", ?, "submit", "draft", "批量导入IEP计划", NOW())'
                 );
                 $logStmt->execute([$planId, $userId, $userName]);
-                $pdo->commit();
-
-                auditLog('import', 'iep', 'iep_plan', intval($planId), $data['title'], null, null, '批量导入IEP计划');
+                // v15：预检模式回滚本行（数据与审批留痕都不落库），auditLog 也跳过
+                if ($dryRun) {
+                    $pdo->rollBack();
+                } else {
+                    $pdo->commit();
+                    auditLog('import', 'iep', 'iep_plan', intval($planId), $data['title'], null, null, '批量导入IEP计划');
+                }
                 $inserted++;
             } catch (Throwable $e) {
                 if ($pdo->inTransaction()) { $pdo->rollBack(); }
                 $failed++;
                 $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
             }
+        }
+
+        // v15：预检报告（此时库中没有任何新数据）
+        if ($dryRun) {
+            io_import_dry_run_response('iep', $inserted, $failed, $errors);
         }
 
         jsonResponse([

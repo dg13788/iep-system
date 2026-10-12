@@ -1400,4 +1400,133 @@ function io_normalize_date(string $v) {
     return false;
 }
 
+/* ==================== 导入列映射唯一数据源（v15） ==================== */
+
+/**
+ * 各模块「批量导入」的列映射——全库唯一数据源。
+ *
+ * 背景：5 个 import case 原先各自内联一份 $columnMap，而「下载导入模板」
+ * 若在前端或另一处另写一份列名，两份口径漂移后用户按模板填好却导入失败
+ * （缺列 400）。现统一收拢到本函数：
+ *   - 各模块 import case 用它做列匹配（io_map_columns）；
+ *   - 各模块 export case 的 template=1 用它输出表头模板。
+ * 新增/调整字段只改这里一处，导入与模板永远同源。
+ *
+ * @param string $module students|iep|assessments|parents|teaching
+ * @return array<string, array{field:string, required:bool}> 中文列名 => 字段定义
+ */
+function io_import_column_map(string $module): array {
+    switch ($module) {
+        case 'students':
+            return [
+                '姓名'         => ['field' => 'name', 'required' => true],
+                '性别'         => ['field' => 'gender', 'required' => false],
+                '出生日期'     => ['field' => 'birth_date', 'required' => false],
+                '身份证号'     => ['field' => 'id_card', 'required' => false],
+                '学籍状态'     => ['field' => 'status', 'required' => false],
+                '障碍类型'     => ['field' => 'disability_type_name', 'required' => false],
+                '障碍等级'     => ['field' => 'disability_level', 'required' => false],
+                '班级'         => ['field' => 'class_name', 'required' => false],
+                '监护人'       => ['field' => 'guardian_name', 'required' => false],
+                '监护人电话'   => ['field' => 'guardian_phone', 'required' => false],
+                '监护人关系'   => ['field' => 'guardian_relation', 'required' => false],
+                '联系地址'     => ['field' => 'address', 'required' => false],
+                '入学日期'     => ['field' => 'enrollment_date', 'required' => false],
+                '备注'         => ['field' => 'remarks', 'required' => false],
+            ];
+        case 'iep':
+            return [
+                '学生姓名'   => ['field' => 'student_name', 'required' => true],
+                '计划标题'   => ['field' => 'title', 'required' => true],
+                '学年'       => ['field' => 'academic_year', 'required' => false],
+                '学期'       => ['field' => 'semester', 'required' => false],
+                '开始日期'   => ['field' => 'start_date', 'required' => false],
+                '结束日期'   => ['field' => 'end_date', 'required' => false],
+            ];
+        case 'assessments':
+            return [
+                '学生姓名'   => ['field' => 'student_name', 'required' => true],
+                '评估类型'   => ['field' => 'assessment_type', 'required' => true],
+                '评估日期'   => ['field' => 'assessment_date', 'required' => false],
+                '总分'       => ['field' => 'total_score', 'required' => false],
+                '满分'       => ['field' => 'max_score', 'required' => false],
+                '评估摘要'   => ['field' => 'summary', 'required' => false],
+                '康复建议'   => ['field' => 'recommendations', 'required' => false],
+            ];
+        case 'parents':
+            return [
+                '姓名'     => ['field' => 'name', 'required' => true],
+                '手机号'   => ['field' => 'phone', 'required' => true],
+                '邮箱'     => ['field' => 'email', 'required' => false],
+                '关系'     => ['field' => 'relation', 'required' => false],
+                '联系地址' => ['field' => 'address', 'required' => false],
+            ];
+        case 'teaching':
+            return [
+                '学生姓名'   => ['field' => 'student_name', 'required' => true],
+                '记录日期'   => ['field' => 'record_date', 'required' => true],
+                '课型'       => ['field' => 'session_type', 'required' => false],
+                '科目'       => ['field' => 'subject', 'required' => false],
+                '教学内容'   => ['field' => 'teaching_content', 'required' => false],
+                '教学方法'   => ['field' => 'teaching_method', 'required' => false],
+                '学生表现'   => ['field' => 'student_performance', 'required' => false],
+                '困难与调整' => ['field' => 'difficulties', 'required' => false],
+                '使用材料'   => ['field' => 'materials_used', 'required' => false],
+                '作业'       => ['field' => 'homework', 'required' => false],
+                '下一步计划' => ['field' => 'next_plan', 'required' => false],
+                '效果评分'   => ['field' => 'effectiveness_score', 'required' => false],
+                '时长(分钟)' => ['field' => 'duration_minutes', 'required' => false],
+                '是否重点记录' => ['field' => 'is_key_record', 'required' => false],
+            ];
+    }
+    return [];
+}
+
+/**
+ * 导入模块注册表：module => [中文名, 权限码]。
+ * 权限码同步登记在 permissions 表（update_v15.sql），当前不授予任何非超管组——
+ * 与 ADR-030「新增导入/导出码不扩大暴露面」一致：导入即写入，仅管理员可用。
+ */
+function io_import_modules(): array {
+    return [
+        'students'    => ['label' => '学生档案', 'permission' => 'student_import'],
+        'iep'         => ['label' => 'IEP 计划', 'permission' => 'iep_import'],
+        'assessments' => ['label' => '评估记录', 'permission' => 'eval_import'],
+        'parents'     => ['label' => '家长账号', 'permission' => 'parent_import'],
+        'teaching'    => ['label' => '教学记录', 'permission' => 'record_import'],
+    ];
+}
+
+/**
+ * 判断是否为「预检（dry run）」请求：只解析+校验+统计，不落库。
+ * multipart 上传场景走 $_POST（getInput() 对非 JSON body 同样回落 $_POST）。
+ */
+function io_import_is_dry_run(): bool {
+    $input = getInput();
+    return isset($input['dry_run']) && (string) $input['dry_run'] === '1';
+}
+
+/**
+ * 预检报告标准化返回：让前端「先预检、后确认」两步导入有稳定契约。
+ *
+ * @param string $module      模块键
+ * @param int    $wouldInsert 校验通过、正式执行时将插入的行数
+ * @param int    $wouldSkip   校验跳过（含错误）的行数
+ * @param array  $errors      逐行错误明细（已含行号）
+ * @param array  $extra       模块附加统计（如家长口令修复数）
+ */
+function io_import_dry_run_response(string $module, int $wouldInsert, int $wouldSkip, array $errors, array $extra = []): void {
+    jsonResponse([
+        'success' => true,
+        'data'    => array_merge([
+            'dry_run'      => true,
+            'module'       => $module,
+            'would_insert' => $wouldInsert,
+            'would_skip'   => $wouldSkip,
+            'errors'       => $errors,
+        ], $extra),
+        'message' => "预检完成：{$wouldInsert} 行可导入，{$wouldSkip} 行将被跳过（未写入任何数据）",
+    ]);
+}
+
 /*__IO_NEXT__*/
