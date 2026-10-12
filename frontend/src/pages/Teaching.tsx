@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   fetchTeachingRecords, fetchStudentOptions, createTeachingRecord,
@@ -63,6 +63,8 @@ interface TeachingRecord {
   effectiveness_score: number;
   duration_minutes: number;
   is_key_record: boolean;
+  /** 修复(探索实测 2026-10-13)：关联 IEP 目标 id，提交时传后端；仅提交链路使用 */
+  iep_goal_id?: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -445,6 +447,10 @@ function RecordFormDrawer({
 
   // 修复(P2)：IEP 目标下拉原为写死的 8 条编造目标，改为按所选学生拉取真实计划目标。
   const [goalOptions, setGoalOptions] = useState<Array<{ value: string; label: string }>>([]);
+  // 修复(探索实测 2026-10-13)：下拉 value 用目标标题，但保存 payload 从未携带
+  // iep_goal_id——教师明明关联了目标，落库的教学记录却与 IEP 目标脱钩，
+  // 目标视角的「教学记录证据链」断裂。此处保存 title→id 映射供提交时补挂。
+  const goalIdByTitle = useRef<Record<string, string>>({});
   const [goalLoading, setGoalLoading] = useState(false);
 
   const [form, setForm] = useState<Partial<TeachingRecord>>({
@@ -524,14 +530,17 @@ function RecordFormDrawer({
         const goals = planIds.length > 0 ? await fetchGoalsForPlans(planIds, 5) : [];
         if (cancelled) return;
         const seen = new Set<string>();
+        const idMap: Record<string, string> = {};
         setGoalOptions(
           goals
             .filter((g) => !!g.title && !seen.has(g.title))
             .map((g) => {
               seen.add(g.title);
+              idMap[g.title] = String(g.id);
               return { value: g.title, label: g.title };
             }),
         );
+        goalIdByTitle.current = idMap;
       } catch {
         if (!cancelled) setGoalOptions([]);
       } finally {
@@ -582,6 +591,11 @@ function RecordFormDrawer({
         next_plan: form.next_plan || '',
         duration_minutes: form.duration_minutes || 30,
         is_key_record: form.is_key_record || false,
+        // 修复(探索实测 2026-10-13)：把所选 IEP 目标 id 带给父组件提交，
+        // 否则教师关联的目标只留在 UI，落库记录与 IEP 目标脱钩
+        iep_goal_id: form.iep_goal && goalIdByTitle.current[form.iep_goal]
+          ? Number(goalIdByTitle.current[form.iep_goal])
+          : undefined,
       };
       try {
         await onSave(quickData);
@@ -1213,6 +1227,9 @@ export default function Teaching() {
       effectiveness_score: data.effectiveness_score,
       duration_minutes: data.duration_minutes,
       is_key_record: data.is_key_record,
+      // 修复(探索实测 2026-10-13)：子组件构造数据时已带所选 IEP 目标 id（iep_goal_id），
+      // 否则教师关联的目标只留在 UI，落库记录与 IEP 目标脱钩，目标视角证据链断裂
+      iep_goal_id: (data as Partial<TeachingRecord> & { iep_goal_id?: number | null }).iep_goal_id ?? undefined,
     };
     try {
       if (editingRecord) {

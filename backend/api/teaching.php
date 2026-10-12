@@ -223,6 +223,13 @@ switch ($action) {
             $placeholders[] = $field;
             if (isset($input[$field])) {
                 $val = is_string($input[$field]) ? trim($input[$field]) : $input[$field];
+                // 修复(探索实测 2026-10-13)：前端「快速记录」默认传 is_key_record=false，
+                // PHP PDO 会把布尔 false 绑定成空字符串 ''，MySQL 8 严格模式下插入
+                // tinyint 列报 1366 Incorrect integer value → 整个创建 500。
+                // 表现：快速记录按默认值填写永远保存失败。布尔必须显式转 0/1。
+                if (is_bool($val)) {
+                    $val = $val ? 1 : 0;
+                }
                 $values[] = ($val === '' || $val === null) ? null : $val;
             } else {
                 $values[] = null;
@@ -280,6 +287,10 @@ switch ($action) {
             if (isset($input[$field])) {
                 $updates[] = $field . ' = ?';
                 $val = is_string($input[$field]) ? trim($input[$field]) : $input[$field];
+                // 同 create：布尔 false 经 PDO 绑定成 ''，MySQL 8 严格模式插入 tinyint 报 1366 → 500
+                if (is_bool($val)) {
+                    $val = $val ? 1 : 0;
+                }
                 $values[] = ($val === '' || $val === null) ? null : $val;
             }
         }
