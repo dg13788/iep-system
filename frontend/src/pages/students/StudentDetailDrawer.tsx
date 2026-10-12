@@ -52,6 +52,9 @@ export default function StudentDetailDrawer({
 
   const tabContentClass = 'space-y-4';
 
+  // 附件列表：后端 GET /students/get 附带返回，列表接口不带该字段，故做兜底
+  const attachments = student.attachments ?? [];
+
   return (
     <>
       <AnimatePresence>
@@ -104,7 +107,7 @@ export default function StudentDetailDrawer({
                         </Badge>
                       </div>
                       <p className="text-sm text-[#64748B] mt-1">
-                        {student.student_no} · {student.gender} · {student.age}岁
+                        {student.student_no} · {student.gender} · {student.age === null ? '年龄未填写' : `${student.age}岁`}
                       </p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#F0F2F5] text-[#405680]">
@@ -324,14 +327,33 @@ export default function StudentDetailDrawer({
                           transition={{ duration: 0.15 }}
                           className={tabContentClass}
                         >
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 text-center">
-                            <FileText className="w-12 h-12 text-[#CBD5E1] mx-auto mb-3" />
-                            <p className="text-[#64748B] font-medium mb-1">暂无附件</p>
-                            <p className="text-[#94A3B8] text-sm mb-4">该学生还没有上传任何附件</p>
-                            <Button size="sm" className="bg-primary-500 hover:bg-primary-600 text-white">
-                              上传附件
-                            </Button>
-                          </div>
+                          {/* 修复(P2)：原实现恒渲染「暂无附件」空态（后端返回的附件从不展示），
+                              且「上传附件」按钮没有 onClick —— 点击毫无反应，而后端也确实没有上传端点。
+                              改为按真实数据渲染列表；空态不再放置无响应的按钮，并如实标注功能状态。 */}
+                          {attachments.length > 0 ? (
+                            <div className="bg-white rounded-lg border border-[#E2E8F0] divide-y divide-[#E2E8F0]">
+                              {attachments.map((att) => (
+                                <div key={att.id} className="flex items-center gap-3 px-4 py-3">
+                                  <FileText className="w-4 h-4 text-[#94A3B8] shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm text-[#1E293B] truncate">{att.file_name}</p>
+                                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                                      {[att.category, att.description, att.created_at].filter(Boolean).join(' · ')}
+                                    </p>
+                                  </div>
+                                  {Number(att.is_confidential) === 1 && (
+                                    <Badge className="bg-[#FEF2F2] text-[#B91C1C] text-xs shrink-0">机密</Badge>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 text-center">
+                              <FileText className="w-12 h-12 text-[#CBD5E1] mx-auto mb-3" />
+                              <p className="text-[#64748B] font-medium mb-1">暂无附件</p>
+                              <p className="text-[#94A3B8] text-sm">该学生还没有上传任何附件。附件上传功能开发中，暂不可在本页提交。</p>
+                            </div>
+                          )}
                         </motion.div>
                       </TabsContent>
 

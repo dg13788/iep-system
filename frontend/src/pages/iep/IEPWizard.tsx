@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import type { IEPPlan, WizardFormData, GoalArea, GoalType, IEPService, EvaluationMethod, EvaluationFrequency, Priority, GoalStatus } from './types';
 import { GOAL_AREAS, GOAL_AREA_COLORS, SERVICE_TYPES, EVALUATION_METHODS, EVALUATION_FREQUENCIES, GOAL_STATUS_COLORS } from './types';
 import type { StudentOption, TeacherOption } from '@/services/iep';
+import { fetchIEPMeta } from '@/services/iep';
 import type { IEPLevel } from '@/store/authStore';
 
 const steps = [
@@ -106,6 +107,7 @@ export default function IEPWizard({
     }
     return names;
   }, [teachers, currentUserName]);
+
 
   const [currentStep, setCurrentStep] = useState(0);
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
@@ -448,14 +450,22 @@ export default function IEPWizard({
                         <button
                           key={t}
                           onClick={() => {
-                            const members = formData.team_members.includes(t)
-                              ? formData.team_members.filter(m => m !== t)
+                            // 归一化后的成员形如「李老师（班主任）」，勾选态比较需去掉角色后缀
+                            const has = formData.team_members.some(
+                              (m) => m === t || m.replace(/（[^）]*）$/, '') === t
+                            );
+                            const members = has
+                              ? formData.team_members.filter(
+                                  (m) => m !== t && m.replace(/（[^）]*）$/, '') !== t
+                                )
                               : [...formData.team_members, t];
                             updateForm({ team_members: members });
                           }}
                           className={cn(
                             'px-3 py-1.5 rounded-full text-sm border transition-all cursor-pointer',
-                            formData.team_members.includes(t)
+                            formData.team_members.some(
+                              (m) => m === t || m.replace(/（[^）]*）$/, '') === t
+                            )
                               ? 'border-[#977653] bg-[#F5F0EB] text-[#7A5F42]'
                               : 'border-[#E2E8F0] bg-white text-[#64748B] hover:border-[#CBD5E1]'
                           )}
@@ -990,6 +1000,23 @@ function GoalModal({ onClose, onAdd, isParticipate, currentUserName, currentUser
     return map;
   }, [teachers]);
 
+  /**
+   * 目标领域：以后端 dict_common.goal_area 为准（口径唯一），
+   * 网络失败或字典为空时回退前端常量。
+   */
+  const [goalAreas, setGoalAreas] = useState<GoalArea[]>(GOAL_AREAS);
+  useEffect(() => {
+    let alive = true;
+    fetchIEPMeta()
+      .then((m) => {
+        if (!alive || !Array.isArray(m.goal_areas) || m.goal_areas.length === 0) return;
+        const merged = m.goal_areas.filter((a): a is GoalArea => !!a && GOAL_AREAS.includes(a as GoalArea));
+        if (merged.length > 0) setGoalAreas(merged);
+      })
+      .catch(() => { /* 保持兜底常量 */ });
+    return () => { alive = false; };
+  }, []);
+
   const validate = () => {
     const errs: string[] = [];
     if (!title.trim()) errs.push('请输入目标名称');
@@ -1100,7 +1127,7 @@ function GoalModal({ onClose, onAdd, isParticipate, currentUserName, currentUser
                 onChange={(e) => setArea(e.target.value as GoalArea)}
                 className="h-10 w-full px-3 rounded-md border border-[#CBD5E1] text-sm bg-white focus:outline-none focus:border-[#3B82F6] cursor-pointer"
               >
-                {GOAL_AREAS.map(a => (
+                {goalAreas.map(a => (
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>

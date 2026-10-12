@@ -201,7 +201,7 @@ function io_export_ext($format) {
 function io_download($format, $filenameBase, $headers, $rows) {
     $content = io_export($format, $headers, $rows);
     if ($content === null) {
-        jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format]);
+        jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
     }
     // 修复(P2-6)：原实现只过滤了 Windows 非法字符，未过滤 CR/LF（潜在 HTTP 头注入），
     // 且中文文件名缺 filename*=UTF-8''（RFC 5987）参数，部分浏览器下载后乱码。

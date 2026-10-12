@@ -112,7 +112,7 @@ switch ($action) {
                 'message' => '查询成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '查询失败']);
+            jsonResponse(['success' => false, 'message' => '查询失败'], 500);
         }
         break;
 
@@ -124,7 +124,7 @@ switch ($action) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 安全修复(P0-2)：单条学生档案读取必须校验数据范围
@@ -143,7 +143,7 @@ switch ($action) {
             $student = $stmt->fetch();
 
             if (!$student) {
-                jsonResponse(['success' => false, 'message' => '学生不存在']);
+                jsonResponse(['success' => false, 'message' => '学生不存在'], 404);
             }
 
             // Get attachments
@@ -184,7 +184,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => $student, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -196,13 +196,13 @@ switch ($action) {
         requirePermission('student_create');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $name = isset($input['name']) ? trim($input['name']) : '';
         if (empty($name)) {
-            jsonResponse(['success' => false, 'message' => '学生姓名不能为空']);
+            jsonResponse(['success' => false, 'message' => '学生姓名不能为空'], 400);
         }
 
         // 安全修复(P0)：创建学生时必须校验班级在数据范围内，禁止跨班创建档案
@@ -248,9 +248,9 @@ switch ($action) {
             jsonResponse(['success' => true, 'data' => ['id' => $studentId], 'message' => '创建成功']);
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
-                jsonResponse(['success' => false, 'message' => '身份证号已存在']);
+                jsonResponse(['success' => false, 'message' => '身份证号已存在'], 409);
             }
-            jsonResponse(['success' => false, 'message' => '创建失败']);
+            jsonResponse(['success' => false, 'message' => '创建失败'], 500);
         }
         break;
 
@@ -262,13 +262,13 @@ switch ($action) {
         requirePermission('student_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 安全修复(P0-2)：写操作前必须校验数据范围，禁止跨班篡改学生档案
@@ -295,7 +295,7 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
@@ -310,9 +310,9 @@ switch ($action) {
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
-                jsonResponse(['success' => false, 'message' => '身份证号已存在']);
+                jsonResponse(['success' => false, 'message' => '身份证号已存在'], 409);
             }
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -324,13 +324,13 @@ switch ($action) {
         requirePermission('student_delete');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 安全修复(P0-2)：删除操作同样受数据范围约束
@@ -345,7 +345,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -370,7 +370,7 @@ switch ($action) {
             $classes = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $classes, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -384,13 +384,13 @@ switch ($action) {
         requirePermission('student_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $name = isset($input['name']) ? trim($input['name']) : '';
         if ($name === '') {
-            jsonResponse(['success' => false, 'message' => '班级名称不能为空']);
+            jsonResponse(['success' => false, 'message' => '班级名称不能为空'], 400);
         }
 
         $grade = isset($input['grade']) ? trim($input['grade']) : '';
@@ -417,7 +417,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => ['id' => $classId], 'message' => '创建成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '创建失败']);
+            jsonResponse(['success' => false, 'message' => '创建失败'], 500);
         }
         break;
 
@@ -429,13 +429,13 @@ switch ($action) {
         requirePermission('student_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 安全修复(P0-3)：改写班级前必须校验该班级在数据范围内。
@@ -479,7 +479,7 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
@@ -496,7 +496,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -509,13 +509,13 @@ switch ($action) {
         requirePermission('student_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 安全修复(P0-3)：删除班级前必须校验该班级在数据范围内，
@@ -542,7 +542,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -579,7 +579,7 @@ switch ($action) {
             $options = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $options, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -592,7 +592,7 @@ switch ($action) {
 
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
-            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format]);
+            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
         }
 
         try {
@@ -662,7 +662,7 @@ switch ($action) {
 
             io_download($format, '学生列表', $headers, $rows);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '导出失败']);
+            jsonResponse(['success' => false, 'message' => '导出失败'], 500);
         }
         break;
 
@@ -674,7 +674,7 @@ switch ($action) {
         requirePermission('student_import');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $filename = isset($_FILES['file']['name']) ? $_FILES['file']['name'] : '';
@@ -703,7 +703,7 @@ switch ($action) {
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
-            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])]);
+            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])], 400);
         }
         $colIndex = $map['colIndex'];
 
@@ -1169,5 +1169,5 @@ switch ($action) {
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的学生管理操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的学生管理操作: ' . $action], 404);
 }

@@ -246,6 +246,13 @@ export default function Dashboard() {
       .slice(0, 6);
   }, [assessments, ieps]);
 
+  // 修复(P3)：最近活动的对象名带 cursor-pointer + hover:underline，视觉上是可点链接，
+  // 但原来没有任何 onClick，点了毫无反应。改为点击跳转到对应业务模块。
+  const handleActivityClick = (activity: { type?: string }) => {
+    if (activity.type === 'evaluation') navigate('/evaluation');
+    else if (activity.type === 'iep') navigate('/iep');
+  };
+
   // IEP 检视提醒（真实派生：待审批 IEP 即需关注）
   const reviewReminders = useMemo(() => {
     return ieps
@@ -643,7 +650,17 @@ export default function Dashboard() {
                     <p className="text-sm text-[#1E293B]">
                       <span className="font-medium">{activity.user}</span>
                       <span className="text-[#64748B]">{activity.action}</span>
-                      <span className="text-primary-600 cursor-pointer hover:underline">{activity.object}</span>
+                      <span
+                        className="text-primary-600 cursor-pointer hover:underline"
+                        onClick={() => handleActivityClick(activity)}
+                        role="link"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleActivityClick(activity);
+                        }}
+                      >
+                        {activity.object}
+                      </span>
                     </p>
                     <p className="text-xs text-[#94A3B8] mt-0.5">{activity.time}</p>
                   </div>

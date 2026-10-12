@@ -43,7 +43,7 @@ switch ($method) {
                 $group = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$group) {
-                    jsonResponse(['success' => false, 'message' => '权限组不存在']);
+                    jsonResponse(['success' => false, 'message' => '权限组不存在'], 404);
                 }
 
                 // Decode JSON fields
@@ -82,7 +82,7 @@ switch ($method) {
             }
         } catch (PDOException $e) {
             error_log('Permission groups GET error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '获取权限组失败']);
+            jsonResponse(['success' => false, 'message' => '获取权限组失败'], 403);
         }
         break;
 
@@ -108,25 +108,25 @@ switch ($method) {
         $sortOrder = isset($input['sort_order']) ? intval($input['sort_order']) : 0;
 
         if (empty($name)) {
-            jsonResponse(['success' => false, 'message' => '权限组名称不能为空']);
+            jsonResponse(['success' => false, 'message' => '权限组名称不能为空'], 403);
         }
         if (mb_strlen($name) > 50) {
-            jsonResponse(['success' => false, 'message' => '权限组名称不能超过50个字符']);
+            jsonResponse(['success' => false, 'message' => '权限组名称不能超过50个字符'], 403);
         }
         if (empty($dataScopeType)) {
-            jsonResponse(['success' => false, 'message' => '数据范围类型不能为空']);
+            jsonResponse(['success' => false, 'message' => '数据范围类型不能为空'], 403);
         }
 
         // Validate data_scope_type
         $validScopeTypes = ['all', 'class_only', 'teacher_related', 'own_only', 'none'];
         if (!in_array($dataScopeType, $validScopeTypes, true)) {
-            jsonResponse(['success' => false, 'message' => '无效的数据范围类型']);
+            jsonResponse(['success' => false, 'message' => '无效的数据范围类型'], 403);
         }
 
         // Validate iep_level
         $validIepLevels = ['none', 'view', 'participate', 'full'];
         if (!in_array($iepLevel, $validIepLevels, true)) {
-            jsonResponse(['success' => false, 'message' => '无效的IEP权限级别']);
+            jsonResponse(['success' => false, 'message' => '无效的IEP权限级别'], 403);
         }
 
         try {
@@ -136,7 +136,7 @@ switch ($method) {
             $checkStmt = $pdo->prepare('SELECT id FROM permission_groups WHERE name = ? LIMIT 1');
             $checkStmt->execute([$name]);
             if ($checkStmt->fetch()) {
-                jsonResponse(['success' => false, 'message' => '权限组名称已存在']);
+                jsonResponse(['success' => false, 'message' => '权限组名称已存在'], 403);
             }
 
             $stmt = $pdo->prepare(
@@ -176,7 +176,7 @@ switch ($method) {
             ]);
         } catch (PDOException $e) {
             error_log('Permission groups POST error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '创建权限组失败']);
+            jsonResponse(['success' => false, 'message' => '创建权限组失败'], 403);
         }
         break;
 
@@ -189,7 +189,7 @@ switch ($method) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误：缺少权限组ID']);
+            jsonResponse(['success' => false, 'message' => '参数错误：缺少权限组ID'], 403);
         }
 
         $input = getInput();
@@ -203,7 +203,7 @@ switch ($method) {
             $existing = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$existing) {
-                jsonResponse(['success' => false, 'message' => '权限组不存在']);
+                jsonResponse(['success' => false, 'message' => '权限组不存在'], 404);
             }
 
             // Build update fields dynamically
@@ -213,16 +213,16 @@ switch ($method) {
             if (isset($input['name'])) {
                 $name = trim($input['name']);
                 if (empty($name)) {
-                    jsonResponse(['success' => false, 'message' => '权限组名称不能为空']);
+                    jsonResponse(['success' => false, 'message' => '权限组名称不能为空'], 403);
                 }
                 if (mb_strlen($name) > 50) {
-                    jsonResponse(['success' => false, 'message' => '权限组名称不能超过50个字符']);
+                    jsonResponse(['success' => false, 'message' => '权限组名称不能超过50个字符'], 403);
                 }
                 // Check for duplicate name (excluding self)
                 $dupStmt = $pdo->prepare('SELECT id FROM permission_groups WHERE name = ? AND id != ? LIMIT 1');
                 $dupStmt->execute([$name, $id]);
                 if ($dupStmt->fetch()) {
-                    jsonResponse(['success' => false, 'message' => '权限组名称已存在']);
+                    jsonResponse(['success' => false, 'message' => '权限组名称已存在'], 403);
                 }
                 $fields[] = 'name = ?';
                 $params[] = $name;
@@ -237,7 +237,7 @@ switch ($method) {
                 $scope = trim($input['data_scope_type']);
                 $validScopeTypes = ['all', 'class_only', 'teacher_related', 'own_only', 'none'];
                 if (!in_array($scope, $validScopeTypes, true)) {
-                    jsonResponse(['success' => false, 'message' => '无效的数据范围类型']);
+                    jsonResponse(['success' => false, 'message' => '无效的数据范围类型'], 403);
                 }
                 $fields[] = 'data_scope_type = ?';
                 $params[] = $scope;
@@ -247,7 +247,7 @@ switch ($method) {
                 $level = trim($input['iep_level']);
                 $validIepLevels = ['none', 'view', 'participate', 'full'];
                 if (!in_array($level, $validIepLevels, true)) {
-                    jsonResponse(['success' => false, 'message' => '无效的IEP权限级别']);
+                    jsonResponse(['success' => false, 'message' => '无效的IEP权限级别'], 403);
                 }
                 $fields[] = 'iep_level = ?';
                 $params[] = $level;
@@ -269,7 +269,7 @@ switch ($method) {
             }
 
             if (empty($fields)) {
-                jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+                jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
             }
 
             // Execute update
@@ -297,7 +297,7 @@ switch ($method) {
             ]);
         } catch (PDOException $e) {
             error_log('Permission groups PUT error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '更新权限组失败']);
+            jsonResponse(['success' => false, 'message' => '更新权限组失败'], 403);
         }
         break;
 
@@ -310,12 +310,12 @@ switch ($method) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误：缺少权限组ID']);
+            jsonResponse(['success' => false, 'message' => '参数错误：缺少权限组ID'], 403);
         }
 
         // Admin group cannot be deleted
         if ($id === 1) {
-            jsonResponse(['success' => false, 'message' => '超级管理员权限组不可删除']);
+            jsonResponse(['success' => false, 'message' => '超级管理员权限组不可删除'], 403);
         }
 
         try {
@@ -329,11 +329,11 @@ switch ($method) {
             $group = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$group) {
-                jsonResponse(['success' => false, 'message' => '权限组不存在']);
+                jsonResponse(['success' => false, 'message' => '权限组不存在'], 404);
             }
 
             if (intval($group['is_system']) === 1) {
-                jsonResponse(['success' => false, 'message' => '系统内置权限组不可删除']);
+                jsonResponse(['success' => false, 'message' => '系统内置权限组不可删除'], 403);
             }
 
             // Check if any users are associated
@@ -347,7 +347,7 @@ switch ($method) {
                 jsonResponse([
                     'success' => false,
                     'message' => '该权限组下还有 ' . $userCount . ' 个用户，请先移除用户后再删除'
-                ]);
+                ], 403);
             }
 
             // Delete
@@ -372,7 +372,7 @@ switch ($method) {
             ]);
         } catch (PDOException $e) {
             error_log('Permission groups DELETE error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '删除权限组失败']);
+            jsonResponse(['success' => false, 'message' => '删除权限组失败'], 403);
         }
         break;
 
@@ -384,5 +384,5 @@ switch ($method) {
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '不支持的请求方式']);
+        jsonResponse(['success' => false, 'message' => '不支持的请求方式'], 405);
 }

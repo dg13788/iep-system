@@ -23,6 +23,15 @@ import { api } from '@/api';
  * 前端视图模型（与 Evaluation.tsx 保持一致）
  * ============================================================ */
 
+/** 评估条目得分（详情接口返回；编辑态回填用） */
+export interface AssessmentItemScore {
+  dimension: string;
+  item_name: string;
+  score: number;
+  max_score: number;
+  notes: string;
+}
+
 export interface EvaluationRecord {
   id: string;
   studentId: string;
@@ -31,7 +40,10 @@ export interface EvaluationRecord {
   className: string;
   templateId: string;
   templateName: string;
+  /** 字典编码（initial/midterm/final/annual），用于筛选与请求参数 */
   assessmentType: string;
+  /** 字典展示名（初期评估…），由后端随列表下发，禁止前端再硬编码一套 */
+  assessmentTypeLabel: string;
   assessmentDate: string;
   assessor: string;
   totalScore: number;
@@ -39,6 +51,8 @@ export interface EvaluationRecord {
   status: 'completed' | 'in_progress' | 'draft';
   scores: Record<string, Record<string, number>>;
   notes: Record<string, Record<string, string>>;
+  /** 详情接口返回的条目得分；列表接口不带该字段 */
+  items?: AssessmentItemScore[];
   recommendations?: string;
 }
 
@@ -75,17 +89,20 @@ interface RawAssessment {
   id?: number | string;
   student_id?: number | string;
   student_name?: string | null;
+  student_no?: string | null;
   assessor_id?: number | string;
   assessor_name?: string | null;
   assessment_date?: string | null;
   assessment_type?: string | null;
+  assessment_type_label?: string | null;
+  template_id?: number | string | null;
+  template_name?: string | null;
   total_score?: number | string | null;
   max_score?: number | string | null;
   score_percentage?: number | string | null;
   status?: string | null;
   summary?: string | null;
   recommendations?: string | null;
-  template_id?: number | string | null;
   created_at?: string | null;
 }
 
@@ -152,15 +169,22 @@ const STATUS_SET = new Set(['completed', 'in_progress', 'draft']);
 export function adaptEvaluation(raw: RawAssessment | null | undefined): EvaluationRecord {
   const r = raw ?? {};
   const status = str(r.status, 'completed');
+  const typeCode = str(r.assessment_type);
+  const rawItems = (r as { items?: RawAssessmentItem[] }).items;
   return {
     id: String(num(r.id, 0)),
     studentId: String(num(r.student_id, 0)),
     studentName: str(r.student_name, '未命名学生'),
-    studentNo: '',
+    // v14：后端 list 已下发 student_no；此前恒为空字符串，表格学生列只显示姓名
+    studentNo: str(r.student_no),
     className: '',
-    templateId: '',
-    templateName: str(r.assessment_type),
-    assessmentType: str(r.assessment_type),
+    templateId: r.template_id != null ? String(num(r.template_id, 0)) : '',
+    // v14：模板名改取后端 JOIN 下发的 template_name。
+    // 原实现用 assessment_type（initial）冒充，「评估模板」列显示原始枚举。
+    // 未关联模板时显示占位符，不回退到类型码制造第二套假口径。
+    templateName: str(r.template_name) || '—',
+    assessmentType: typeCode,
+    assessmentTypeLabel: str(r.assessment_type_label) || typeCode,
     assessmentDate: str(r.assessment_date),
     assessor: str(r.assessor_name, ''),
     totalScore: num(r.total_score, 0),
@@ -168,6 +192,15 @@ export function adaptEvaluation(raw: RawAssessment | null | undefined): Evaluati
     status: (STATUS_SET.has(status) ? status : 'completed') as EvaluationRecord['status'],
     scores: {},
     notes: {},
+    items: Array.isArray(rawItems)
+      ? rawItems.map((it) => ({
+          dimension: str(it.dimension),
+          item_name: str(it.item_name),
+          score: num(it.score, 0),
+          max_score: num(it.max_score, 0),
+          notes: nullableStr(it.notes),
+        }))
+      : undefined,
     recommendations: nullableStr(r.recommendations),
   };
 }
@@ -224,11 +257,20 @@ export interface AssessmentListParams {
   status?: string;
 }
 
+export interface AssessmentTypeOption {
+  /** 字典编码，如 initial */
+  code: string;
+  /** 展示名，如 初期评估 */
+  name: string;
+}
+
 export interface AssessmentListResult {
   list: EvaluationRecord[];
   total: number;
   page: number;
   pageSize: number;
+  /** v14：后端下发的评估类型字典（ADR-033 单一口径），前端筛选下拉消费 */
+  assessmentTypes: AssessmentTypeOption[];
 }
 
 export async function fetchAssessments(
@@ -242,7 +284,13 @@ export async function fetchAssessments(
   if (params.assessment_type) query.assessment_type = params.assessment_type;
   if (params.status) query.status = params.status;
 
-  const res = await api.get<{ list?: RawAssessment[]; total?: number; page?: number; pageSize?: number }>(
+  const res = await api.get<{
+    list?: RawAssessment[];
+    total?: number;
+    page?: number;
+    pageSize?: number;
+    assessment_types?: Array<{ code?: string; name?: string }>;
+  }>(
     '/assessments/list',
     query,
   );
@@ -251,11 +299,17 @@ export async function fetchAssessments(
   }
   const data = res.data ?? {};
   const rows = Array.isArray(data.list) ? data.list : [];
+  const typeOptions: AssessmentTypeOption[] = Array.isArray(data.assessment_types)
+    ? data.assessment_types
+        .map((t) => ({ code: str(t?.code), name: str(t?.name) }))
+        .filter((t) => t.code !== '')
+    : [];
   return {
     list: rows.map((r) => adaptEvaluation(r)),
     total: num(data.total, 0),
     page: num(data.page, 1),
     pageSize: num(data.pageSize, 100),
+    assessmentTypes: typeOptions,
   };
 }
 

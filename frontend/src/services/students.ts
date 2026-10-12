@@ -117,16 +117,20 @@ function nullableStr(v: unknown): string {
   return v === null || v === undefined ? '' : String(v);
 }
 
-/** 由出生日期计算周岁 */
-function calcAge(birthDate: string): number {
-  if (!birthDate) return 0;
+/**
+ * 由出生日期计算周岁。
+ * 修复(P2-1)：出生日期缺失 / 非法时原实现返回 0，展示层直接拼成「0岁」，
+ * 在特教场景会被误读为「该生 0 岁」。改为返回 null，由展示层渲染为「—」。
+ */
+function calcAge(birthDate: string): number | null {
+  if (!birthDate) return null;
   const birth = new Date(birthDate);
-  if (Number.isNaN(birth.getTime())) return 0;
+  if (Number.isNaN(birth.getTime())) return null;
   const now = new Date();
   let age = now.getFullYear() - birth.getFullYear();
   const m = now.getMonth() - birth.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-  return age < 0 ? 0 : age;
+  return age < 0 ? null : age;
 }
 
 /**

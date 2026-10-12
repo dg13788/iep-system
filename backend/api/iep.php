@@ -1,5 +1,105 @@
 <?php
 /**
+ * 归一化团队成员为「可读字符串数组」。
+ *
+ * team_members 是 JSON 列，库里实际存在两种形态：
+ *   1) 对象数组：[{"role":"班主任","user_id":3}, ...]（生成器 / 早期写入）
+ *   2) 字符串数组：["李老师","王老师"]（前端向导提交）
+ * 前端与导出文档都按 string[] 直接 join('、') 展示，遇到第 1 种会渲染成
+ * "[object Object]、[object Object]"，详情页和导出的 Word/PDF 都会中招。
+ * 这里统一成「姓名（角色）」的可读文本；角色缺失时只留姓名，姓名查不到时回落 ID。
+ */
+function normalize_team_members($raw): array
+{
+    if (empty($raw)) {
+        return [];
+    }
+    $list = is_string($raw) ? json_decode($raw, true) : $raw;
+    if (!is_array($list)) {
+        return [];
+    }
+
+    $userIds = [];
+    foreach ($list as $m) {
+        if (is_array($m) && !empty($m['user_id'])) {
+            $userIds[] = intval($m['user_id']);
+        }
+    }
+    $nameById = [];
+    if ($userIds) {
+        try {
+            $pdo = getDB();
+            $in = implode(',', array_fill(0, count($userIds), '?'));
+            $st = $pdo->prepare("SELECT id, real_name FROM users WHERE id IN ($in)");
+            $st->execute($userIds);
+            foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $nameById[intval($r['id'])] = $r['real_name'] ?: ('用户' . intval($r['id']));
+            }
+        } catch (PDOException $e) {
+            error_log('normalize_team_members user lookup: ' . $e->getMessage());
+        }
+    }
+
+    $out = [];
+    foreach ($list as $m) {
+        if (is_array($m)) {
+            $name = '';
+            if (!empty($m['user_id'])) {
+                $name = $nameById[intval($m['user_id'])] ?? ('用户' . intval($m['user_id']));
+            } elseif (!empty($m['name'])) {
+                $name = (string) $m['name'];
+            }
+            $role = isset($m['role']) ? trim((string) $m['role']) : '';
+            if ($name === '' && $role !== '') {
+                $name = $role;
+            }
+            if ($name === '') {
+                continue;
+            }
+            $out[] = ($role !== '' && $role !== $name) ? "{$name}（{$role}）" : $name;
+        } else {
+            $s = trim((string) $m);
+            if ($s !== '') {
+                $out[] = $s;
+            }
+        }
+    }
+    return array_values(array_unique($out));
+}
+
+/**
+ * 兼容 team_members 的两种历史写法：字符串数组或 JSON 字符串。
+ */
+function iep_team_members_param($value): ?string
+{
+    if ($value === null || $value === '') {
+        return null;
+    }
+    if (is_array($value)) {
+        return json_encode(array_values($value), JSON_UNESCAPED_UNICODE);
+    }
+    return (string) $value;
+}
+
+/**
+ * 判断某教师是否在团队成员名单中。
+ * 归一化后的元素形如「李老师（班主任）」，勾选态比较时需去掉括号内的角色。
+ */
+function iep_team_members_contains(array $members, string $name): bool
+{
+    $target = trim($name);
+    if ($target === '') {
+        return false;
+    }
+    foreach ($members as $m) {
+        if ($m === $target || preg_replace('/（[^）]*）$/', '', (string) $m) === $target) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * IEP Module - Individualized Education Plan Endpoints
  * 
  * Endpoints:
@@ -29,10 +129,19 @@
  *   GET  /api/iep/meeting_participants    - IEP 会议参与人
  *   POST /api/iep/meeting_participant_save- 会议参与人与签到留痕
  *   GET  /api/iep/meta                    - 特教专业字典（安置形式/相关服务/沟通方式）
+ *
+ * v7（进度智能内核 Progress Intelligence Core，对应 Step 1 整改）：
+ *   GET  /api/iep/progress_series         - 目标历史进度数据点（修复「只写不读」）
+ *   GET  /api/iep/progress_analysis       - aim line / 趋势线 / 决策结论 / 调整点
+ *   GET  /api/iep/adjustments             - 干预调整留痕列表
+ *   POST /api/iep/adjustment_save         - 记录一次干预调整（DBI Step 4）
+ *   POST /api/iep/adjustment_delete       - 软删除干预调整
+ *   GET  /api/iep/consistency_check       - IEP 内在一致性质检（提交审核前强制）
  */
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/io_engine.php';
+require_once __DIR__ . '/progress_analysis.php';
 
 $path = isset($_GET['path']) ? trim($_GET['path'], '/') : '';
 $parts = explode('/', $path);
@@ -67,60 +176,16 @@ switch ($action) {
             $whereStr = implode(' AND ', $where);
 
             // Apply data scope filtering
+            //
+            // 安全修复(P0-2)：原实现在 class_ids 为空时不追加任何过滤条件，
+            // 导致班主任在关联缺失或查询异常时可见全校数据（fail-open 越权）；
+            // 现改为 fail-closed：无关联班级即不可见任何数据。
+            //
+            // 重构(v8)：这段过滤原先在 iep.php 与 workbench.php 各写一份。
+            // 安全边界出现第二份实现，迟早会长出「列表看不到、工作台却能操作」的越权口子。
+            // 现统一收敛到 pa_plan_scope_clause()，行为逐分支保持一致（含 viewer/none 一律拒绝）。
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'class_teacher') {
-                // 安全修复(P0-2)：原实现在 class_ids 为空时不追加任何过滤条件，
-                // 导致班主任在关联缺失或查询异常时可见全校数据（fail-open 越权）。
-                // 现改为 fail-closed：无关联班级即不可见任何数据。
-                if (empty($scope['class_ids'])) {
-                    $scopeClause = ' AND p.id = -1';
-                } else {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND s.class_id IN ($placeholders)";
-                    $scopeParams = $scope['class_ids'];
-                }
-            } elseif ($scope['type'] === 'teacher') {
-
-                $conditions = [];
-                // Primary teacher
-                if (!empty($scope['teacher_id'])) {
-                    $conditions[] = 'p.primary_teacher_id = ?';
-                    $scopeParams[] = $scope['teacher_id'];
-                }
-                // Students in their classes
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "s.class_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                // Students whose IEP goals they manage
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "p.student_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) {
-                    $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')';
-                } else {
-                    $scopeClause = ' AND p.id = -1'; // No access
-                }
-            } elseif ($scope['type'] === 'parent') {
-                // 安全修复(P0-2)：fail-closed
-                if (empty($scope['student_ids'])) {
-                    $scopeClause = ' AND p.id = -1';
-                } else {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $scopeClause = " AND p.student_id IN ($placeholders)";
-                    $scopeParams = $scope['student_ids'];
-                }
-            } elseif ($scope['type'] === 'viewer') {
-                $scopeClause = ' AND p.id = -1';
-            } elseif ($scope['type'] === 'none') {
-                // 安全加固：数据范围为 none 时一律拒绝
-                $scopeClause = ' AND p.id = -1';
-            }
+            [$scopeClause, $scopeParams] = pa_plan_scope_clause($scope);
 
             // Merge scope params
             $countParams = array_merge($params, $scopeParams);
@@ -156,7 +221,7 @@ switch ($action) {
                 'message' => '查询成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '查询失败']);
+            jsonResponse(['success' => false, 'message' => '查询失败'], 500);
         }
         break;
 
@@ -168,7 +233,7 @@ switch ($action) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：防 IDOR 越权读取（教师仅本班/所教学生，家长仅自家孩子）
@@ -191,15 +256,22 @@ switch ($action) {
             $plan = $stmt->fetch();
 
             if (!$plan) {
-                jsonResponse(['success' => false, 'message' => 'IEP计划不存在']);
+                jsonResponse(['success' => false, 'message' => 'IEP计划不存在'], 404);
             }
+
+            // 团队成员归一化：库里可能是 [{role,user_id}] 对象数组，
+            // 原样下发会让前端 join('、') 渲染成 [object Object]
+            $plan['team_members'] = normalize_team_members($plan['team_members'] ?? null);
 
             // Get goals
             $goalStmt = $pdo->prepare(
                 'SELECT id, goal_code, area, title, description, target_behavior, criteria, 
                         evaluation_method, baseline, target_score, current_score, progress_percentage, 
                         start_date, target_date, priority, status, teaching_strategies, resources, 
-                        responsible_teacher_id, sort_order 
+                        responsible_teacher_id, sort_order,
+                        monitor_frequency, monitor_method, monitor_owner_id,
+                        baseline_value, baseline_date, target_value,
+                        source_assessment_id, source_assessment_item_id
                  FROM iep_goals 
                  WHERE iep_plan_id = ? AND deleted_at IS NULL ORDER BY area, sort_order'
             );
@@ -229,7 +301,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => $plan, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -241,7 +313,7 @@ switch ($action) {
         requirePermission('iep_create');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -249,7 +321,7 @@ switch ($action) {
         $title = isset($input['title']) ? trim($input['title']) : '';
 
         if ($studentId <= 0 || empty($title)) {
-            jsonResponse(['success' => false, 'message' => '学生ID和计划标题不能为空']);
+            jsonResponse(['success' => false, 'message' => '学生ID和计划标题不能为空'], 400);
         }
 
         // 数据范围校验：禁止为范围外学生创建 IEP
@@ -289,7 +361,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => ['id' => $planId, 'plan_code' => $planCode], 'message' => '创建成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '创建失败: ' . $e->getMessage()]);
+            jsonResponse(['success' => false, 'message' => '创建失败: ' . $e->getMessage()], 500);
         }
         break;
 
@@ -301,13 +373,13 @@ switch ($action) {
         requirePermission('iep_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：禁止修改范围外 IEP
@@ -346,7 +418,7 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
@@ -360,7 +432,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -372,13 +444,13 @@ switch ($action) {
         requirePermission('iep_delete');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：禁止删除范围外 IEP
@@ -393,7 +465,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -405,13 +477,13 @@ switch ($action) {
         requirePermission('iep_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：禁止提交范围外 IEP
@@ -429,7 +501,7 @@ switch ($action) {
             $stmt->execute([$id]);
             $current = $stmt->fetch();
             if (!$current) {
-                jsonResponse(['success' => false, 'message' => 'IEP计划不存在']);
+                jsonResponse(['success' => false, 'message' => 'IEP计划不存在'], 404);
             }
             $previousStatus = $current['status'];
 
@@ -462,6 +534,30 @@ switch ($action) {
                 ], 400);
             }
 
+            // v7（Step 1 · P0-3 / IDEA 内在一致性）：提交审核前强制质检。
+            // 此前系统只校验「安置形式」一项，其余法定要件（基线、达成标准、监控频率、
+            // 会议日期、转衔）全靠教师自查，形式化风险完全外溢到审计环节。
+            // 现在把质量量规固化成可执行规则：error 级问题阻断提交并逐条列出，
+            // 让「质量不合格的 IEP」在流程内被拦下，而不是在流程外被追责。
+            $check = pa_consistency_check($pdo, $id);
+            if (!$check['passed']) {
+                $pdo->rollBack();
+                $lines = [];
+                foreach ($check['issues'] as $iss) {
+                    if ($iss['level'] !== 'error') continue;
+                    $lines[] = '· ' . $iss['title'] . '：' . $iss['detail'];
+                }
+                jsonResponse([
+                    'success' => false,
+                    'message' => '未通过 IEP 一致性质检，共 ' . $check['error_count'] . ' 项必须处理后才能提交：',
+                    'code'    => 422,
+                    'data'    => [
+                        'check' => $check,
+                        'brief' => $lines
+                    ]
+                ], 422);
+            }
+
             // Update status
             $stmt = $pdo->prepare('UPDATE iep_plans SET status = "reviewing", updated_at = NOW() WHERE id = ?');
             $stmt->execute([$id]);
@@ -479,7 +575,7 @@ switch ($action) {
             jsonResponse(['success' => true, 'message' => '提交成功']);
         } catch (PDOException $e) {
             $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => '提交失败']);
+            jsonResponse(['success' => false, 'message' => '提交失败'], 500);
         }
         break;
 
@@ -491,7 +587,7 @@ switch ($action) {
         requirePermission('iep_approve');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -500,7 +596,7 @@ switch ($action) {
         $comment = isset($input['comment']) ? trim($input['comment']) : '';
 
         if ($id <= 0 || empty($decision)) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：禁止审批范围外 IEP
@@ -522,7 +618,7 @@ switch ($action) {
             $stmt->execute([$id]);
             $current = $stmt->fetch();
             if (!$current) {
-                jsonResponse(['success' => false, 'message' => 'IEP计划不存在']);
+                jsonResponse(['success' => false, 'message' => 'IEP计划不存在'], 404);
             }
             $previousStatus = $current['status'];
 
@@ -607,7 +703,9 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => 'IEP计划不存在', 'code' => 404], 404);
         }
 
-        $isParent = isset($user['type']) && $user['type'] === 'parent';
+        // 家长身份需同时覆盖两类账号（parents 表登录 / users 表家长角色），
+        // 否则后者在签名时会被要求 iep_approve 权限而被拒。
+        $isParent = currentUserIsParent($user);
 
         // 安全修复(P0-1)：家长电子签名是 IEP 流程中具有法律效力的确认环节。
         // 原实现存在三处致命缺陷：
@@ -620,7 +718,12 @@ switch ($action) {
         //   - 教职工代签：必须具 iep_approve 权限，且 parent_id 必须是该学生的
         //     真实监护人之一，审批日志如实记录实际操作人为「代签」。
         if ($isParent) {
-            $parentId = intval($user['sub']);
+            // 必须走 parent_ref_id 映射：users.id ≠ parents.id，直接取 sub 会签成另一位家长
+            $mapped = currentParentId($user);
+            if ($mapped === null) {
+                jsonResponse(['success' => false, 'message' => '家长身份解析失败', 'code' => 403], 403);
+            }
+            $parentId = $mapped;
         } else {
             requirePermission('iep_approve');
             if ($parentId <= 0) {
@@ -764,7 +867,7 @@ switch ($action) {
             $pdo->rollBack();
             // 修复(7.3)：原 catch 静默吞异常，排障等于瞎的
             error_log('iep/sign error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '签名失败']);
+            jsonResponse(['success' => false, 'message' => '签名失败'], 500);
         }
         break;
 
@@ -796,9 +899,13 @@ switch ($action) {
         // 数据范围校验：只能撤销范围内 IEP 的签名
         requireIepInScope($planId);
 
-        $isParent = isset($user['type']) && $user['type'] === 'parent';
+        $isParent = currentUserIsParent($user);
         if ($isParent) {
-            $parentId = intval($user['sub']);
+            $mapped = currentParentId($user);
+            if ($mapped === null) {
+                jsonResponse(['success' => false, 'message' => '家长身份解析失败', 'code' => 403], 403);
+            }
+            $parentId = $mapped;
         } else {
             requirePermission('iep_approve');
             if ($parentId <= 0) {
@@ -897,7 +1004,7 @@ switch ($action) {
         requirePermission('goal_update');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -905,7 +1012,7 @@ switch ($action) {
         $goalsJson = isset($input['goals']) ? $input['goals'] : '[]';
 
         if ($planId <= 0) {
-            jsonResponse(['success' => false, 'message' => '计划ID不能为空']);
+            jsonResponse(['success' => false, 'message' => '计划ID不能为空'], 400);
         }
 
         // 数据范围校验：禁止修改范围外 IEP 的目标
@@ -913,25 +1020,65 @@ switch ($action) {
 
         $goals = is_string($goalsJson) ? json_decode($goalsJson, true) : $goalsJson;
         if (!is_array($goals)) {
-            jsonResponse(['success' => false, 'message' => '目标数据格式错误']);
+            jsonResponse(['success' => false, 'message' => '目标数据格式错误'], 400);
         }
 
         try {
             $pdo = getDB();
             $pdo->beginTransaction();
 
+            // v7（Step 1）：保存目标时必须一并持久化「进度监控」元数据。
+            // 这些字段是 IDEA 法定要件，也是 aim line 与提示提醒的计算依据；
+            // 若保存路径不支持写入，新增目标将永远无法通过一致性质检而被挡住 —— 那是自造死锁。
+            $monitorFields = function (array $goal): array {
+                $freq = trim((string)($goal['monitor_frequency'] ?? ''));
+                if (!in_array($freq, ['每次课', '每天', '每周2次', '每周1次', '每两周', '每月'], true)) {
+                    $freq = null;
+                }
+                $baseVal   = (isset($goal['baseline_value']) && is_numeric($goal['baseline_value']))
+                    ? max(0, min(100, floatval($goal['baseline_value']))) : null;
+                $targetVal = (isset($goal['target_value']) && is_numeric($goal['target_value']))
+                    ? max(0, min(100, floatval($goal['target_value']))) : null;
+                return [
+                    $freq,
+                    trim((string)($goal['monitor_method'] ?? '')) ?: null,
+                    isset($goal['monitor_owner_id']) && intval($goal['monitor_owner_id']) > 0
+                        ? intval($goal['monitor_owner_id']) : null,
+                    $baseVal,
+                    trim((string)($goal['baseline_date'] ?? '')) ?: null,
+                    $targetVal,
+                    isset($goal['source_assessment_id']) && intval($goal['source_assessment_id']) > 0
+                        ? intval($goal['source_assessment_id']) : null,
+                    isset($goal['source_assessment_item_id']) && intval($goal['source_assessment_item_id']) > 0
+                        ? intval($goal['source_assessment_item_id']) : null,
+                    // 显式给了数值 → 标记为「教师指定」，后续重跑迁移不得覆盖
+                    $baseVal !== null ? 0 : 1,
+                    $targetVal !== null ? 0 : 1,
+                ];
+            };
+
             $insertStmt = $pdo->prepare(
                 'INSERT INTO iep_goals (iep_plan_id, goal_code, area, title, description, target_behavior, 
                  criteria, evaluation_method, baseline, target_score, current_score, start_date, target_date, 
-                 priority, teaching_strategies, resources, responsible_teacher_id, sort_order, created_at, updated_at) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+                 priority, teaching_strategies, resources, responsible_teacher_id, sort_order,
+                 monitor_frequency, monitor_method, monitor_owner_id,
+                 baseline_value, baseline_date, target_value,
+                 source_assessment_id, source_assessment_item_id,
+                 baseline_value_is_derived, target_value_is_derived,
+                 created_at, updated_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
             );
 
             $updateStmt = $pdo->prepare(
                 'UPDATE iep_goals SET area = ?, title = ?, description = ?, target_behavior = ?, 
                  criteria = ?, evaluation_method = ?, baseline = ?, target_score = ?, start_date = ?, 
                  target_date = ?, priority = ?, teaching_strategies = ?, resources = ?, 
-                 responsible_teacher_id = ?, sort_order = ?, updated_at = NOW() WHERE id = ?'
+                 responsible_teacher_id = ?, sort_order = ?,
+                 monitor_frequency = ?, monitor_method = ?, monitor_owner_id = ?,
+                 baseline_value = ?, baseline_date = ?, target_value = ?,
+                 source_assessment_id = ?, source_assessment_item_id = ?,
+                 baseline_value_is_derived = ?, target_value_is_derived = ?,
+                 updated_at = NOW() WHERE id = ? AND iep_plan_id = ? AND deleted_at IS NULL'
             );
 
             foreach ($goals as $index => $goal) {
@@ -953,8 +1100,21 @@ switch ($action) {
                         $goal['resources'] ?? '',
                         isset($goal['responsible_teacher_id']) ? intval($goal['responsible_teacher_id']) : null,
                         $index,
-                        intval($goal['id'])
+                        ...$monitorFields($goal),
+                        intval($goal['id']), $planId
                     ]);
+                    // 此前 WHERE 只约束 id，不约束 iep_plan_id：
+                    // 只要拿到任意一个在范围内计划的 id，就能在 goals 数组里塞别人的 goal_id，
+                    // 改写全校任意 IEP 的目标、基线与期末目标值（教学岗普遍有 goal_update 权限）。
+                    // 现在加了计划归属约束，并对「无匹配」按 ADR-018 返回 404——
+                    // 否则越权写入会被静默伪装成操作成功。
+                    if ($updateStmt->rowCount() === 0) {
+                        if ($pdo->inTransaction()) $pdo->rollBack();
+                        jsonResponse([
+                            'success' => false,
+                            'message' => '目标 #' . intval($goal['id']) . ' 不存在或不属于该计划，未做任何修改'
+                        ], 404);
+                    }
                 } else {
                     // Insert new goal
                     $goalCode = 'G-' . $planId . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
@@ -975,7 +1135,8 @@ switch ($action) {
                         $goal['teaching_strategies'] ?? '',
                         $goal['resources'] ?? '',
                         isset($goal['responsible_teacher_id']) ? intval($goal['responsible_teacher_id']) : null,
-                        $index
+                        $index,
+                        ...$monitorFields($goal)
                     ]);
                 }
             }
@@ -987,7 +1148,7 @@ switch ($action) {
             jsonResponse(['success' => true, 'message' => '目标保存成功']);
         } catch (PDOException $e) {
             $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => '保存失败: ' . $e->getMessage()]);
+            jsonResponse(['success' => false, 'message' => '保存失败: ' . $e->getMessage()], 500);
         }
         break;
 
@@ -999,7 +1160,7 @@ switch ($action) {
         requirePermission('goal_update');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -1078,7 +1239,7 @@ switch ($action) {
             jsonResponse(['success' => true, 'data' => ['current_score' => $currentScore, 'progress' => min($progressPercentage, 100)], 'message' => '进度记录成功']);
         } catch (PDOException $e) {
             $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => '记录失败']);
+            jsonResponse(['success' => false, 'message' => '记录失败'], 500);
         }
         break;
 
@@ -1090,8 +1251,10 @@ switch ($action) {
 
         $planId = isset($_GET['plan_id']) ? intval($_GET['plan_id']) : 0;
         if ($planId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
+        // 审批意见全文（含驳回理由、代签说明）不该对任何登录账号开放
+        requireIepInScope($planId);
 
         try {
             $pdo = getDB();
@@ -1105,7 +1268,7 @@ switch ($action) {
             $logs = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $logs, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -1117,8 +1280,9 @@ switch ($action) {
 
         $studentId = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
         if ($studentId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
+        requireStudentInScope($studentId);
 
         try {
             $pdo = getDB();
@@ -1171,7 +1335,7 @@ switch ($action) {
                 'message' => '获取成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -1184,7 +1348,7 @@ switch ($action) {
 
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
-            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format]);
+            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
         }
 
         try {
@@ -1200,42 +1364,12 @@ switch ($action) {
             if (!empty($status)) { $where[] = 'p.status = ?'; $params[] = $status; }
             $whereStr = implode(' AND ', $where);
 
-            // 数据范围过滤（fail-closed），与 list 一致
+            // 数据范围过滤：复用全库唯一实现（ADR-009）。
+            // 原先此处是手抄的一份 if/elseif，且**没有 else 兜底**——
+            // 遇到 'all' 或将来新增的 scope 类型时 $scopeClause 为空串，
+            // 等于静默 fail-open 全量导出。改为统一实现后未知类型一律拒绝。
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'class_teacher') {
-                if (empty($scope['class_ids'])) { $scopeClause = ' AND p.id = -1'; }
-                else {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND s.class_id IN ($placeholders)";
-                    $scopeParams = $scope['class_ids'];
-                }
-            } elseif ($scope['type'] === 'teacher') {
-                $conditions = [];
-                if (!empty($scope['teacher_id'])) { $conditions[] = 'p.primary_teacher_id = ?'; $scopeParams[] = $scope['teacher_id']; }
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "s.class_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "p.student_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) { $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')'; }
-                else { $scopeClause = ' AND p.id = -1'; }
-            } elseif ($scope['type'] === 'parent') {
-                if (empty($scope['student_ids'])) { $scopeClause = ' AND p.id = -1'; }
-                else {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $scopeClause = " AND p.student_id IN ($placeholders)";
-                    $scopeParams = $scope['student_ids'];
-                }
-            } elseif ($scope['type'] === 'viewer' || $scope['type'] === 'none') {
-                $scopeClause = ' AND p.id = -1';
-            }
+            [$scopeClause, $scopeParams] = pa_plan_scope_clause($scope);
 
             $queryParams = array_merge($params, $scopeParams);
 
@@ -1267,7 +1401,7 @@ switch ($action) {
 
             io_download($format, 'IEP计划', $headers, $rows);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '导出失败']);
+            jsonResponse(['success' => false, 'message' => '导出失败'], 500);
         }
         break;
 
@@ -1279,7 +1413,7 @@ switch ($action) {
         requirePermission('iep_import');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $filename = isset($_FILES['file']['name']) ? $_FILES['file']['name'] : '';
@@ -1300,7 +1434,7 @@ switch ($action) {
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
-            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])]);
+            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])], 400);
         }
         $colIndex = $map['colIndex'];
 
@@ -2096,12 +2230,21 @@ switch ($action) {
                  WHERE category = 'communication_method' AND is_active = 1 ORDER BY sort_order, id"
             )->fetchAll();
 
+            // v13：目标领域此前只在前端硬编码，dict_common 建了却无人消费，
+            // 导致下拉与库里已有数据口径分裂。现统一由后端下发（name = 显示值，
+            // 与 iep_goals.area 取值一致），前端常量仅作网络失败时的兜底。
+            $goalAreas = $pdo->query(
+                "SELECT name FROM dict_common
+                 WHERE category = 'goal_area' AND is_active = 1 ORDER BY sort_order, id"
+            )->fetchAll(PDO::FETCH_COLUMN);
+
             jsonResponse([
                 'success' => true,
                 'data'    => [
                     'placement_types'        => $placementTypes,
                     'related_services'       => $services,
-                    'communication_methods'  => $comm
+                    'communication_methods'  => $comm,
+                    'goal_areas'             => $goalAreas
                 ],
                 'message' => '获取成功'
             ]);
@@ -2111,6 +2254,357 @@ switch ($action) {
         }
         break;
 
+require_once __DIR__ . '/progress_analysis.php';
+
+// ============================================================================
+// v7 进度智能内核（Progress Intelligence Core）
+//   取数与算法全部下沉到 progress_analysis.php，本文件只负责鉴权、入参与输出，
+//   保证「图上看到的」与「今日工作台将来看到的」是同一份口径。
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+// GET /api/iep/progress_series - 目标的历史进度数据点
+//   修复 P0-0：iep_goal_progress 此前只有写入路径（iep/progress），
+//   前端拿不到任何历史数据，进度图只能用「本次会话刚提交的那条」冒充趋势。
+//   数据从进库那天起就存在，但从未被读过 —— 这是本模块最严重的功能性缺陷。
+// ----------------------------------------------------------------------------
+case 'progress_series':
+    requireAuth();
+    requirePermission('iep_view');
+
+    $seriesGoalId = isset($_GET['goal_id']) ? intval($_GET['goal_id']) : 0;
+    requireGoalInScope($seriesGoalId);
+
+    $seriesPrefer = trim((string)($_GET['source'] ?? 'auto'));
+    if (!in_array($seriesPrefer, ['auto', 'trial', 'rating'], true)) {
+        $seriesPrefer = 'auto';
+    }
+
+    try {
+        $pdo    = getDB();
+        $series = pa_fetch_series($pdo, $seriesGoalId, $seriesPrefer);
+        jsonResponse([
+            'success' => true,
+            'data'    => [
+                'goal_id' => $seriesGoalId,
+                'points'  => $series['points'],
+                'source'  => $series['source'],
+                'meta'    => $series['meta']
+            ],
+            'message' => '获取成功'
+        ]);
+    } catch (Throwable $e) {
+        error_log('iep/progress_series error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+    }
+    break;
+
+// ----------------------------------------------------------------------------
+// GET /api/iep/progress_analysis - 单目标或整计划的进度分析
+//   返回：数据点 / aim line（取代硬编码 y=80）/ 趋势线 / 决策结论 / 干预调整点
+// ----------------------------------------------------------------------------
+case 'progress_analysis':
+    requireAuth();
+    requirePermission('iep_view');
+
+    $paGoalId = isset($_GET['goal_id']) ? intval($_GET['goal_id']) : 0;
+    $paPlanId = isset($_GET['plan_id']) ? intval($_GET['plan_id']) : 0;
+
+    if ($paGoalId <= 0 && $paPlanId <= 0) {
+        jsonResponse(['success' => false, 'message' => 'goal_id 或 plan_id 不能为空', 'code' => 400], 400);
+    }
+
+    if ($paGoalId > 0) {
+        requireGoalInScope($paGoalId);
+    } else {
+        requireIepInScope($paPlanId);
+    }
+
+    try {
+        $pdo  = getDB();
+        $list = [];
+
+        if ($paGoalId > 0) {
+            $one = pa_analyze_goal($pdo, $paGoalId);
+            if ($one !== null) $list[] = $one;
+        } else {
+            $gStmt = $pdo->prepare(
+                'SELECT id FROM iep_goals WHERE iep_plan_id = ? AND deleted_at IS NULL ORDER BY area, sort_order'
+            );
+            $gStmt->execute([$paPlanId]);
+            foreach ($gStmt->fetchAll(PDO::FETCH_COLUMN) as $gid) {
+                $one = pa_analyze_goal($pdo, (int)$gid);
+                if ($one !== null) $list[] = $one;
+            }
+        }
+
+        // 计划级汇总：为「今日工作台 / 需关注目标」预留的统一统计口径
+        $summary = ['adjust' => 0, 'watch' => 0, 'on_track' => 0, 'stale' => 0, 'mastered' => 0, 'nodata' => 0];
+        foreach ($list as $it) {
+            $lv = $it['decision']['level'] ?? 'nodata';
+            if (isset($summary[$lv])) $summary[$lv]++;
+        }
+
+        jsonResponse([
+            'success' => true,
+            'data'    => [
+                'goals'   => $list,
+                'summary' => $summary
+            ],
+            'message' => '获取成功'
+        ]);
+    } catch (Throwable $e) {
+        error_log('iep/progress_analysis error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '分析失败', 'code' => 500], 500);
+    }
+    break;
+
+// ----------------------------------------------------------------------------
+// GET /api/iep/adjustments - 干预调整留痕列表
+// ----------------------------------------------------------------------------
+case 'adjustments':
+    requireAuth();
+    requirePermission('iep_view');
+
+    $adjPlanId = isset($_GET['plan_id']) ? intval($_GET['plan_id']) : 0;
+    $adjGoalId = isset($_GET['goal_id']) ? intval($_GET['goal_id']) : 0;
+
+    if ($adjPlanId <= 0 && $adjGoalId <= 0) {
+        jsonResponse(['success' => false, 'message' => 'plan_id 或 goal_id 不能为空', 'code' => 400], 400);
+    }
+    if ($adjGoalId > 0) {
+        requireGoalInScope($adjGoalId);
+    } else {
+        requireIepInScope($adjPlanId);
+    }
+
+    try {
+        $pdo  = getDB();
+        $bind = [];
+        if ($adjGoalId > 0) {
+            $sql = 'SELECT a.*, u.real_name AS decided_by_real_name, g.title AS goal_title
+                      FROM iep_intervention_adjustments a
+                      LEFT JOIN users u ON a.decided_by = u.id
+                      LEFT JOIN iep_goals g ON a.goal_id = g.id
+                     WHERE a.goal_id = ? AND a.deleted_at IS NULL';
+            $bind[] = $adjGoalId;
+        } elseif ($adjPlanId > 0) {
+            $sql = 'SELECT a.*, u.real_name AS decided_by_real_name, g.title AS goal_title
+                      FROM iep_intervention_adjustments a
+                      LEFT JOIN users u ON a.decided_by = u.id
+                      LEFT JOIN iep_goals g ON a.goal_id = g.id
+                     WHERE a.iep_plan_id = ? AND a.deleted_at IS NULL';
+            $bind[] = $adjPlanId;
+        }
+        $sql .= ' ORDER BY a.adjusted_at DESC, a.id DESC';
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($bind);
+        jsonResponse(['success' => true, 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC), 'message' => '获取成功']);
+    } catch (Throwable $e) {
+        error_log('iep/adjustments error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+    }
+    break;
+
+// ----------------------------------------------------------------------------
+// POST /api/iep/adjustment_save - 记录一次干预调整（DBI Step 4）
+//   系统不替团队做决定：change_detail 必填且不得为空壳，
+//   hypothesis 与 review_due_date 鼓励填写，用于闭合 Step 3 与 Step 5。
+// ----------------------------------------------------------------------------
+case 'adjustment_save':
+    requireAuth();
+    requirePermission('goal_update');
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        jsonResponse(['success' => false, 'message' => '请求方式错误', 'code' => 405], 405);
+    }
+
+    $input   = getInput();
+    $user    = getCurrentUser();
+    $userId  = isset($user['sub']) ? intval($user['sub']) : 0;
+    $adjId   = isset($input['id']) ? intval($input['id']) : 0;
+    $planId2 = isset($input['plan_id']) ? intval($input['plan_id']) : 0;
+    $goalId2 = isset($input['goal_id']) ? intval($input['goal_id']) : 0;
+
+    if ($goalId2 > 0) {
+        requireGoalInScope($goalId2);
+        $planId2 = getGoalPlanId($goalId2);
+    } elseif ($planId2 > 0) {
+        requireIepInScope($planId2);
+    } else {
+        jsonResponse(['success' => false, 'message' => 'plan_id 或 goal_id 不能为空', 'code' => 400], 400);
+    }
+
+    $changeDetail = trim((string)($input['change_detail'] ?? ''));
+    if ($changeDetail === '') {
+        jsonResponse([
+            'success' => false,
+            'message' => '请写清「具体改了什么」——这是后续复盘的依据，不能留空',
+            'code'    => 400
+        ], 400);
+    }
+
+    $triggerType = trim((string)($input['trigger_type'] ?? 'team_decision'));
+    if (!in_array($triggerType,
+        ['below_aimline', 'plateau', 'regression', 'mastered', 'parent_request', 'team_decision', 'other'], true)) {
+        $triggerType = 'team_decision';
+    }
+    $changeType = trim((string)($input['change_type'] ?? 'other'));
+    if (!in_array($changeType,
+        ['dosage', 'prompt_level', 'material', 'grouping', 'schedule', 'behavior_support',
+         'reinforcement', 'task_analysis', 'environment', 'other'], true)) {
+        $changeType = 'other';
+    }
+    $outcome = trim((string)($input['outcome'] ?? 'pending'));
+    if (!in_array($outcome, ['effective', 'partially_effective', 'ineffective', 'pending'], true)) {
+        $outcome = 'pending';
+    }
+
+    $adjustedAt = trim((string)($input['adjusted_at'] ?? ''));
+    if ($adjustedAt === '') { $adjustedAt = date('Y-m-d'); }
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $adjustedAt)) {
+        jsonResponse(['success' => false, 'message' => '调整日期格式应为 YYYY-MM-DD', 'code' => 400], 400);
+    }
+
+    $reviewDue = trim((string)($input['review_due_date'] ?? ''));
+    if ($reviewDue !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $reviewDue)) {
+        jsonResponse(['success' => false, 'message' => '再监控到期日格式应为 YYYY-MM-DD', 'code' => 400], 400);
+    }
+
+    $objId2 = isset($input['objective_id']) ? intval($input['objective_id']) : 0;
+
+    try {
+        $pdo = getDB();
+
+        if ($adjId > 0) {
+            $stmt = $pdo->prepare(
+                'UPDATE iep_intervention_adjustments SET
+                    trigger_type = ?, trigger_detail = ?, hypothesis = ?,
+                    change_type = ?, change_detail = ?, adjusted_at = ?,
+                    review_due_date = ?, outcome = ?, outcome_note = ?, decided_by = ?
+                 WHERE id = ? AND iep_plan_id = ? AND deleted_at IS NULL'
+            );
+            $stmt->execute([
+                $triggerType,
+                trim((string)($input['trigger_detail'] ?? '')) ?: null,
+                trim((string)($input['hypothesis'] ?? '')) ?: null,
+                $changeType,
+                $changeDetail,
+                $adjustedAt,
+                $reviewDue !== '' ? $reviewDue : null,
+                $outcome,
+                trim((string)($input['outcome_note'] ?? '')) ?: null,
+                $userId,
+                $adjId, $planId2
+            ]);
+            $newId = $adjId;
+            $act   = 'update';
+        } else {
+            $stmt = $pdo->prepare(
+                'INSERT INTO iep_intervention_adjustments
+                 (iep_plan_id, goal_id, objective_id, adjusted_at, trigger_type, trigger_detail,
+                  hypothesis, change_type, change_detail, decided_by, decided_by_name,
+                  review_due_date, outcome, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([
+                $planId2,
+                $goalId2 > 0 ? $goalId2 : null,
+                $objId2 > 0 ? $objId2 : null,
+                $adjustedAt,
+                $triggerType,
+                trim((string)($input['trigger_detail'] ?? '')) ?: null,
+                trim((string)($input['hypothesis'] ?? '')) ?: null,
+                $changeType,
+                $changeDetail,
+                $userId,
+                $user['name'] ?? null,
+                $reviewDue !== '' ? $reviewDue : null,
+                $outcome,
+                $userId
+            ]);
+            $newId = intval($pdo->lastInsertId());
+            $act   = 'create';
+        }
+
+        auditLog($act, 'iep', 'intervention_adjustment', intval($newId), '', null, null,
+                 '记录干预调整：' . mb_substr($changeDetail, 0, 40, 'UTF-8'));
+
+        jsonResponse(['success' => true, 'data' => ['id' => $newId], 'message' => '保存成功']);
+    } catch (Throwable $e) {
+        error_log('iep/adjustment_save error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
+    }
+    break;
+
+// ----------------------------------------------------------------------------
+// POST /api/iep/adjustment_delete - 软删除干预调整记录
+// ----------------------------------------------------------------------------
+case 'adjustment_delete':
+    requireAuth();
+    requirePermission('goal_update');
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        jsonResponse(['success' => false, 'message' => '请求方式错误', 'code' => 405], 405);
+    }
+
+    $input  = getInput();
+    $delId  = isset($input['id']) ? intval($input['id']) : 0;
+    if ($delId <= 0) {
+        jsonResponse(['success' => false, 'message' => '参数错误', 'code' => 400], 400);
+    }
+
+    try {
+        $pdo  = getDB();
+        $stmt = $pdo->prepare('SELECT iep_plan_id FROM iep_intervention_adjustments WHERE id = ? AND deleted_at IS NULL');
+        $stmt->execute([$delId]);
+        $row  = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) {
+            jsonResponse(['success' => false, 'message' => '记录不存在', 'code' => 404], 404);
+        }
+        requireIepInScope((int)$row['iep_plan_id']);
+
+        $del = $pdo->prepare('UPDATE iep_intervention_adjustments SET deleted_at = NOW() WHERE id = ?');
+        $del->execute([$delId]);
+
+        auditLog('delete', 'iep', 'intervention_adjustment', $delId, '', null, null, '删除干预调整记录');
+        jsonResponse(['success' => true, 'message' => '删除成功']);
+    } catch (Throwable $e) {
+        error_log('iep/adjustment_delete error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '删除失败', 'code' => 500], 500);
+    }
+    break;
+
+// ----------------------------------------------------------------------------
+// GET /api/iep/consistency_check - IEP 内在一致性质检
+//   把 IEP 质量量规固化成可执行规则：不属于或不完整的问题在提交审核前被拦下，
+//   而不是等到上级审计或家长质疑时才被发现。
+// ----------------------------------------------------------------------------
+case 'consistency_check':
+    requireAuth();
+    requirePermission('iep_view');
+
+    $ccPlanId = isset($_GET['plan_id']) ? intval($_GET['plan_id']) : 0;
+    if ($ccPlanId <= 0) {
+        jsonResponse(['success' => false, 'message' => 'plan_id 不能为空', 'code' => 400], 400);
+    }
+    requireIepInScope($ccPlanId);
+
+    try {
+        $pdo    = getDB();
+        $result = pa_consistency_check($pdo, $ccPlanId);
+        jsonResponse([
+            'success' => true,
+            'data'    => $result,
+            'message' => $result['passed'] ? '通过一致性质检' : '存在必须处理的问题'
+        ]);
+    } catch (Throwable $e) {
+        error_log('iep/consistency_check error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '质检失败', 'code' => 500], 500);
+    }
+    break;
+
     default:
-        jsonResponse(['success' => false, 'message' => '未知的IEP操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的IEP操作: ' . $action], 404);
 }

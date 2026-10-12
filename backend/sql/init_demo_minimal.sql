@@ -1,4 +1,11 @@
 -- ============================================================
+-- 修复(P2)：本文件原先没有声明客户端字符集。在 character_set_client=gbk 的环境
+-- （中文 Windows 上 mysql 客户端的默认值）下导入，会直接报
+-- ERROR 1267 Illegal mix of collations (utf8mb4_0900_ai_ci,IMPLICIT)
+-- and (gbk_chinese_ci,COERCIBLE)，整份演示数据写不进去。这里显式声明 utf8mb4。
+SET NAMES utf8mb4;
+
+-- ============================================================
 -- 系统初始化后的最小演示数据集（mode=demo 时写入）
 --
 -- 设计原则：

@@ -8,6 +8,26 @@ export type StudentStatus = '在读' | '休学' | '毕业' | '转衔';
 
 export type DisabilityLevel = '轻度' | '中度' | '重度' | '极重度';
 
+/**
+ * 学生附件（student_attachments）。
+ * 字段与 backend/api/students.php「Get attachments」查询列严格一致。
+ * 注：后端目前只有读取（GET /students/get 附带返回），没有上传端点，
+ * 因此该列表当前只可能是空或历史遗留数据。
+ */
+export interface StudentAttachment {
+  id: number;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  file_type: string | null;
+  category: string | null;
+  description: string | null;
+  /** MySQL tinyint 会以字符串回传，故放宽为 number | string */
+  is_confidential: number | string;
+  uploaded_by: number | null;
+  created_at: string;
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -34,12 +54,15 @@ export interface Student {
   enrollment_date: string;
   status: StudentStatus;
   remarks: string;
-  age: number;
+  /** 由 birth_date 计算；出生日期缺失时为 null（展示层渲染为「—」） */
+  age: number | null;
   diagnosis_date: string;
   diagnosis_org: string;
   diagnosis_note: string;
   secondary_disability: string;
   special_needs: string;
+  /** 详情接口（GET /students/get）附带返回，列表接口不带 */
+  attachments?: StudentAttachment[];
 }
 
 export interface ClassItem {

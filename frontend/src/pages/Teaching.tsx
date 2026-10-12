@@ -4,6 +4,8 @@ import {
   fetchTeachingRecords, fetchStudentOptions, createTeachingRecord,
   updateTeachingRecord, deleteTeachingRecord, type StudentOption,
 } from '@/services/teaching';
+import { fetchIEPList, fetchGoalsForPlans } from '@/services/iep';
+import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
 import {
   Search, BookPlus, LayoutList, Calendar as CalendarIcon,
@@ -66,19 +68,13 @@ interface TeachingRecord {
 /* ------------------------------------------------------------------ */
 /*  Mock Data                                                          */
 /* ------------------------------------------------------------------ */
-const STUDENTS = ['王小明', '李小红', '张小刚', '赵小芳', '陈小华', '刘小军', '孙小丽', '周小强'];
-const TEACHERS = ['王老师', '李老师', '张老师', '赵老师'];
-const IEP_GOALS = [
-  '提升语言表达能力（词组到短句）',
-  '增强社交互动技能',
-  '提高生活自理能力（穿衣）',
-  '改善精细动作协调性',
-  '培养情绪管理能力',
-  '提升注意力持续时间',
-  '增强数概念理解',
-  '改善大肌肉运动能力',
-];
-const SUBJECTS = ['语言训练', '社交训练', '生活自理', '认知训练', '感觉统合', '精细动作', '音乐治疗', '美术创作'];
+// 修复(P2)：原文件在此处定义了三份编造数据——STUDENTS / TEACHERS / IEP_GOALS。
+// 其中 IEP_GOALS 是「关联 IEP 目标」下拉的**唯一**选项来源，TEACHERS 从未被使用，
+// STUDENTS 在学生列表为空时兜底出现在学生下拉里。教学记录会直接落库，
+// 选中「王小明」「提升语言表达能力」这类编造值即产生脏数据。
+// 现已全部移除：学生下拉只渲染真实数据（为空时禁用），IEP 目标改为按所选学生
+// 拉取真实计划目标，教师默认值取当前登录用户真实姓名。
+const SUBJECTS =['语言训练', '社交训练', '生活自理', '认知训练', '感觉统合', '精细动作', '音乐治疗', '美术创作'];
 const SESSION_TYPES: Array<'个训' | '小组' | '集体' | '生活实践'> = ['个训', '小组', '集体', '生活实践'];
 
 // 修复（三维度回测 0919 · P2-1）：此处原有的本地 mock 数据生成函数（仅声明、从未渲染）已整体删除，避免被误读为真实数据源。
@@ -220,11 +216,15 @@ function StarRating({
 function CalendarView({
   records,
   onSelectDay,
+  onSelectRecord,
 }: {
   records: TeachingRecord[];
   onSelectDay: (date: string) => void;
+  onSelectRecord?: (record: TeachingRecord) => void;
 }) {
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 0, 1));
+  // 修复(P2)：初始月份原硬编码为 new Date(2025, 0, 1)，在 2026 年打开会停在
+  // 2025 年 1 月，当月的教学记录一条都看不到，需手动翻 20 个月才能回到现在。
+  const [currentMonth, setCurrentMonth] = useState(() => new Date());
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
@@ -330,6 +330,13 @@ function CalendarView({
               {dayRecords.slice(0, 3).map((r, ri) => (
                 <div
                   key={ri}
+                  // 修复(P3)：该条目带 cursor-pointer 视觉上暗示可点击，但原来没有任何 onClick，
+                  // 点了毫无反应。现在点击直接打开该条教学记录详情。
+                  onClick={() => onSelectRecord?.(r)}
+                  role={onSelectRecord ? 'button' : undefined}
+                  tabIndex={onSelectRecord ? 0 : undefined}
+                  onKeyDown={onSelectRecord ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectRecord(r); } } : undefined}
+                  title="点击查看该条教学记录"
                   className="text-xs truncate px-1.5 py-0.5 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity"
                   style={{
                     backgroundColor: `${SUBJECT_COLORS[r.subject] || '#977653'}15`,
@@ -432,13 +439,21 @@ function RecordFormDrawer({
 }) {
   const [recordMode, setRecordMode] = useState<'quick' | 'full'>(initialMode);
 
+  // 修复(P2)：教师默认值原为编造的「王老师」，落库后无法追溯真实授课人。
+  // 改为取当前登录用户真实姓名；取不到时留空，由用户填写。
+  const currentUserName = useAuthStore((s) => s.user?.name ?? '');
+
+  // 修复(P2)：IEP 目标下拉原为写死的 8 条编造目标，改为按所选学生拉取真实计划目标。
+  const [goalOptions, setGoalOptions] = useState<Array<{ value: string; label: string }>>([]);
+  const [goalLoading, setGoalLoading] = useState(false);
+
   const [form, setForm] = useState<Partial<TeachingRecord>>({
     student_name: '',
     date: new Date().toISOString().split('T')[0],
     session_type: '个训',
     subject: '',
     iep_goal: '',
-    teacher: '王老师',
+    teacher: currentUserName,
     teaching_content: '',
     teaching_method: '',
     student_performance: '',
@@ -464,7 +479,7 @@ function RecordFormDrawer({
         session_type: '个训',
         subject: '',
         iep_goal: '',
-        teacher: '王老师',
+        teacher: currentUserName,
         teaching_content: '',
         teaching_method: '',
         student_performance: '',
@@ -482,6 +497,52 @@ function RecordFormDrawer({
   });
 
   const isEditing = !!record;
+
+  // 依赖做成稳定标量，避免 students 数组每次渲染都新建导致 effect 自激
+  const studentsKey = useMemo(() => students.map((s) => String(s.id)).join(','), [students]);
+
+  // 按所选学生拉取真实 IEP 目标：GET /iep/list?student_id= → GET /iep/get?id=
+  useEffect(() => {
+    let cancelled = false;
+    if (!form.student_name) {
+      setGoalOptions([]);
+      setGoalLoading(false);
+      return;
+    }
+    const student = students.find((s) => s.name === form.student_name);
+    if (!student) {
+      setGoalOptions([]);
+      setGoalLoading(false);
+      return;
+    }
+    setGoalLoading(true);
+    (async () => {
+      try {
+        const { list } = await fetchIEPList({ student_id: String(student.id), pageSize: 20 });
+        if (cancelled) return;
+        const planIds = list.map((p) => p.id);
+        const goals = planIds.length > 0 ? await fetchGoalsForPlans(planIds, 5) : [];
+        if (cancelled) return;
+        const seen = new Set<string>();
+        setGoalOptions(
+          goals
+            .filter((g) => !!g.title && !seen.has(g.title))
+            .map((g) => {
+              seen.add(g.title);
+              return { value: g.title, label: g.title };
+            }),
+        );
+      } catch {
+        if (!cancelled) setGoalOptions([]);
+      } finally {
+        if (!cancelled) setGoalLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.student_name, studentsKey]);
 
   const update = (field: string, value: unknown) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -506,7 +567,9 @@ function RecordFormDrawer({
       const quickData: Partial<TeachingRecord> = {
         ...form,
         date: new Date().toISOString().split('T')[0],
-        teacher: form.teacher || '王老师',
+        // 修复(P2)：原为 `|| '王老师'`，教师为空时会把编造姓名写进真实教学记录，
+        // 事后无法追溯真实授课人。改为回落到当前登录用户真实姓名（仍为空则留空）。
+        teacher: form.teacher || currentUserName || '',
         session_type: (form.session_type || '个训') as '个训' | '小组' | '集体' | '生活实践',
         subject: form.subject || SUBJECTS[0],
         teaching_content: form.teaching_content || `${form.student_name} 的 ${form.iep_goal} 训练记录。`,
@@ -614,7 +677,7 @@ function RecordFormDrawer({
                   <SelectValue placeholder="选择学生" />
                 </SelectTrigger>
                 <SelectContent>
-                  {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : STUDENTS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                  {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-[#94A3B8]">暂无可选学生</div>}
                 </SelectContent>
               </Select>
             </motion.div>
@@ -629,12 +692,22 @@ function RecordFormDrawer({
               <label className="block text-base font-semibold text-[#1E293B]">
                 IEP 目标 <span className="text-[#EF4444]">*</span>
               </label>
-              <Select value={form.iep_goal} onValueChange={(v) => update('iep_goal', v)}>
+              <Select
+                value={form.iep_goal}
+                onValueChange={(v) => update('iep_goal', v)}
+                disabled={!form.student_name || goalOptions.length === 0}
+              >
                 <SelectTrigger className="w-full h-12 text-base">
                   <SelectValue placeholder="选择IEP目标" />
                 </SelectTrigger>
                 <SelectContent>
-                  {IEP_GOALS.map((g) => (<SelectItem key={g} value={g}>{g}</SelectItem>))}
+                  {goalOptions.length > 0 ? (
+                    goalOptions.map((g) => (<SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>))
+                  ) : (
+                    <div className="px-2 py-2 text-xs text-[#94A3B8]">
+                      {!form.student_name ? '请先选择学生' : goalLoading ? '正在加载该学生的 IEP 目标…' : '该学生暂无 IEP 目标'}
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </motion.div>
@@ -716,7 +789,7 @@ function RecordFormDrawer({
                   <Select value={form.student_name} onValueChange={(v) => update('student_name', v)}>
                     <SelectTrigger className="w-full"><SelectValue placeholder="选择学生" /></SelectTrigger>
                     <SelectContent>
-                      {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : STUDENTS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                      {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-[#94A3B8]">暂无可选学生</div>}
                     </SelectContent>
                   </Select>
                 </div>
@@ -745,10 +818,20 @@ function RecordFormDrawer({
               <h3 className="text-sm font-semibold text-[#1E293B] mb-3 pb-2 border-b border-[#E2E8F0]">IEP目标关联</h3>
               <div>
                 <label className="block text-sm font-medium text-[#1E293B] mb-1.5">关联IEP目标（可选）</label>
-                <Select value={form.iep_goal} onValueChange={(v) => update('iep_goal', v)}>
+                <Select
+                  value={form.iep_goal}
+                  onValueChange={(v) => update('iep_goal', v)}
+                  disabled={!form.student_name || goalOptions.length === 0}
+                >
                   <SelectTrigger className="w-full"><SelectValue placeholder="选择IEP目标" /></SelectTrigger>
                   <SelectContent>
-                    {IEP_GOALS.map((g) => (<SelectItem key={g} value={g}>{g}</SelectItem>))}
+                    {goalOptions.length > 0 ? (
+                      goalOptions.map((g) => (<SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>))
+                    ) : (
+                      <div className="px-2 py-2 text-xs text-[#94A3B8]">
+                        {!form.student_name ? '请先选择学生' : goalLoading ? '正在加载该学生的 IEP 目标…' : '该学生暂无 IEP 目标'}
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1245,7 +1328,7 @@ export default function Teaching() {
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="学生" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部学生</SelectItem>
-              {studentOptions.length > 0 ? studentOptions.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : STUDENTS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+              {studentOptions.length > 0 ? studentOptions.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-[#94A3B8]">暂无可选学生</div>}
             </SelectContent>
           </Select>
           <Select value={subjectFilter} onValueChange={setSubjectFilter}>
@@ -1511,7 +1594,11 @@ export default function Teaching() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <CalendarView records={filteredRecords} onSelectDay={handleDaySelect} />
+            <CalendarView
+              records={filteredRecords}
+              onSelectDay={handleDaySelect}
+              onSelectRecord={handleViewRecord}
+            />
           </motion.div>
         )}
       </AnimatePresence>

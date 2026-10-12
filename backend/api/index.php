@@ -43,6 +43,16 @@ $moduleFiles = [
     'intervention'      => 'intervention.php',
     // 系统管理员控制台（所有数据 / 初始化 / 一键备份），权限组 1 专属
     'admin'             => 'admin.php',
+    // v8 今日工作台（Step 2：教师的一天）
+    'workbench'         => 'workbench.php',
+    // Step 3：目标起草助手（评估 → IEP 因果链闭合 + 草案留痕）
+    'goal_draft'        => 'goal_draft.php',
+    // Step 4：转衔与家长闭环（转衔目标/转衔服务/家长意见征集/季度进度报告）
+    'transition'        => 'transition.php',
+    // Step 5：轻量校级协同（目标健康度/逾期采集/质检未通过清单）
+    'school'            => 'school.php',
+    // Step 6：开放生态与知识沉淀（数据集导出 + 默认关闭的只读开放接口）
+    'openapi'           => 'openapi.php',
 ];
 
 // Handle module routing
@@ -55,4 +65,4 @@ if (isset($moduleFiles[$module])) {
 }
 
 // Unknown module
-jsonResponse(['success' => false, 'message' => '未知的接口模块: ' . $module]);
+jsonResponse(['success' => false, 'message' => '未知的接口模块: ' . $module], 404);

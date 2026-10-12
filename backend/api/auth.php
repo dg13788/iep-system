@@ -21,7 +21,7 @@ switch ($action) {
     // ============================================================
     case 'login':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -136,7 +136,7 @@ switch ($action) {
             ]);
         } catch (PDOException $e) {
             error_log('Login error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '登录失败，请稍后重试']);
+            jsonResponse(['success' => false, 'message' => '登录失败，请稍后重试'], 500);
         }
         break;
 
@@ -160,7 +160,7 @@ switch ($action) {
             $userInfo = $stmt->fetch();
 
             if (!$userInfo) {
-                jsonResponse(['success' => false, 'message' => '用户不存在或已被禁用']);
+                jsonResponse(['success' => false, 'message' => '用户不存在或已被禁用'], 404);
             }
 
             // Get permission group info (v3)
@@ -196,7 +196,7 @@ switch ($action) {
             jsonResponse(['success' => true, 'data' => $userInfo, 'message' => '获取成功']);
         } catch (PDOException $e) {
             error_log('Get user info error: ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '获取用户信息失败']);
+            jsonResponse(['success' => false, 'message' => '获取用户信息失败'], 500);
         }
         break;
 
@@ -205,7 +205,7 @@ switch ($action) {
     // ============================================================
     case 'parent-login':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -309,10 +309,10 @@ switch ($action) {
                 'message' => '登录成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '登录失败，请稍后重试']);
+            jsonResponse(['success' => false, 'message' => '登录失败，请稍后重试'], 500);
         }
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的认证操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的认证操作: ' . $action], 404);
 }

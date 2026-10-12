@@ -25,6 +25,14 @@ $path = isset($_GET['path']) ? trim($_GET['path'], '/') : '';
 $parts = explode('/', $path);
 $action = isset($parts[1]) ? $parts[1] : '';
 
+// 三级路径支持：原实现只取第二段（$parts[1]），
+// 于是 `case 'communications/create'` 永远匹配不到——POST 创建沟通记录
+// 会静默落到列表分支，教师以为保存成功、实际一条都没写进去。
+// 存在第三段时拼成 'xxx/yyy' 再进 switch。
+if (isset($parts[2]) && $parts[2] !== '') {
+    $action .= '/' . $parts[2];
+}
+
 switch ($action) {
     // ============================================================
     // GET /api/parents/list - Parent accounts list
@@ -107,12 +115,27 @@ switch ($action) {
             $countStmt->execute($countParams);
             $total = intval($countStmt->fetchColumn());
 
+            // v14 真实浏览器冒烟修复：原 SQL 不下发关联学生，前端「关联学生」列
+            // 只能渲染空数组（硬编码 student_names: []），表头有列、内容永远空白。
+            // 口径与 parents/get 详情一致：家长已在数据范围内时，展示其全部关联学生
+            // （详情视图同样不做额外学生范围过滤，列表不引入更严的口径）。
+            $studentNamesSql = '(SELECT GROUP_CONCAT(s.name ORDER BY s.id SEPARATOR \',\')
+                                  FROM student_parents sp INNER JOIN students s ON sp.student_id = s.id
+                                 WHERE sp.parent_id = p.id AND s.deleted_at IS NULL)';
             $stmt = $pdo->prepare(
-                'SELECT p.id, p.name, p.phone, p.email, p.relation, p.is_active, p.last_login_at, p.created_at 
+                'SELECT p.id, p.name, p.phone, p.email, p.relation, p.is_active, p.last_login_at, p.created_at,
+                        ' . $studentNamesSql . ' AS student_names_csv
                  FROM parents p WHERE ' . $whereStr . $scopeClause . ' ORDER BY p.created_at DESC LIMIT ' . $offset . ', ' . $pageSize
             );
             $stmt->execute($queryParams);
             $list = $stmt->fetchAll();
+
+            foreach ($list as &$pr) {
+                $csv = (string)($pr['student_names_csv'] ?? '');
+                $pr['student_names'] = $csv === '' ? [] : explode(',', $csv);
+                unset($pr['student_names_csv']);
+            }
+            unset($pr);
 
             // Audit log
             logDataScopeAccess('parents', $scope['type'], $total);
@@ -123,7 +146,7 @@ switch ($action) {
                 'message' => '查询成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '查询失败']);
+            jsonResponse(['success' => false, 'message' => '查询失败'], 500);
         }
         break;
 
@@ -136,8 +159,9 @@ switch ($action) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
+        requireParentInScope($id);
 
         try {
             $pdo = getDB();
@@ -150,7 +174,7 @@ switch ($action) {
             $parent = $stmt->fetch();
 
             if (!$parent) {
-                jsonResponse(['success' => false, 'message' => '家长不存在']);
+                jsonResponse(['success' => false, 'message' => '家长不存在'], 404);
             }
 
             // Get linked students
@@ -167,7 +191,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => $parent, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -179,7 +203,7 @@ switch ($action) {
         requirePermission('parent_manage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -187,7 +211,7 @@ switch ($action) {
         $phone = isset($input['phone']) ? trim($input['phone']) : '';
 
         if (empty($name) || empty($phone)) {
-            jsonResponse(['success' => false, 'message' => '姓名和手机号不能为空']);
+            jsonResponse(['success' => false, 'message' => '姓名和手机号不能为空'], 400);
         }
 
         $relation = isset($input['relation']) ? trim($input['relation']) : '';
@@ -212,9 +236,9 @@ switch ($action) {
             jsonResponse(['success' => true, 'data' => ['id' => $parentId], 'message' => '创建成功，初始密码为手机号后6位']);
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
-                jsonResponse(['success' => false, 'message' => '手机号已存在']);
+                jsonResponse(['success' => false, 'message' => '手机号已存在'], 409);
             }
-            jsonResponse(['success' => false, 'message' => '创建失败']);
+            jsonResponse(['success' => false, 'message' => '创建失败'], 500);
         }
         break;
 
@@ -226,13 +250,13 @@ switch ($action) {
         requirePermission('parent_manage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         $updatableFields = ['name', 'phone', 'relation', 'email', 'address', 'is_active'];
@@ -248,7 +272,7 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
@@ -263,9 +287,9 @@ switch ($action) {
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
-                jsonResponse(['success' => false, 'message' => '手机号已存在']);
+                jsonResponse(['success' => false, 'message' => '手机号已存在'], 409);
             }
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -277,13 +301,13 @@ switch ($action) {
         requirePermission('parent_manage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -295,7 +319,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -310,7 +334,7 @@ switch ($action) {
 
         $parentId = isset($_GET['parent_id']) ? intval($_GET['parent_id']) : 0;
         if ($parentId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -328,7 +352,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => $students, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -340,7 +364,7 @@ switch ($action) {
         requirePermission('parent_manage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -348,7 +372,7 @@ switch ($action) {
         $studentId = isset($input['student_id']) ? intval($input['student_id']) : 0;
 
         if ($parentId <= 0 || $studentId <= 0) {
-            jsonResponse(['success' => false, 'message' => '家长ID和学生ID不能为空']);
+            jsonResponse(['success' => false, 'message' => '家长ID和学生ID不能为空'], 400);
         }
 
         $relation = isset($input['relation']) ? trim($input['relation']) : '';
@@ -364,9 +388,9 @@ switch ($action) {
             jsonResponse(['success' => true, 'message' => '关联成功']);
         } catch (PDOException $e) {
             if ($e->getCode() == 23000) {
-                jsonResponse(['success' => false, 'message' => '该家长已关联此学生']);
+                jsonResponse(['success' => false, 'message' => '该家长已关联此学生'], 409);
             }
-            jsonResponse(['success' => false, 'message' => '关联失败']);
+            jsonResponse(['success' => false, 'message' => '关联失败'], 500);
         }
         break;
 
@@ -378,7 +402,7 @@ switch ($action) {
         requirePermission('parent_manage');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -386,7 +410,7 @@ switch ($action) {
         $studentId = isset($input['student_id']) ? intval($input['student_id']) : 0;
 
         if ($parentId <= 0 || $studentId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -396,7 +420,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '取消关联成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '取消关联失败']);
+            jsonResponse(['success' => false, 'message' => '取消关联失败'], 500);
         }
         break;
 
@@ -405,7 +429,7 @@ switch ($action) {
     // ============================================================
     case 'login':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -413,7 +437,7 @@ switch ($action) {
         $password = isset($input['password']) ? $input['password'] : '';
 
         if (empty($phone) || empty($password)) {
-            jsonResponse(['success' => false, 'message' => '手机号和密码不能为空']);
+            jsonResponse(['success' => false, 'message' => '手机号和密码不能为空'], 400);
         }
 
         try {
@@ -426,13 +450,13 @@ switch ($action) {
             $parent = $stmt->fetch();
 
             if (!$parent) {
-                jsonResponse(['success' => false, 'message' => '手机号或密码错误']);
+                jsonResponse(['success' => false, 'message' => '手机号或密码错误'], 401);
             }
             if (!$parent['is_active']) {
-                jsonResponse(['success' => false, 'message' => '账号已被禁用']);
+                jsonResponse(['success' => false, 'message' => '账号已被禁用'], 401);
             }
             if (!password_verify($password, $parent['password_hash'])) {
-                jsonResponse(['success' => false, 'message' => '手机号或密码错误']);
+                jsonResponse(['success' => false, 'message' => '手机号或密码错误'], 401);
             }
 
             // Update login info
@@ -463,7 +487,7 @@ switch ($action) {
                 'message' => '登录成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '登录失败']);
+            jsonResponse(['success' => false, 'message' => '登录失败'], 500);
         }
         break;
 
@@ -571,7 +595,7 @@ switch ($action) {
                 'message' => '查询成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '查询失败']);
+            jsonResponse(['success' => false, 'message' => '查询失败'], 500);
         }
         break;
 
@@ -583,7 +607,7 @@ switch ($action) {
         requirePermission('parents.communication_create');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -591,7 +615,7 @@ switch ($action) {
         $content = isset($input['content']) ? trim($input['content']) : '';
 
         if ($studentId <= 0 || empty($content)) {
-            jsonResponse(['success' => false, 'message' => '学生ID和沟通内容不能为空']);
+            jsonResponse(['success' => false, 'message' => '学生ID和沟通内容不能为空'], 400);
         }
 
         $user = getCurrentUser();
@@ -623,7 +647,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => ['id' => $commId], 'message' => '创建成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '创建失败']);
+            jsonResponse(['success' => false, 'message' => '创建失败'], 500);
         }
         break;
 
@@ -632,9 +656,22 @@ switch ($action) {
     // ============================================================
     case 'signatures':
         requireAuth();
+        requirePermission('parent_view');
 
         $parentId = isset($_GET['parent_id']) ? intval($_GET['parent_id']) : 0;
         $planId = isset($_GET['plan_id']) ? intval($_GET['plan_id']) : 0;
+
+        // 此前 $where 以 '1=1' 起步，两个参数都不传就返回全校签署台账，
+        // 而且连 parent_view 权限都不校验——只读督导和家长账号一次 GET 就能拖走。
+        if ($parentId <= 0 && $planId <= 0) {
+            jsonResponse(['success' => false, 'message' => '请至少提供 parent_id 或 plan_id 之一'], 400);
+        }
+        if ($planId > 0) {
+            requireIepInScope($planId);
+        }
+        if ($parentId > 0) {
+            requireParentInScope($parentId);
+        }
 
         try {
             $pdo = getDB();
@@ -665,7 +702,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => $signatures, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -674,11 +711,14 @@ switch ($action) {
     // ============================================================
     case 'children':
         $user = getCurrentUser();
-        if (!$user || !isset($user['type']) || $user['type'] !== 'parent') {
-            jsonResponse(['success' => false, 'message' => '仅限家长访问']);
+        // 原判定只认 JWT type='parent'，而 users 表里的家长角色账号（如演示家长 parent1）
+        // 根本没有该声明 → 「仅限家长访问」，家长端连自己的孩子列表都拿不到。
+        // 且 $parentId 直接取 $user['sub']，对这类账号拿到的是 users.id 而非 parents.id，
+        // 会按家长表主键错位查到另一个家庭的孩子。改用统一身份解析。
+        $parentId = currentParentId($user);
+        if ($parentId === null) {
+            jsonResponse(['success' => false, 'message' => '仅限家长访问', 'code' => 403], 403);
         }
-
-        $parentId = intval($user['sub']);
 
         try {
             $pdo = getDB();
@@ -696,7 +736,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => $children, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -709,7 +749,7 @@ switch ($action) {
 
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
-            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format]);
+            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
         }
 
         try {
@@ -743,7 +783,7 @@ switch ($action) {
 
             io_download($format, '家长账号', $headers, $rows);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '导出失败']);
+            jsonResponse(['success' => false, 'message' => '导出失败'], 500);
         }
         break;
 
@@ -755,7 +795,7 @@ switch ($action) {
         requirePermission('parent_import');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $filename = isset($_FILES['file']['name']) ? $_FILES['file']['name'] : '';
@@ -775,7 +815,7 @@ switch ($action) {
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
-            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])]);
+            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])], 400);
         }
         $colIndex = $map['colIndex'];
 
@@ -836,5 +876,5 @@ switch ($action) {
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的家长操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的家长操作: ' . $action], 404);
 }

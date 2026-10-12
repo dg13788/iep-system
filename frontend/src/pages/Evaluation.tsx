@@ -27,6 +27,10 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Wand2,
+  Heart,
+  BookOpen,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   BarChart,
@@ -58,11 +62,18 @@ import { ioExportDownload } from '@/utils/ioExport';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import {
   fetchAssessments,
+  fetchAssessment,
+  fetchAssessmentTemplates,
+  fetchTemplateItems,
   createAssessment,
   updateAssessment,
   deleteAssessment,
+  type AssessmentTypeOption,
 } from '@/services/evaluation';
+import { fetchIEPList } from '@/services/iep';
+import GoalDraftDrawer from '@/pages/iep/GoalDraftDrawer';
 import { fetchStudents as fetchStudentsList } from '@/services/students';
+import { useAuthStore } from '@/store/authStore';
 
 /* ─── Data Scope Badge ─── */
 function DataScopeBadge() {
@@ -123,7 +134,10 @@ interface EvaluationRecord {
   className: string;
   templateId: string;
   templateName: string;
+  /** 字典编码（initial/midterm/final/annual） */
   assessmentType: string;
+  /** 字典展示名（初期评估…），由后端随列表下发 */
+  assessmentTypeLabel: string;
   assessmentDate: string;
   assessor: string;
   totalScore: number;
@@ -131,6 +145,8 @@ interface EvaluationRecord {
   status: 'completed' | 'in_progress' | 'draft';
   scores: Record<string, Record<string, number>>;
   notes: Record<string, Record<string, string>>;
+  /** 详情接口返回的条目得分（编辑态回填用） */
+  items?: { dimension: string; item_name: string; score: number; max_score: number; notes: string }[];
   recommendations?: string;
 }
 
@@ -142,229 +158,36 @@ interface Student {
   disabilityType: string;
 }
 
-/* ─── Mock Data: Templates ─── */
+/**
+ * v14：模板卡片图标按分类取（原 mock 模板自带 icon 字段，真实模板没有，
+ * 全部落回 brain 图标）。分类取值见 assessment_templates.category。
+ */
+const CATEGORY_ICON_STYLE: Record<string, { icon: React.ReactNode; color: string }> = {
+  '认知发展': { icon: <Brain className="w-8 h-8" style={{ color: '#977653' }} />, color: '#977653' },
+  '沟通交往': { icon: <MessageSquare className="w-8 h-8" style={{ color: '#3B82F6' }} />, color: '#3B82F6' },
+  '运动能力': { icon: <Activity className="w-8 h-8" style={{ color: '#10B981' }} />, color: '#10B981' },
+  '社会适应': { icon: <Users className="w-8 h-8" style={{ color: '#F59E0B' }} />, color: '#F59E0B' },
+  '生活自理': { icon: <HomeIcon className="w-8 h-8" style={{ color: '#405680' }} />, color: '#405680' },
+  '情绪行为': { icon: <Heart className="w-8 h-8" style={{ color: '#EC4899' }} />, color: '#EC4899' },
+  '学业准备': { icon: <BookOpen className="w-8 h-8" style={{ color: '#8B5CF6' }} />, color: '#8B5CF6' },
+  '课程本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: '#0EA5E9' }} />, color: '#0EA5E9' },
+  '能力本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: '#14B8A6' }} />, color: '#14B8A6' },
+  '专项评估': { icon: <FileText className="w-8 h-8" style={{ color: '#64748B' }} />, color: '#64748B' },
+};
 
-const templates: AssessmentTemplate[] = [
-  {
-    id: 't1',
-    name: '认知发展评估',
-    category: '认知发展',
-    icon: 'brain',
-    color: '#977653',
-    description: '注意力、记忆力、逻辑思维等维度',
-    dimensions: [
-      {
-        id: 'd1',
-        name: '注意力',
-        items: [
-          { id: 'i1', name: '视觉注意力', description: '能否持续关注视觉目标5分钟以上', maxScore: 5 },
-          { id: 'i2', name: '听觉注意力', description: '能否听从3步以上指令', maxScore: 5 },
-          { id: 'i3', name: '注意力分配', description: '能否同时处理两项任务', maxScore: 5 },
-          { id: 'i4', name: '注意力转移', description: '能否根据指令灵活转移注意力', maxScore: 5 },
-        ],
-      },
-      {
-        id: 'd2',
-        name: '记忆力',
-        items: [
-          { id: 'i5', name: '瞬时记忆', description: '能否记住5-7个数字或物品', maxScore: 5 },
-          { id: 'i6', name: '短时记忆', description: '30分钟后能否回忆所学内容', maxScore: 5 },
-          { id: 'i7', name: '长时记忆', description: '能否回忆一周前学习的内容', maxScore: 5 },
-        ],
-      },
-      {
-        id: 'd3',
-        name: '逻辑思维',
-        items: [
-          { id: 'i8', name: '分类能力', description: '能否按颜色、形状等特征分类', maxScore: 5 },
-          { id: 'i9', name: '排序能力', description: '能否按大小、长短排序', maxScore: 5 },
-          { id: 'i10', name: '因果关系', description: '能否理解简单因果关系', maxScore: 5 },
-        ],
-      },
-      {
-        id: 'd4',
-        name: '问题解决',
-        items: [
-          { id: 'i11', name: '简单问题', description: '能否解决一步推理问题', maxScore: 5 },
-          { id: 'i12', name: '多步问题', description: '能否解决需要2-3步的问题', maxScore: 5 },
-        ],
-      },
-      {
-        id: 'd5',
-        name: '概念形成',
-        items: [
-          { id: 'i13', name: '数量概念', description: '能否理解10以内数量', maxScore: 5 },
-          { id: 'i14', name: '时间概念', description: '能否理解昨天、今天、明天', maxScore: 5 },
-          { id: 'i15', name: '空间概念', description: '能否理解上下左右前后', maxScore: 5 },
-        ],
-      },
-    ],
-  },
-  {
-    id: 't2',
-    name: '语言能力评估',
-    category: '语言能力',
-    icon: 'message',
-    color: '#3B82F6',
-    description: '理解、表达、阅读、书写等维度',
-    dimensions: [
-      { id: 'd6', name: '语言理解', items: [
-        { id: 'i16', name: '名词理解', description: '能否理解常见名词100个以上', maxScore: 5 },
-        { id: 'i17', name: '动词理解', description: '能否理解常见动词50个以上', maxScore: 5 },
-        { id: 'i18', name: '句子理解', description: '能否理解复杂句子', maxScore: 5 },
-      ]},
-      { id: 'd7', name: '语言表达', items: [
-        { id: 'i19', name: '单词表达', description: '能否主动使用单词表达需求', maxScore: 5 },
-        { id: 'i20', name: '句子表达', description: '能否使用完整句子表达', maxScore: 5 },
-        { id: 'i21', name: '描述能力', description: '能否描述图片或事件', maxScore: 5 },
-      ]},
-      { id: 'd8', name: '阅读能力', items: [
-        { id: 'i22', name: '识字量', description: '能否识别100个以上常用汉字', maxScore: 5 },
-        { id: 'i23', name: '阅读理解', description: '能否理解简单短文', maxScore: 5 },
-      ]},
-      { id: 'd9', name: '书写能力', items: [
-        { id: 'i24', name: '握笔姿势', description: '握笔姿势是否正确', maxScore: 5 },
-        { id: 'i25', name: '字形书写', description: '能否正确书写常见汉字', maxScore: 5 },
-        { id: 'i26', name: '书写工整', description: '书写是否工整清晰', maxScore: 5 },
-      ]},
-    ],
-  },
-  {
-    id: 't3',
-    name: '运动能力评估',
-    category: '运动能力',
-    icon: 'activity',
-    color: '#10B981',
-    description: '大肌肉、精细动作、协调性等维度',
-    dimensions: [
-      { id: 'd10', name: '大肌肉动作', items: [
-        { id: 'i27', name: '跑', description: '能否平稳跑步20米以上', maxScore: 5 },
-        { id: 'i28', name: '跳', description: '能否双脚连续跳跃', maxScore: 5 },
-        { id: 'i29', name: '投掷', description: '能否准确投掷到目标', maxScore: 5 },
-        { id: 'i30', name: '平衡', description: '单脚站立能否超过5秒', maxScore: 5 },
-      ]},
-      { id: 'd11', name: '精细动作', items: [
-        { id: 'i31', name: '穿珠', description: '能否将珠子穿入细绳', maxScore: 5 },
-        { id: 'i32', name: '剪纸', description: '能否沿直线剪纸', maxScore: 5 },
-        { id: 'i33', name: '折纸', description: '能否完成简单折纸', maxScore: 5 },
-      ]},
-      { id: 'd12', name: '手眼协调', items: [
-        { id: 'i34', name: '搭积木', description: '能否搭8块以上积木不倒', maxScore: 5 },
-        { id: 'i35', name: '连线', description: '能否沿虚线连线', maxScore: 5 },
-        { id: 'i36', name: '涂色', description: '能否在轮廓内涂色', maxScore: 5 },
-      ]},
-      { id: 'd13', name: '生活动作', items: [
-        { id: 'i37', name: '翻书', description: '能否逐页翻书', maxScore: 5 },
-        { id: 'i38', name: '拧瓶盖', description: '能否独立拧开瓶盖', maxScore: 5 },
-      ]},
-    ],
-  },
-  {
-    id: 't4',
-    name: '社交适应评估',
-    category: '社交适应',
-    icon: 'users',
-    color: '#F59E0B',
-    description: '人际互动、情绪管理、规则意识等维度',
-    dimensions: [
-      { id: 'd14', name: '人际互动', items: [
-        { id: 'i39', name: '眼神接触', description: '交流时能否保持眼神接触', maxScore: 5 },
-        { id: 'i40', name: '主动交往', description: '能否主动与同伴互动', maxScore: 5 },
-        { id: 'i41', name: '合作游戏', description: '能否参与合作性游戏', maxScore: 5 },
-      ]},
-      { id: 'd15', name: '情绪管理', items: [
-        { id: 'i42', name: '情绪识别', description: '能否识别自己和他人的情绪', maxScore: 5 },
-        { id: 'i43', name: '情绪表达', description: '能否适当表达情绪', maxScore: 5 },
-        { id: 'i44', name: '情绪调节', description: '能否在帮助下平复情绪', maxScore: 5 },
-      ]},
-      { id: 'd16', name: '规则意识', items: [
-        { id: 'i45', name: '遵守规则', description: '能否遵守课堂规则', maxScore: 5 },
-        { id: 'i46', name: '轮流等待', description: '能否学会轮流和等待', maxScore: 5 },
-        { id: 'i47', name: '安全意识', description: '是否具备基本安全意识', maxScore: 5 },
-      ]},
-    ],
-  },
-  {
-    id: 't5',
-    name: '生活自理评估',
-    category: '生活自理',
-    icon: 'home',
-    color: '#405680',
-    description: '饮食、穿衣、卫生、出行等维度',
-    dimensions: [
-      { id: 'd17', name: '饮食自理', items: [
-        { id: 'i48', name: '使用餐具', description: '能否正确使用勺子、筷子', maxScore: 5 },
-        { id: 'i49', name: '饮水', description: '能否独立打开水杯饮水', maxScore: 5 },
-        { id: 'i50', name: '进食习惯', description: '能否保持桌面整洁', maxScore: 5 },
-      ]},
-      { id: 'd18', name: '穿脱衣物', items: [
-        { id: 'i51', name: '穿脱外套', description: '能否独立穿脱外套', maxScore: 5 },
-        { id: 'i52', name: '穿脱鞋袜', description: '能否独立穿脱鞋袜', maxScore: 5 },
-        { id: 'i53', name: '整理衣物', description: '能否叠放衣物', maxScore: 5 },
-      ]},
-      { id: 'd19', name: '个人卫生', items: [
-        { id: 'i54', name: '洗手', description: '能否按步骤正确洗手', maxScore: 5 },
-        { id: 'i55', name: '刷牙', description: '能否独立刷牙', maxScore: 5 },
-        { id: 'i56', name: '洗脸', description: '能否独立洗脸', maxScore: 5 },
-      ]},
-      { id: 'd20', name: '如厕技能', items: [
-        { id: 'i57', name: '表达需求', description: '能否表达如厕需求', maxScore: 5 },
-        { id: 'i58', name: '如厕自理', description: '能否独立完成如厕过程', maxScore: 5 },
-      ]},
-      { id: 'd21', name: '出行安全', items: [
-        { id: 'i59', name: '安全过马路', description: '能否看红绿灯过马路', maxScore: 5 },
-        { id: 'i60', name: '交通规则', description: '能否理解基本交通规则', maxScore: 5 },
-      ]},
-    ],
-  },
-];
+function templateIcon(t: AssessmentTemplate): React.ReactNode {
+  return CATEGORY_ICON_STYLE[t.category]?.icon ?? <FileText className="w-8 h-8" style={{ color: '#977653' }} />;
+}
 
-const templateMap = new Map(templates.map((t) => [t.id, t]));
+function templateColor(t: AssessmentTemplate): string {
+  return CATEGORY_ICON_STYLE[t.category]?.color ?? '#977653';
+}
 
-function getTemplateMaxScore(templateId: string): number {
-  const t = templateMap.get(templateId);
+/** 模板满分：各维度条目满分之和（随选中模板实时计算，不再查 mock 映射表） */
+function calcTemplateMaxScore(t: AssessmentTemplate | null): number {
   if (!t) return 100;
   return t.dimensions.reduce((sum, d) => sum + d.items.reduce((s, i) => s + i.maxScore, 0), 0);
 }
-
-/* ─── Mock Data: Students ─── */
-
-const students: Student[] = [
-  { id: 's1', name: '王小明', studentNo: '2024001', className: '特教一班', disabilityType: '智力发育迟缓' },
-  { id: 's2', name: '李小红', studentNo: '2024002', className: '特教一班', disabilityType: '自闭症谱系障碍' },
-  { id: 's3', name: '张小刚', studentNo: '2024003', className: '特教二班', disabilityType: '唐氏综合征' },
-  { id: 's4', name: '刘小美', studentNo: '2024004', className: '特教二班', disabilityType: '智力发育迟缓' },
-  { id: 's5', name: '陈小军', studentNo: '2024005', className: '特教三班', disabilityType: '脑瘫' },
-  { id: 's6', name: '赵小芳', studentNo: '2024006', className: '特教三班', disabilityType: '自闭症谱系障碍' },
-  { id: 's7', name: '孙小亮', studentNo: '2024007', className: '特教一班', disabilityType: '语言发育迟缓' },
-  { id: 's8', name: '周小静', studentNo: '2024008', className: '特教二班', disabilityType: '智力发育迟缓' },
-  { id: 's9', name: '吴小强', studentNo: '2024009', className: '特教一班', disabilityType: '注意力缺陷' },
-  { id: 's10', name: '马小丽', studentNo: '2024010', className: '特教三班', disabilityType: '唐氏综合征' },
-];
-
-/* ─── Mock Data: Evaluation Records ─── */
-
-const initialRecords: EvaluationRecord[] = [
-  { id: 'e1', studentId: 's1', studentName: '王小明', studentNo: '2024001', className: '特教一班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-15', assessor: '张老师', totalScore: 68, maxScore: 85, status: 'completed', scores: {}, notes: {}, recommendations: '建议加强注意力训练和逻辑思维能力培养。' },
-  { id: 'e2', studentId: 's2', studentName: '李小红', studentNo: '2024002', className: '特教一班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-14', assessor: '李老师', totalScore: 42, maxScore: 75, status: 'completed', scores: {}, notes: {}, recommendations: '需要加强语言表达和理解训练，建议每日进行语言互动练习。' },
-  { id: 'e3', studentId: 's3', studentName: '张小刚', studentNo: '2024003', className: '特教二班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-13', assessor: '王老师', totalScore: 55, maxScore: 80, status: 'completed', scores: {}, notes: {} },
-  { id: 'e4', studentId: 's4', studentName: '刘小美', studentNo: '2024004', className: '特教二班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-12', assessor: '张老师', totalScore: 38, maxScore: 70, status: 'completed', scores: {}, notes: {} },
-  { id: 'e5', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '特教三班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-11', assessor: '赵老师', totalScore: 45, maxScore: 65, status: 'completed', scores: {}, notes: {} },
-  { id: 'e6', studentId: 's6', studentName: '赵小芳', studentNo: '2024006', className: '特教三班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-10', assessor: '张老师', totalScore: 35, maxScore: 85, status: 'in_progress', scores: {}, notes: {} },
-  { id: 'e7', studentId: 's7', studentName: '孙小亮', studentNo: '2024007', className: '特教一班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-09', assessor: '李老师', totalScore: 50, maxScore: 75, status: 'completed', scores: {}, notes: {} },
-  { id: 'e8', studentId: 's8', studentName: '周小静', studentNo: '2024008', className: '特教二班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-08', assessor: '王老师', totalScore: 62, maxScore: 80, status: 'completed', scores: {}, notes: {} },
-  { id: 'e9', studentId: 's9', studentName: '吴小强', studentNo: '2024009', className: '特教一班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-07', assessor: '张老师', totalScore: 28, maxScore: 70, status: 'draft', scores: {}, notes: {} },
-  { id: 'e10', studentId: 's10', studentName: '马小丽', studentNo: '2024010', className: '特教三班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-06', assessor: '赵老师', totalScore: 52, maxScore: 65, status: 'completed', scores: {}, notes: {} },
-  { id: 'e11', studentId: 's1', studentName: '王小明', studentNo: '2024001', className: '特教一班', templateId: 't4', templateName: '社交适应评估', assessmentType: '社交适应', assessmentDate: '2025-01-05', assessor: '张老师', totalScore: 48, maxScore: 70, status: 'completed', scores: {}, notes: {} },
-  { id: 'e12', studentId: 's2', studentName: '李小红', studentNo: '2024002', className: '特教一班', templateId: 't1', templateName: '认知发展评估', assessmentType: '认知发展', assessmentDate: '2025-01-04', assessor: '李老师', totalScore: 55, maxScore: 85, status: 'completed', scores: {}, notes: {} },
-  { id: 'e13', studentId: 's3', studentName: '张小刚', studentNo: '2024003', className: '特教二班', templateId: 't2', templateName: '语言能力评估', assessmentType: '语言能力', assessmentDate: '2025-01-03', assessor: '李老师', totalScore: 30, maxScore: 75, status: 'in_progress', scores: {}, notes: {} },
-  { id: 'e14', studentId: 's4', studentName: '刘小美', studentNo: '2024004', className: '特教二班', templateId: 't5', templateName: '生活自理评估', assessmentType: '生活自理', assessmentDate: '2025-01-02', assessor: '赵老师', totalScore: 40, maxScore: 65, status: 'completed', scores: {}, notes: {} },
-  { id: 'e15', studentId: 's5', studentName: '陈小军', studentNo: '2024005', className: '特教三班', templateId: 't3', templateName: '运动能力评估', assessmentType: '运动能力', assessmentDate: '2025-01-01', assessor: '王老师', totalScore: 48, maxScore: 80, status: 'completed', scores: {}, notes: {} },
-];
-
-/* Data scope filtering is now applied server-side; these module-level consts were dead code
-   (filterByDataScope is pass-through). Initial state below uses the raw mock arrays as skeletons
-   and is replaced by fetched data on mount. */
 
 /**
  * 修复说明(P0-2)：原先此处为 `const readOnly = isReadOnly();`，
@@ -390,6 +213,21 @@ const typeBadgeColor: Record<string, string> = {
   '生活自理': 'bg-[#F0F2F5] text-[#405680]',
 };
 
+/**
+ * v14：评估类型字典兜底常量。
+ * 唯一口径是后端 /assessments/list 随列表下发的 assessment_types（dict_common）。
+ * 此前前端硬编码「认知发展/语言能力/运动能力/社交适应/生活自理」旧五类做筛选，
+ * 与存量数据（全部 initial）完全对不上——选任何一项都查不到记录；
+ * 而新建评估落库的又是模板分类（课程本位/专项评估…），三套口径互相矛盾。
+ * 此处仅在接口未下发字典时兜底，避免"加载失败"被渲染成"没有类型可选"。
+ */
+const FALLBACK_ASSESSMENT_TYPES: AssessmentTypeOption[] = [
+  { code: 'initial', name: '初期评估' },
+  { code: 'midterm', name: '中期评估' },
+  { code: 'final', name: '末期评估' },
+  { code: 'annual', name: '年度评估' },
+];
+
 const scoreColors = [
   '',
   'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]',
@@ -398,14 +236,6 @@ const scoreColors = [
   'bg-[#F5F0EB] text-[#5C4832] border-[#D6C8B8]',
   'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]',
 ];
-
-const templateQuickIcons: Record<string, React.ReactNode> = {
-  brain: <Brain className="w-8 h-8" style={{ color: '#977653' }} />,
-  message: <MessageSquare className="w-8 h-8" style={{ color: '#3B82F6' }} />,
-  activity: <Activity className="w-8 h-8" style={{ color: '#10B981' }} />,
-  users: <Users className="w-8 h-8" style={{ color: '#F59E0B' }} />,
-  home: <HomeIcon className="w-8 h-8" style={{ color: '#405680' }} />,
-};
 
 function getGradeLabel(pct: number): { label: string; color: string } {
   if (pct >= 90) return { label: '优秀', color: 'text-[#059669]' };
@@ -420,6 +250,28 @@ export default function Evaluation() {
   /* P0-2 修复：在组件内订阅 authStore 求值，避免模块顶层冻结为只读 */
   const readOnly = useIsReadOnly();
 
+  /* Step 3：从评估起草 IEP 目标 */
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draftPlanId, setDraftPlanId] = useState<number | null>(null);
+  const [draftAssessmentId, setDraftAssessmentId] = useState<number | null>(null);
+
+  /** 评估 → IEP 的落点：找到该学生的 IEP 计划，把本次评估带进起草抽屉 */
+  const handleDraftGoals = useCallback(async (record: EvaluationRecord) => {
+    try {
+      const r = await fetchIEPList({ student_id: record.studentId, pageSize: 100 });
+      const plan = (r.list ?? [])[0];
+      if (!plan) {
+        toast.error('该学生还没有 IEP 计划，请先创建计划再据此起草目标');
+        return;
+      }
+      setDraftPlanId(Number(plan.id));
+      setDraftAssessmentId(Number(record.id));
+      setDraftOpen(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '未找到可用的 IEP 计划');
+    }
+  }, []);
+
   /* List state */
   // 修复（三维度回测 0919 · P1-3 评估记录 mock 初始态）：
   // 原实现以本地 mock 数组作为初始 state，后端尚未返回甚至加载失败时，
@@ -427,6 +279,8 @@ export default function Evaluation() {
   // 特教老师极可能把它当成真实评估记录。改为空态，由接口数据填充。
   const [records, setRecords] = useState<EvaluationRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
+  // v14：评估类型字典由后端随列表下发（ADR-033），兜底常量防"加载失败=无可选项"
+  const [assessmentTypes, setAssessmentTypes] = useState<AssessmentTypeOption[]>(FALLBACK_ASSESSMENT_TYPES);
   const [search, setSearch] = useState('');
   const [studentFilter, setStudentFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -437,18 +291,39 @@ export default function Evaluation() {
 
   /* Drawer state */
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<'new' | 'detail'>('new');
+  const [drawerMode, setDrawerMode] = useState<'new' | 'edit' | 'detail'>('new');
   const [activeRecord, setActiveRecord] = useState<EvaluationRecord | null>(null);
+  /** v14：编辑态下被编辑的记录 id（草稿/进行中可继续编辑） */
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   // P3-1 修复：自研抽屉支持 Esc 关闭
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   useDrawerA11y(drawerOpen, closeDrawer);
+
+  /* v14：评估模板改从后端真实模板库拉取。
+   * 原实现用模块级 mock 模板（t1-t5「认知发展评估」等）：点卡片创建的评估
+   * template_id 为空（'t1' → NaN → undefined）、条目是 mock 内容，
+   * 与模板管理页维护的 30 个真实模板完全割裂。 */
+  const [templates, setTemplates] = useState<AssessmentTemplate[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateItemsLoading, setTemplateItemsLoading] = useState(false);
 
   /* New assessment flow state */
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedTemplate, setSelectedTemplate] = useState<AssessmentTemplate | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [assessmentDate, setAssessmentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [assessor, setAssessor] = useState('张老师');
+  // v14：评估者默认取当前登录用户。原实现预填虚构人名「张老师」，而后端落库的
+  // assessor_id 恒为当前用户（createAssessment 的 payload 里根本没有评估者字段）——
+  // 表单显示与档案归属不一致，在特教评估档案里属于归因错误。输入框同步改为只读。
+  const currentUserName = useAuthStore((s) => s.user?.name ?? '');
+  const [assessor, setAssessor] = useState('');
+  useEffect(() => {
+    if (currentUserName && assessor === '') setAssessor(currentUserName);
+  }, [currentUserName, assessor]);
+  // v14：评估类型由教师按字典选择（初期/中期/末期/年度评估）。
+  // 原实现取模板分类（课程本位/专项评估…）——分类与类型是两个维度，混用后
+  // ①写入非字典值 ②按类型筛选永远查不到新建记录。默认初期评估。
+  const [newAssessmentType, setNewAssessmentType] = useState('initial');
   const [assessmentEnv, setAssessmentEnv] = useState('教室');
   const [studentState, setStudentState] = useState('');
   const [toolsUsed, setToolsUsed] = useState('');
@@ -473,6 +348,9 @@ export default function Evaluation() {
     try {
       const res = await fetchAssessments({ page: 1, pageSize: 100 });
       setRecords(res.list);
+      if (res.assessmentTypes.length > 0) {
+        setAssessmentTypes(res.assessmentTypes);
+      }
     } catch {
       // 保持空列表，UI 已提供兜底文案
     } finally {
@@ -482,6 +360,14 @@ export default function Evaluation() {
 
   useEffect(() => {
     loadRecords();
+    // v14：真实模板库（原 mock 模板整段已删）
+    setTemplatesLoading(true);
+    fetchAssessmentTemplates()
+      .then((list) => setTemplates(list))
+      .catch(() => {
+        // 加载失败保持空列表，模板选择区显示"暂无可选模板"而非 mock 假模板
+      })
+      .finally(() => setTemplatesLoading(false));
     fetchStudentsList({ page: 1, pageSize: 200, sort_field: 'created_at', sort_order: 'asc' })
       .then((res) => {
         if (res.list.length > 0) {
@@ -495,7 +381,7 @@ export default function Evaluation() {
         }
       })
       .catch(() => {
-        // 后端不可用时回退本地 mock 学生列表
+        // 后端不可用时保持空下拉，不得回退假学生
       });
   }, [loadRecords]);
 
@@ -545,11 +431,14 @@ export default function Evaluation() {
 
   const openNewAssessment = (template?: AssessmentTemplate) => {
     setDrawerMode('new');
+    setEditingRecordId(null);
     setCurrentStep(1);
     setSelectedStudent(null);
     setSelectedTemplate(template || null);
     setAssessmentDate(new Date().toISOString().split('T')[0]);
-    setAssessor('张老师');
+    // v14：评估者取当前登录用户，不再重置为虚构人名
+    setAssessor(currentUserName);
+    setNewAssessmentType('initial');
     setAssessmentEnv('教室');
     setStudentState('');
     setToolsUsed('');
@@ -558,26 +447,130 @@ export default function Evaluation() {
     setItemNotes({});
     setRecommendations('');
     setStudentSearch('');
-    if (template && template.dimensions.length > 0) {
-      setActiveDimension(template.dimensions[0].id);
-    }
+    setActiveDimension('');
     setDrawerOpen(true);
+    // v14：选中模板后异步拉取真实条目（模板列表接口不含维度/条目）
+    if (template) {
+      loadTemplateDimensions(template);
+    }
   };
 
-  const openDetail = (record: EvaluationRecord) => {
-    setDrawerMode('detail');
-    setActiveRecord(record);
+  /** v14：拉取模板维度与条目；失败时清空维度并提示，不得回退 mock 条目 */
+  const loadTemplateDimensions = useCallback(async (template: AssessmentTemplate) => {
+    setTemplateItemsLoading(true);
+    try {
+      const dims = await fetchTemplateItems(template.id);
+      const full = { ...template, dimensions: dims };
+      setSelectedTemplate(full);
+      if (dims.length > 0) setActiveDimension(dims[0].id);
+    } catch {
+      setSelectedTemplate({ ...template, dimensions: [] });
+      toast.error('模板条目加载失败，请重试');
+    } finally {
+      setTemplateItemsLoading(false);
+    }
+  }, []);
+
+  /**
+   * v14：继续编辑（草稿/进行中）。
+   * 原实现点「继续编辑」调 openNewAssessment() 打开一张空白表单——
+   * 教师以为在改草稿 A，提交后却新建了记录 B，属于会污染数据的误导入口。
+   * 现改为真正的编辑态：载入原记录详情、模板条目，并把历史得分回填。
+   */
+  const openEditAssessment = useCallback(async (record: EvaluationRecord) => {
+    setDrawerMode('edit');
+    setEditingRecordId(record.id);
+    setCurrentStep(1);
     setDrawerOpen(true);
+    setTemplateItemsLoading(true);
+    try {
+      const detail = await fetchAssessment(record.id);
+      const template = templates.find((t) => t.id === detail.templateId) ?? null;
+      setSelectedStudent({
+        id: detail.studentId,
+        name: detail.studentName,
+        studentNo: detail.studentNo,
+        className: detail.className,
+        disabilityType: '',
+      });
+      setAssessmentDate(detail.assessmentDate);
+      setNewAssessmentType(detail.assessmentType || 'initial');
+      setAssessor(detail.assessor || currentUserName);
+      setNote('');
+      setRecommendations(detail.recommendations ?? '');
+      setStudentSearch('');
+      if (template) {
+        const dims = await fetchTemplateItems(template.id);
+        setSelectedTemplate({ ...template, dimensions: dims });
+        // 历史得分按「维度名 + 条目名」回填
+        const scores: Record<string, number> = {};
+        const notes: Record<string, string> = {};
+        dims.forEach((d) => d.items.forEach((it) => {
+          const hit = detail.items?.find((x) => x.dimension === d.name && x.item_name === it.name);
+          if (hit) {
+            scores[it.id] = hit.score ?? 0;
+            if (hit.notes) notes[it.id] = hit.notes;
+          }
+        }));
+        setItemScores(scores);
+        setItemNotes(notes);
+        if (dims.length > 0) setActiveDimension(dims[0].id);
+      } else {
+        setSelectedTemplate(null);
+        setItemScores({});
+        setItemNotes({});
+      }
+    } catch {
+      toast.error('评估记录加载失败');
+      setDrawerOpen(false);
+    } finally {
+      setTemplateItemsLoading(false);
+    }
+  }, [templates, currentUserName]);
+
+  const openDetail = async (record: EvaluationRecord) => {
+    setDrawerMode('detail');
+    setDrawerOpen(true);
+    try {
+      // v14：详情必须拉真实条目明细。原实现直接把列表行丢进详情抽屉，
+      // 「各维度得分」靠总分按维度满分比例估算（pro-rate），
+      // 把估计值当实测值呈现——属于编造精度，已改为按 assessment_items 真实聚合。
+      const detail = await fetchAssessment(record.id);
+      setActiveRecord(detail);
+    } catch {
+      setActiveRecord(record);
+      toast.error('评估详情加载失败，显示列表摘要');
+    }
   };
 
   const handleNext = () => {
-    if (currentStep === 1 && !selectedStudent) {
-      toast.error('请选择学生');
-      return;
+    if (currentStep === 1) {
+      if (!selectedTemplate) {
+        toast.error('请选择评估模板');
+        return;
+      }
+      if (templateItemsLoading) {
+        toast.error('模板条目加载中，请稍候');
+        return;
+      }
+      if (selectedTemplate.dimensions.length === 0) {
+        toast.error('该模板还没有条目，请先在「模板管理」中配置');
+        return;
+      }
+      if (!selectedStudent) {
+        toast.error('请选择学生');
+        return;
+      }
     }
-    if (currentStep === 2 && !assessmentDate) {
-      toast.error('请选择评估日期');
-      return;
+    if (currentStep === 2) {
+      if (!assessmentDate) {
+        toast.error('请选择评估日期');
+        return;
+      }
+      if (!newAssessmentType) {
+        toast.error('请选择评估类型');
+        return;
+      }
     }
     if (currentStep < 4) setCurrentStep(currentStep + 1);
   };
@@ -588,7 +581,7 @@ export default function Evaluation() {
 
   const handleSubmit = async () => {
     if (!selectedStudent || !selectedTemplate) return;
-    const maxScore = selectedTemplate.dimensions.reduce((s, d) => s + d.items.reduce((is, it) => is + it.maxScore, 0), 0);
+    const maxScore = calcTemplateMaxScore(selectedTemplate);
     const totalScore = Object.values(itemScores).reduce((s, v) => s + (v || 0), 0);
     const items = selectedTemplate.dimensions.flatMap((d) =>
       d.items.map((it) => ({
@@ -601,22 +594,40 @@ export default function Evaluation() {
       }))
     );
     try {
-      await createAssessment({
-        student_id: Number(selectedStudent.id) || 0,
-        assessment_type: selectedTemplate.category,
-        date: assessmentDate,
-        total_score: totalScore,
-        max_score: maxScore,
-        summary: note,
-        recommendations,
-        template_id: Number(selectedTemplate.id) || undefined,
-        items,
-      });
-      await loadRecords();
-      toast.success('评估录入成功！');
-      setCurrentStep(4);
+      if (drawerMode === 'edit' && editingRecordId) {
+        // v14：编辑态走 update（含条目整体重写），完成后状态回到已完成
+        await updateAssessment(Number(editingRecordId), {
+          assessment_type: newAssessmentType,
+          date: assessmentDate,
+          total_score: totalScore,
+          max_score: maxScore,
+          summary: note,
+          recommendations,
+          status: 'completed',
+          items,
+        });
+        await loadRecords();
+        toast.success('评估已更新');
+        setDrawerOpen(false);
+      } else {
+        await createAssessment({
+          student_id: Number(selectedStudent.id) || 0,
+          // v14：评估类型取教师选择的字典编码，不再用模板分类顶替
+          assessment_type: newAssessmentType,
+          date: assessmentDate,
+          total_score: totalScore,
+          max_score: maxScore,
+          summary: note,
+          recommendations,
+          template_id: Number(selectedTemplate.id) || undefined,
+          items,
+        });
+        await loadRecords();
+        toast.success('评估录入成功！');
+        setCurrentStep(4);
+      }
     } catch {
-      toast.error('评估录入失败');
+      toast.error(drawerMode === 'edit' ? '评估更新失败' : '评估录入失败');
     }
   };
 
@@ -625,7 +636,7 @@ export default function Evaluation() {
       toast.error('请先选择学生和模板');
       return;
     }
-    const maxScore = getTemplateMaxScore(selectedTemplate.id);
+    const maxScore = calcTemplateMaxScore(selectedTemplate);
     const totalScore = Object.values(itemScores).reduce((s, v) => s + (v || 0), 0);
     const items = selectedTemplate.dimensions.flatMap((d) =>
       d.items.map((it) => ({
@@ -638,9 +649,27 @@ export default function Evaluation() {
       }))
     );
     try {
+      // v14：草稿同样可继续编辑——编辑态直接改原记录，不再新建后再打草稿标
+      if (drawerMode === 'edit' && editingRecordId) {
+        await updateAssessment(Number(editingRecordId), {
+          assessment_type: newAssessmentType,
+          date: assessmentDate,
+          total_score: totalScore,
+          max_score: maxScore,
+          summary: note,
+          recommendations,
+          status: 'draft',
+          items,
+        });
+        await loadRecords();
+        toast.success('草稿已保存');
+        setDrawerOpen(false);
+        return;
+      }
       const created = await createAssessment({
         student_id: Number(selectedStudent.id) || 0,
-        assessment_type: selectedTemplate.category,
+        // v14：评估类型取教师选择的字典编码，不再用模板分类顶替
+        assessment_type: newAssessmentType,
         date: assessmentDate,
         total_score: totalScore,
         max_score: maxScore,
@@ -679,9 +708,11 @@ export default function Evaluation() {
         max_score: record.maxScore,
         summary: '',
         recommendations: record.recommendations ?? '',
+        // v14：复制必须带上模板关联，否则复件是无模板孤儿记录
+        template_id: record.templateId ? Number(record.templateId) : undefined,
       });
       await loadRecords();
-      toast.success('评估记录已复制');
+      toast.success('已复制为空白评估（得分为空，请重新评分）');
     } catch {
       toast.error('复制失败');
     }
@@ -778,11 +809,11 @@ export default function Evaluation() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部类型</SelectItem>
-              <SelectItem value="认知发展">认知发展</SelectItem>
-              <SelectItem value="语言能力">语言能力</SelectItem>
-              <SelectItem value="运动能力">运动能力</SelectItem>
-              <SelectItem value="社交适应">社交适应</SelectItem>
-              <SelectItem value="生活自理">生活自理</SelectItem>
+              {/* v14：选项改消费后端字典（code 为值、name 为展示）。
+                  原硬编码旧五类与存量数据（initial）对不上，筛选恒为空。 */}
+              {assessmentTypes.map((t) => (
+                <SelectItem key={t.code} value={t.code}>{t.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -809,23 +840,29 @@ export default function Evaluation() {
         className="bg-white rounded-lg p-5 mb-6 shadow-sm"
       >
         <h4 className="text-base font-semibold text-[#1E293B] mb-4">选择评估模板</h4>
-        <div className="flex flex-wrap gap-3">
-          {templates.map((t, i) => (
-            <motion.button
-              key={t.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.2 + i * 0.06 }}
-              onClick={() => openNewAssessment(t)}
-              className="flex flex-col items-start w-[200px] p-4 bg-white border border-[#E2E8F0] rounded-lg text-left transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
-              style={{ borderColor: selectedTemplate?.id === t.id ? t.color : undefined, borderWidth: selectedTemplate?.id === t.id ? '2px' : '1px' }}
-            >
-              <div className="mb-2">{templateQuickIcons[t.icon]}</div>
-              <span className="text-sm font-semibold text-[#1E293B] group-hover:text-[#977653]">{t.name}</span>
-              <span className="text-xs text-[#94A3B8] mt-1 line-clamp-2">{t.description}</span>
-            </motion.button>
-          ))}
-        </div>
+        {templatesLoading ? (
+          <div className="text-sm text-[#94A3B8] py-6">模板加载中…</div>
+        ) : templates.length === 0 ? (
+          <div className="text-sm text-[#94A3B8] py-6">暂无可用评估模板，请先在「模板管理」中创建</div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {templates.map((t, i) => (
+              <motion.button
+                key={t.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: 0.2 + i * 0.06 }}
+                onClick={() => openNewAssessment(t)}
+                className="flex flex-col items-start w-[200px] p-4 bg-white border border-[#E2E8F0] rounded-lg text-left transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
+                style={{ borderColor: selectedTemplate?.id === t.id ? templateColor(t) : undefined, borderWidth: selectedTemplate?.id === t.id ? '2px' : '1px' }}
+              >
+                <div className="mb-2">{templateIcon(t)}</div>
+                <span className="text-sm font-semibold text-[#1E293B] group-hover:text-[#977653]">{t.name}</span>
+                <span className="text-xs text-[#94A3B8] mt-1 line-clamp-2">{t.description || t.category}</span>
+              </motion.button>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Records Table */}
@@ -889,8 +926,9 @@ export default function Evaluation() {
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <Badge className={`${typeBadgeColor[record.assessmentType] || 'bg-[#F0F2F5] text-[#64748B]'} text-xs font-medium border-0`}>
-                      {record.assessmentType}
+                    {/* v14：徽章显示字典展示名（初期评估），不再把原始编码 initial 暴露给用户 */}
+                    <Badge className={`${typeBadgeColor[record.assessmentTypeLabel] || 'bg-[#F0F2F5] text-[#64748B]'} text-xs font-medium border-0`}>
+                      {record.assessmentTypeLabel}
                     </Badge>
                   </td>
                   <td className="px-4 py-4 text-sm text-[#1E293B]">{record.templateName}</td>
@@ -908,7 +946,7 @@ export default function Evaluation() {
                         <Eye className="w-4 h-4" />
                       </button>
                       {!readOnly && (record.status === 'draft' || record.status === 'in_progress') && (
-                        <button onClick={() => { openNewAssessment(); }} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#EFF6FF] hover:text-[#3B82F6] transition-colors cursor-pointer" title="继续编辑">
+                        <button onClick={() => { openEditAssessment(record); }} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#EFF6FF] hover:text-[#3B82F6] transition-colors cursor-pointer" title="继续编辑">
                           <Pencil className="w-4 h-4" />
                         </button>
                       )}
@@ -1000,15 +1038,21 @@ export default function Evaluation() {
               className="fixed right-0 top-0 h-full w-[800px] max-w-[95vw] bg-white z-50 shadow-xl overflow-y-auto"
               role="dialog"
               aria-modal="true"
-              aria-label={drawerMode === 'new' ? '录入评估' : '评估详情'}
+              aria-label={drawerMode === 'detail' ? '评估详情' : (drawerMode === 'edit' ? '编辑评估' : '录入评估')}
             >
-              {drawerMode === 'new' ? (
+              {drawerMode !== 'detail' ? (
                 <NewAssessmentDrawer
                   currentStep={currentStep}
+                  mode={drawerMode === 'edit' ? 'edit' : 'new'}
                   selectedTemplate={selectedTemplate}
                   selectedStudent={selectedStudent}
+                  templates={templates}
+                  templatesLoading={templatesLoading}
+                  templateItemsLoading={templateItemsLoading}
                   assessmentDate={assessmentDate}
                   assessor={assessor}
+                  assessmentType={newAssessmentType}
+                  assessmentTypes={assessmentTypes}
                   assessmentEnv={assessmentEnv}
                   studentState={studentState}
                   toolsUsed={toolsUsed}
@@ -1029,7 +1073,7 @@ export default function Evaluation() {
                   onSelectTemplate={openNewAssessment}
                   onSelectStudent={setSelectedStudent}
                   onSetAssessmentDate={setAssessmentDate}
-                  onSetAssessor={setAssessor}
+                  onSetAssessmentType={setNewAssessmentType}
                   onSetAssessmentEnv={setAssessmentEnv}
                   onSetStudentState={setStudentState}
                   onSetToolsUsed={setToolsUsed}
@@ -1057,13 +1101,28 @@ export default function Evaluation() {
                 activeRecord && (
                   <DetailDrawer
                     record={activeRecord}
+                    template={templates.find((t) => t.id === activeRecord?.templateId) ?? null}
                     onClose={() => setDrawerOpen(false)}
                     history={records}
+                    {...(readOnly ? {} : { onDraftGoals: () => void handleDraftGoals(activeRecord) })}
                   />
                 )
               )}
             </motion.div>
           </>
+        )}
+
+        {draftOpen && draftPlanId !== null && (
+          <GoalDraftDrawer
+            planId={draftPlanId}
+            studentName={activeRecord?.studentName}
+            editable={!readOnly}
+            {...(draftAssessmentId !== null ? { assessmentId: draftAssessmentId } : {})}
+            onClose={() => setDraftOpen(false)}
+            onAdopted={() => {
+              toast.success('目标已采纳，可在 IEP 计划详情中查看');
+            }}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -1074,10 +1133,19 @@ export default function Evaluation() {
 
 interface NewAssessmentDrawerProps {
   currentStep: number;
+  /** v14：新建 / 编辑（草稿继续编辑） */
+  mode: 'new' | 'edit';
   selectedTemplate: AssessmentTemplate | null;
   selectedStudent: Student | null;
+  /** v14：真实模板库与加载态（原 mock 数组已删） */
+  templates: AssessmentTemplate[];
+  templatesLoading: boolean;
+  templateItemsLoading: boolean;
   assessmentDate: string;
   assessor: string;
+  /** v14：评估类型（字典编码）与字典选项 */
+  assessmentType: string;
+  assessmentTypes: AssessmentTypeOption[];
   assessmentEnv: string;
   studentState: string;
   toolsUsed: string;
@@ -1098,7 +1166,7 @@ interface NewAssessmentDrawerProps {
   onSelectTemplate: (t: AssessmentTemplate) => void;
   onSelectStudent: (s: Student | null) => void;
   onSetAssessmentDate: (v: string) => void;
-  onSetAssessor: (v: string) => void;
+  onSetAssessmentType: (v: string) => void;
   onSetAssessmentEnv: (v: string) => void;
   onSetStudentState: (v: string) => void;
   onSetToolsUsed: (v: string) => void;
@@ -1114,10 +1182,16 @@ interface NewAssessmentDrawerProps {
 
 function NewAssessmentDrawer({
   currentStep,
+  mode,
   selectedTemplate,
   selectedStudent,
+  templates,
+  templatesLoading,
+  templateItemsLoading,
   assessmentDate,
   assessor,
+  assessmentType,
+  assessmentTypes,
   assessmentEnv,
   studentState,
   toolsUsed,
@@ -1138,7 +1212,7 @@ function NewAssessmentDrawer({
   onSelectTemplate,
   onSelectStudent,
   onSetAssessmentDate,
-  onSetAssessor,
+  onSetAssessmentType,
   onSetAssessmentEnv,
   onSetStudentState,
   onSetToolsUsed,
@@ -1162,7 +1236,7 @@ function NewAssessmentDrawer({
             <X className="w-5 h-5" />
           </button>
           <h3 className="text-lg font-semibold text-[#1E293B]">
-            {currentStep < 4 ? '录入评估' : '评估完成'}
+            {currentStep < 4 ? (mode === 'edit' ? '编辑评估' : '录入评估') : (mode === 'edit' ? '编辑完成' : '评估完成')}
             {selectedTemplate ? ` - ${selectedTemplate.name}` : ''}
           </h3>
         </div>
@@ -1216,27 +1290,35 @@ function NewAssessmentDrawer({
             <div>
               <label className="block text-sm font-medium text-[#1E293B] mb-2">评估模板 <span className="text-[#EF4444]">*</span></label>
               {!selectedTemplate ? (
-                <div className="flex flex-wrap gap-3">
-                  {templates.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => onSelectTemplate(t)}
-                      className="flex items-center gap-3 p-3 border border-[#E2E8F0] rounded-lg hover:border-[#C1AC96] hover:shadow-sm transition-all cursor-pointer text-left"
-                    >
-                      {templateQuickIcons[t.icon]}
-                      <div>
-                        <div className="text-sm font-medium text-[#1E293B]">{t.name}</div>
-                        <div className="text-xs text-[#94A3B8]">{t.category}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                templatesLoading ? (
+                  <div className="text-sm text-[#94A3B8] py-4">模板加载中…</div>
+                ) : templates.length === 0 ? (
+                  <div className="text-sm text-[#94A3B8] py-4">暂无可用评估模板，请先在「模板管理」中创建</div>
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {templates.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => onSelectTemplate(t)}
+                        className="flex items-center gap-3 p-3 border border-[#E2E8F0] rounded-lg hover:border-[#C1AC96] hover:shadow-sm transition-all cursor-pointer text-left"
+                      >
+                        {templateIcon(t)}
+                        <div>
+                          <div className="text-sm font-medium text-[#1E293B]">{t.name}</div>
+                          <div className="text-xs text-[#94A3B8]">{t.category}</div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )
               ) : (
                 <div className="flex items-center gap-3 p-3 bg-[#F5F0EB] border border-[#D6C8B8] rounded-lg">
-                  {templateQuickIcons[selectedTemplate.icon]}
+                  {templateIcon(selectedTemplate)}
                   <div className="flex-1">
                     <div className="text-sm font-medium text-[#1E293B]">{selectedTemplate.name}</div>
-                    <div className="text-xs text-[#64748B]">{selectedTemplate.description}</div>
+                    <div className="text-xs text-[#64748B]">
+                      {templateItemsLoading ? '条目加载中…' : (selectedTemplate.description || `${selectedTemplate.dimensions.length} 个维度`)}
+                    </div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => { onSelectTemplate(null as any); }}>更改</Button>
                 </div>
@@ -1306,7 +1388,23 @@ function NewAssessmentDrawer({
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估者</label>
-                <Input value={assessor} onChange={(e) => onSetAssessor(e.target.value)} />
+                {/* v14：只读。后端 assessor_id 恒取当前登录用户，可编辑的输入框
+                    会造成"填了别人名字就归别人"的假象；默认值也改为当前用户。 */}
+                <Input value={assessor} readOnly className="bg-[#F7F6F4]" />
+                <p className="text-xs text-[#94A3B8] mt-1">评估者自动取当前登录账号，不可修改</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估类型 <span className="text-[#EF4444]">*</span></label>
+                {/* v14：类型由教师按字典选择。原实现把模板分类（课程本位/专项评估…）
+                    写进 assessment_type，与字典和存量数据三套口径互相矛盾。 */}
+                <Select value={assessmentType} onValueChange={onSetAssessmentType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {assessmentTypes.map((t) => (
+                      <SelectItem key={t.code} value={t.code}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估环境</label>
@@ -1435,8 +1533,13 @@ function NewAssessmentDrawer({
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="text-[#64748B]">学生</div>
                 <div className="text-[#1E293B] font-medium">{selectedStudent?.name}</div>
-                <div className="text-[#64748B]">评估类型</div>
+                <div className="text-[#64748B]">评估模板</div>
                 <div className="text-[#1E293B] font-medium">{selectedTemplate?.name}</div>
+                <div className="text-[#64748B]">评估类型</div>
+                {/* v14：显示字典标签；原实现把模板名放在「评估类型」标签下，张冠李戴 */}
+                <div className="text-[#1E293B] font-medium">
+                  {assessmentTypes.find((t) => t.code === assessmentType)?.name ?? assessmentType}
+                </div>
                 <div className="text-[#64748B]">评估日期</div>
                 <div className="text-[#1E293B] font-medium">{assessmentDate}</div>
                 <div className="text-[#64748B]">总分</div>
@@ -1503,9 +1606,13 @@ function NewAssessmentDrawer({
 
 interface DetailDrawerProps {
   record: EvaluationRecord;
+  /** v14：由父级从真实模板库解析后传入（原查 mock templateMap，已删） */
+  template: AssessmentTemplate | null;
   onClose: () => void;
   /** 同学生的历史评估记录，用于计算「与上期对比」 */
   history: EvaluationRecord[];
+  /** Step 3：据此评估起草 IEP 目标（无 IEP 计划时由父级提示） */
+  onDraftGoals?: () => void;
 }
 
 /**
@@ -1531,26 +1638,38 @@ interface ComparisonRow {
 /** 按维度计算百分制得分区 */
 function dimensionPercent(
   record: EvaluationRecord,
-  template: AssessmentTemplate | undefined,
 ): Array<{ name: string; percent: number }> {
-  if (!template) return [];
-  return template.dimensions.map((d) => {
-    const dimScores = record.scores?.[d.id] ?? {};
-    const maxOfDim = d.items.reduce((s, i) => s + (i.maxScore || 0), 0);
-    const got = d.items.reduce((s, i) => {
-      const v = dimScores[i.id];
-      return s + (typeof v === 'number' ? v : 0);
-    }, 0);
-    return { name: d.name, percent: maxOfDim > 0 ? Math.round((got / maxOfDim) * 100) : 0 };
+  // v14：按 assessment_items 真实聚合。原实现读 record.scores（接口从不填充，
+  // 恒为 {}），维度对比图「当前得分」永远是 0，还依赖 mock templateMap。
+  return aggregateDimensions(record).map((d) => ({ name: d.name, percent: d.percent }));
+}
+
+/** v14：按维度聚合真实条目得分（维度名 → 得分/满分/百分制） */
+function aggregateDimensions(
+  record: EvaluationRecord,
+): Array<{ name: string; score: number; max: number; percent: number }> {
+  const items = record.items ?? [];
+  if (items.length === 0) return [];
+  const map = new Map<string, { score: number; max: number }>();
+  items.forEach((it) => {
+    const cur = map.get(it.dimension) ?? { score: 0, max: 0 };
+    cur.score += it.score;
+    cur.max += it.max_score;
+    map.set(it.dimension, cur);
   });
+  return [...map.entries()].map(([name, v]) => ({
+    name,
+    score: v.score,
+    max: v.max,
+    percent: v.max > 0 ? Math.round((v.score / v.max) * 100) : 0,
+  }));
 }
 
 function buildComparisonData(
   record: EvaluationRecord,
-  template: AssessmentTemplate | undefined,
   history: EvaluationRecord[],
 ): ComparisonRow[] {
-  const dims = dimensionPercent(record, template);
+  const dims = dimensionPercent(record);
   // 历史记录未保存维度明细时，退化为整体得分，不编造维度拆分
   const rows: Array<{ name: string; current: number }> =
     dims.length > 0
@@ -1581,7 +1700,7 @@ function buildComparisonData(
   }
 
   // 仅当上期使用同一模板时，维度名称才具备可比性
-  const prevDims = prevRecord.templateId === record.templateId ? dimensionPercent(prevRecord, template) : [];
+  const prevDims = prevRecord.templateId === record.templateId ? dimensionPercent(prevRecord) : [];
   const prevMap = new Map(prevDims.map((d) => [d.name, d.percent]));
   const isSingleOverall = rows.length === 1;
 
@@ -1601,14 +1720,21 @@ function buildComparisonData(
   });
 }
 
-function DetailDrawer({ record, onClose, history }: DetailDrawerProps) {
-  const template = templateMap.get(record.templateId);
+function DetailDrawer({ record, template, onClose, history, onDraftGoals }: DetailDrawerProps) {
   const pct = record.maxScore > 0 ? Math.round((record.totalScore / record.maxScore) * 100) : 0;
   const grade = getGradeLabel(pct);
 
+  // v14：各维度得分按 assessment_items 真实聚合。
+  // 原实现用「总分 × 维度满分占比」估算（pro-rate），任何记录都会得到
+  // 一份看起来精确、实则编造的维度分布；无条目明细时宁可显示空态。
+  const dimensionRows = useMemo(
+    () => aggregateDimensions(record).map((d) => ({ ...d, grade: getGradeLabel(d.percent) })),
+    [record],
+  );
+
   // P2-2 修复：对比数据由本条记录与历史记录真实计算得出
   const comparisonData = useMemo(
-    () => buildComparisonData(record, template, history),
+    () => buildComparisonData(record, history),
     [record, template, history],
   );
   const hasPrevious = comparisonData.some((r) => r.previous !== null);
@@ -1640,6 +1766,12 @@ function DetailDrawer({ record, onClose, history }: DetailDrawerProps) {
           </h3>
         </div>
         <div className="flex gap-2">
+          {onDraftGoals && (
+            <Button size="sm" onClick={onDraftGoals}>
+              <Wand2 className="w-4 h-4 mr-1" />
+              据此起草目标
+            </Button>
+          )}
           <Button variant="secondary" size="sm" onClick={() => void exportSingleReport('pdf')}>
             <FileText className="w-4 h-4 mr-1" />
             导出PDF
@@ -1658,11 +1790,12 @@ function DetailDrawer({ record, onClose, history }: DetailDrawerProps) {
           <h4 className="text-base font-semibold text-[#1E293B] mb-4">基本信息</h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div><span className="text-[#64748B]">学生姓名：</span><span className="text-[#1E293B] font-medium">{record.studentName}</span></div>
-            <div><span className="text-[#64748B]">学号：</span><span className="text-[#1E293B]">{record.studentNo}</span></div>
-            <div><span className="text-[#64748B]">班级：</span><span className="text-[#1E293B]">{record.className}</span></div>
+            <div><span className="text-[#64748B]">学号：</span><span className="text-[#1E293B]">{record.studentNo || '—'}</span></div>
+            <div><span className="text-[#64748B]">班级：</span><span className="text-[#1E293B]">{record.className || '—'}</span></div>
             <div><span className="text-[#64748B]">评估日期：</span><span className="text-[#1E293B]">{record.assessmentDate}</span></div>
-            <div><span className="text-[#64748B]">评估者：</span><span className="text-[#1E293B]">{record.assessor}</span></div>
-            <div><span className="text-[#64748B]">评估类型：</span><span className="text-[#1E293B]">{record.assessmentType}</span></div>
+            <div><span className="text-[#64748B]">评估者：</span><span className="text-[#1E293B]">{record.assessor || '—'}</span></div>
+            <div><span className="text-[#64748B]">评估类型：</span><span className="text-[#1E293B]">{record.assessmentTypeLabel}</span></div>
+            <div><span className="text-[#64748B]">评估模板：</span><span className="text-[#1E293B]">{template?.name ?? record.templateName}</span></div>
           </div>
         </div>
 
@@ -1694,7 +1827,7 @@ function DetailDrawer({ record, onClose, history }: DetailDrawerProps) {
         </div>
 
         {/* Dimension Breakdown */}
-        {template && (
+        {dimensionRows.length > 0 ? (
           <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
             <h4 className="text-base font-semibold text-[#1E293B] mb-4">各维度得分</h4>
             <table className="w-full">
@@ -1708,30 +1841,29 @@ function DetailDrawer({ record, onClose, history }: DetailDrawerProps) {
                 </tr>
               </thead>
               <tbody>
-                {template.dimensions.map((dim) => {
-                  const dimScore = Math.round(record.totalScore * (dim.items.reduce((s, it) => s + it.maxScore, 0) / record.maxScore));
-                  const dimMax = dim.items.reduce((s, it) => s + it.maxScore, 0);
-                  const dimPct = Math.round((dimScore / dimMax) * 100);
-                  const dimGrade = getGradeLabel(dimPct);
-                  return (
-                    <tr key={dim.id} className="border-b border-[#E2E8F0] last:border-0">
-                      <td className="py-3 text-sm text-[#1E293B] font-medium">{dim.name}</td>
-                      <td className="py-3 text-sm text-[#1E293B]">{dimScore}</td>
-                      <td className="py-3 text-sm text-[#64748B]">{dimMax}</td>
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-                            <div className="h-full bg-[#977653] rounded-full" style={{ width: `${dimPct}%` }} />
-                          </div>
-                          <span className="text-xs text-[#64748B]">{dimPct}%</span>
+                {dimensionRows.map((dim) => (
+                  <tr key={dim.name} className="border-b border-[#E2E8F0] last:border-0">
+                    <td className="py-3 text-sm text-[#1E293B] font-medium">{dim.name}</td>
+                    <td className="py-3 text-sm text-[#1E293B]">{dim.score}</td>
+                    <td className="py-3 text-sm text-[#64748B]">{dim.max}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
+                          <div className="h-full bg-[#977653] rounded-full" style={{ width: `${dim.percent}%` }} />
                         </div>
-                      </td>
-                      <td className={`py-3 text-xs font-medium ${dimGrade.color}`}>{dimGrade.label}</td>
-                    </tr>
-                  );
-                })}
+                        <span className="text-xs text-[#64748B]">{dim.percent}%</span>
+                      </div>
+                    </td>
+                    <td className={`py-3 text-xs font-medium ${dim.grade.color}`}>{dim.grade.label}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
+            <h4 className="text-base font-semibold text-[#1E293B] mb-2">各维度得分</h4>
+            <p className="text-sm text-[#94A3B8]">该记录没有条目明细，暂不展示维度分布（不做估算）。</p>
           </div>
         )}
 

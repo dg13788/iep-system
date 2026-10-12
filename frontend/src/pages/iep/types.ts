@@ -1,6 +1,21 @@
 export type IEPStatus = '草稿' | '审核中' | '已通过' | '已签名' | '执行中' | '已完成' | '已驳回';
 
-export type GoalArea = '认知' | '沟通' | '社交' | '生活自理' | '运动' | '情绪行为' | '学业';
+/**
+ * 目标领域：与 dict_common.category='goal_area' 的 name 取值保持一致。
+ *
+ * 2026-10-12 修复：原常量只有 7 个通用领域，而演示数据中约 43% 的目标
+ * 用的是培智课标课程（生活数学/生活语文/生活适应/劳动技能/职业转衔…），
+ * 下拉里根本选不到，颜色也全部 fallback 成灰色。字典建了却没人消费，
+ * 等于口径分裂——教师新建目标时无法复现系统里已有的数据。
+ */
+export type GoalArea =
+  // 通用领域（dict_common id 9~15）
+  | '认知' | '沟通' | '社交' | '生活自理' | '运动' | '情绪行为' | '学业'
+  // 培智学校义务教育课程标准课程（dict_common id 35~44）
+  | '生活语文' | '生活数学' | '生活适应' | '劳动技能' | '唱游与律动'
+  | '绘画与手工' | '运动与保健' | '信息技术' | '康复训练' | '艺术休闲'
+  // 转衔
+  | '职业转衔';
 
 export type GoalType = '长期目标' | '短期目标';
 
@@ -143,6 +158,7 @@ export interface WizardFormData {
 }
 
 export const GOAL_AREA_COLORS: Record<GoalArea, string> = {
+  // 通用领域
   '认知': '#3B82F6',
   '沟通': '#10B981',
   '社交': '#8B5CF6',
@@ -150,6 +166,18 @@ export const GOAL_AREA_COLORS: Record<GoalArea, string> = {
   '运动': '#EF4444',
   '情绪行为': '#EC4899',
   '学业': '#405680',
+  // 培智课标课程（与既有色板同系但可区分，避免全部 fallback 成灰）
+  '生活语文': '#7C3AED',
+  '生活数学': '#2563EB',
+  '生活适应': '#059669',
+  '劳动技能': '#D97706',
+  '唱游与律动': '#DB2777',
+  '绘画与手工': '#0891B2',
+  '运动与保健': '#DC2626',
+  '信息技术': '#0D9488',
+  '康复训练': '#4F46E5',
+  '艺术休闲': '#B45309',
+  '职业转衔': '#7A5F42',
 };
 
 export const STATUS_COLORS: Record<IEPStatus, { bg: string; text: string; lightBg: string }> = {
@@ -169,7 +197,15 @@ export const GOAL_STATUS_COLORS: Record<GoalStatus, { bg: string; text: string }
   '暂停': { bg: 'bg-[#FFFBEB]', text: 'text-[#D97706]' },
 };
 
-export const GOAL_AREAS: GoalArea[] = ['认知', '沟通', '社交', '生活自理', '运动', '情绪行为', '学业'];
+export const GOAL_AREAS: GoalArea[] = [
+  // 通用领域
+  '认知', '沟通', '社交', '生活自理', '运动', '情绪行为', '学业',
+  // 培智学校义务教育课程标准课程
+  '生活语文', '生活数学', '生活适应', '劳动技能', '唱游与律动',
+  '绘画与手工', '运动与保健', '信息技术', '康复训练', '艺术休闲',
+  // 转衔
+  '职业转衔',
+];
 
 export const SERVICE_TYPES: ServiceType[] = ['认知训练', '语言治疗', '运动康复', '社交训练', '生活自理训练', '感觉统合', '艺术治疗', '其他'];
 

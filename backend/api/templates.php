@@ -59,7 +59,7 @@ switch ($action) {
                 'message' => '查询成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '查询失败']);
+            jsonResponse(['success' => false, 'message' => '查询失败'], 500);
         }
         break;
 
@@ -71,7 +71,7 @@ switch ($action) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -85,12 +85,12 @@ switch ($action) {
             $template = $stmt->fetch();
 
             if (!$template) {
-                jsonResponse(['success' => false, 'message' => '模板不存在']);
+                jsonResponse(['success' => false, 'message' => '模板不存在'], 404);
             }
 
             jsonResponse(['success' => true, 'data' => $template, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -106,7 +106,7 @@ switch ($action) {
             $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
             jsonResponse(['success' => true, 'data' => $types, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -118,7 +118,7 @@ switch ($action) {
 
         $templateId = isset($_GET['template_id']) ? intval($_GET['template_id']) : 0;
         if ($templateId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -132,7 +132,7 @@ switch ($action) {
             $items = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $items, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -144,7 +144,7 @@ switch ($action) {
         requirePermission('template_create');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -152,7 +152,7 @@ switch ($action) {
         $type = isset($input['type']) ? trim($input['type']) : '';
 
         if (empty($name) || empty($type)) {
-            jsonResponse(['success' => false, 'message' => '模板名称和类型不能为空']);
+            jsonResponse(['success' => false, 'message' => '模板名称和类型不能为空'], 400);
         }
 
         $description = isset($input['description']) ? trim($input['description']) : '';
@@ -177,7 +177,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => ['id' => $templateId], 'message' => '创建成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '创建失败']);
+            jsonResponse(['success' => false, 'message' => '创建失败'], 500);
         }
         break;
 
@@ -189,13 +189,13 @@ switch ($action) {
         requirePermission('template_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         $updatableFields = ['name', 'category', 'description', 'target_disability_types', 
@@ -213,7 +213,7 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
@@ -227,7 +227,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -239,13 +239,13 @@ switch ($action) {
         requirePermission('template_delete');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -257,7 +257,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -269,7 +269,7 @@ switch ($action) {
         requirePermission('template_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -278,7 +278,7 @@ switch ($action) {
         $itemName = isset($input['item_name']) ? trim($input['item_name']) : '';
 
         if ($templateId <= 0 || empty($dimension) || empty($itemName)) {
-            jsonResponse(['success' => false, 'message' => '模板ID、维度和项目名称不能为空']);
+            jsonResponse(['success' => false, 'message' => '模板ID、维度和项目名称不能为空'], 400);
         }
 
         $itemDescription = isset($input['item_description']) ? trim($input['item_description']) : '';
@@ -296,7 +296,7 @@ switch ($action) {
             $itemId = $pdo->lastInsertId();
             jsonResponse(['success' => true, 'data' => ['id' => $itemId], 'message' => '添加成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '添加失败']);
+            jsonResponse(['success' => false, 'message' => '添加失败'], 500);
         }
         break;
 
@@ -308,13 +308,13 @@ switch ($action) {
         requirePermission('template_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         $updatableFields = ['dimension', 'item_name', 'item_description', 'max_score', 'sort_order'];
@@ -330,7 +330,7 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
@@ -341,7 +341,7 @@ switch ($action) {
             $stmt->execute($values);
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -353,13 +353,13 @@ switch ($action) {
         requirePermission('template_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -368,7 +368,7 @@ switch ($action) {
             $stmt->execute([$id]);
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -380,14 +380,14 @@ switch ($action) {
         requirePermission('template_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $ids = isset($input['ids']) ? (is_string($input['ids']) ? json_decode($input['ids'], true) : $input['ids']) : [];
 
         if (!is_array($ids) || empty($ids)) {
-            jsonResponse(['success' => false, 'message' => 'ID数组不能为空']);
+            jsonResponse(['success' => false, 'message' => 'ID数组不能为空'], 400);
         }
 
         try {
@@ -400,10 +400,10 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '排序更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '排序更新失败']);
+            jsonResponse(['success' => false, 'message' => '排序更新失败'], 500);
         }
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的模板操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的模板操作: ' . $action], 404);
 }

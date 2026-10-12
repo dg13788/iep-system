@@ -11,15 +11,19 @@ import {
 import { useAuthStore } from '@/store/authStore';
 
 const breadcrumbMap: Record<string, string> = {
-  '/': '仪表盘',
+  // '/' 是今日工作台（Today），不是仪表盘
+  '/': '今日',
   '/login': '登录',
+  '/dashboard': '仪表盘',
   '/students': '学生管理',
   '/evaluation': '评估管理',
   '/iep': 'IEP管理',
   '/teaching': '教学记录',
   '/templates': '模板管理',
   '/parents': '家校协作',
+  '/school': '教学健康度',
   '/system': '系统管理',
+  '/admin': '管理控制台',
 };
 
 export default function Topbar() {

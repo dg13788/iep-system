@@ -150,7 +150,7 @@ switch ($action) {
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的管理操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的管理操作: ' . $action], 404);
 }
 
 // ===========================================================
@@ -435,7 +435,7 @@ function adminBackup(string $subAction): void {
             break;
 
         default:
-            jsonResponse(['success' => false, 'message' => '未知的备份操作: ' . $subAction]);
+            jsonResponse(['success' => false, 'message' => '未知的备份操作: ' . $subAction], 404);
     }
 }
 

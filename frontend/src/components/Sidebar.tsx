@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  CalendarCheck,
   LayoutDashboard,
   Users,
   ClipboardCheck,
@@ -10,6 +11,7 @@ import {
   Layers,
   Home,
   Settings,
+  School as SchoolIcon,
   ShieldAlert,
   LogOut,
   ChevronLeft,
@@ -18,14 +20,25 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
-const navItems = [
-  { path: '/', label: '仪表盘', icon: LayoutDashboard },
+interface NavItem {
+  path: string;
+  label: string;
+  icon: typeof CalendarCheck;
+  /** 恒可见（不参与菜单权限过滤） */
+  always?: boolean;
+}
+
+const navItems: NavItem[] = [
+  // 今日工作台取代统计仪表盘成为首页：教师打开系统第一眼应该是「今天要做什么」
+  { path: '/', label: '今日', icon: CalendarCheck, always: true },
+  { path: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
   { path: '/students', label: '学生管理', icon: Users },
   { path: '/evaluation', label: '评估管理', icon: ClipboardCheck },
   { path: '/iep', label: 'IEP管理', icon: FileText },
   { path: '/teaching', label: '教学记录', icon: BookOpen },
   { path: '/templates', label: '模板管理', icon: Layers },
   { path: '/parents', label: '家校协作', icon: Home },
+  { path: '/school', label: '教学健康度', icon: SchoolIcon },
   { path: '/system', label: '系统管理', icon: Settings },
   // 管理控制台：菜单权限 key 为 admin，仅超级管理员组（pg=1）持有
   { path: '/admin', label: '管理控制台', icon: ShieldAlert },
@@ -33,13 +46,15 @@ const navItems = [
 
 // 路径到菜单权限key的映射
 const pathToMenuKey: Record<string, string> = {
-  '/': 'dashboard',
+  '/': 'today',
+  '/dashboard': 'dashboard',
   '/students': 'students',
   '/evaluation': 'evaluation',
   '/iep': 'iep',
   '/teaching': 'teaching',
   '/templates': 'templates',
   '/parents': 'parents',
+  '/school': 'school',
   '/system': 'system',
   '/admin': 'admin',
 };
@@ -61,7 +76,10 @@ export default function Sidebar({ collapsed }: SidebarProps) {
   };
 
   // 根据用户权限过滤导航项
+  // 首页（今日工作台）恒可见：它是登录后的落点，若因菜单权限缺失而隐藏，
+  // 用户会看到「有页面却进不去」的空白感，侧栏也失去锚点。
   const visibleNavItems = navItems.filter((item) => {
+    if (item.always) return true;
     const key = pathToMenuKey[item.path];
     return hasMenu(key);
   });

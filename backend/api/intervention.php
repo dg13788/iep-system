@@ -337,5 +337,5 @@ switch ($action) {
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的行为干预操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的行为干预操作: ' . $action], 404);
 }

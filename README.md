@@ -9,15 +9,18 @@
 
 ## 功能特性
 
-- 仪表盘：数据统计、雷达图、快捷操作
-- 学生管理：完整档案、班级管理、数据权限隔离
-- 评估管理：7 大能力领域评估、跨期对比
-- IEP 管理：5 步向导制定、目标追踪、Canvas 电子签名
+- 今日工作台：以「教师的一天」为主视角组织待办、复审与审批（首屏；原统计仪表盘降级为二级页面）
+- 进度决策内核（PIC）：试次记录按辅助层级分组、撤提示证据、目标线（aim line）、达标判定与倒退识别；数据点不足 4 个时只返回「继续采集」，不输出结论
+- 学生管理：完整档案、班级管理、数据权限隔离（全域 / 本班 / 相关学生 / 本人）
+- 评估管理：评估模板库（模板 / 维度 / 条目可配置）、跨期对比、维度得分聚合、评估类型以数据字典为唯一口径
+- IEP 管理：5 步向导制定、目标追踪、Canvas 电子签名；目标起草助手仅产出草稿，保留「AI 建议 → 教师定稿」差异留痕
 - 教学记录：快速记录、日历视图、反思记录
-- 模板管理：评估模板、IEP 模板
-- 家校协作：家长签名、沟通记录
-- 系统管理：权限组管理、审计日志
+- 模板管理：评估模板与条目配置
+- 家校协作：家长自助登录（独立入口）、结构化家长意见、签名、沟通记录
+- 转衔与校级协同：可测量转衔目标、轻量校内协同（仅本范围，不含多校租户）
+- 系统管理：权限组管理、审计日志、数据字典
 - 数据导入导出：学生 / IEP / 评估 / 教学 / 家长数据批量导入导出（Excel/PDF）
+- 开放 API：只读能力，默认关闭（`IEP_OPENAPI=1` 方启用）
 
 ## 技术栈
 
@@ -38,11 +41,16 @@ iep/
 ├── server_router.php         PHP 内置服务器路由（本地一键运行）
 ├── frontend/                 前端项目（React 19 + Vite）
 │   ├── src/                  源代码
+│   │   ├── pages/            页面（今日工作台 / 仪表盘 / 学生 / 评估 / IEP / 教学 / 家校 / 校级协同…）
+│   │   ├── services/         API 客户端
+│   │   └── ...
 │   └── package.json          依赖配置
 ├── backend/                  后端项目（PHP 8 + MySQL 8）
 │   ├── api/                  RESTful API 接口（含公共配置 config.php）
+│   │   │                    进度决策内核 progress_analysis / 今日工作台 workbench / 转衔 transition /
+│   │   │                    校级协同 school / 开放接口 openapi / 目标起草 goal_drafting 等
 │   ├── config/               密钥目录（jwt.secret 不入库，首次运行自动生成）
-│   └── sql/                  数据库脚本（init.sql + update_v3~v6.sql）
+│   └── sql/                  数据库脚本（init.sql + update_v3~v14.sql）
 ```
 > 注：完整开发技术文档（数据库设计 / API 规范 / 权限体系）为专有资产，不随开源仓库发布。
 
@@ -64,6 +72,14 @@ mysql -u root -p iep_system < backend/sql/update_v3.sql
 mysql -u root -p iep_system < backend/sql/update_v4.sql
 mysql -u root -p iep_system < backend/sql/update_v5.sql
 mysql -u root -p iep_system < backend/sql/update_v6.sql
+mysql -u root -p iep_system < backend/sql/update_v7.sql
+mysql -u root -p iep_system < backend/sql/update_v8.sql
+mysql -u root -p iep_system < backend/sql/update_v9.sql
+mysql -u root -p iep_system < backend/sql/update_v10.sql
+mysql -u root -p iep_system < backend/sql/update_v11.sql
+mysql -u root -p iep_system < backend/sql/update_v12.sql
+mysql -u root -p iep_system < backend/sql/update_v13.sql
+mysql -u root -p iep_system < backend/sql/update_v14.sql
 ```
 
 | 脚本 | 说明 |
@@ -73,6 +89,14 @@ mysql -u root -p iep_system < backend/sql/update_v6.sql
 | `update_v4.sql` | 特教专业内核：短期目标达成记录、安置形式、相关服务、GB/T 26341 残疾等级、安全档案 |
 | `update_v5.sql` | 深度审查遗留项整改 |
 | `update_v6.sql` | 管理控制台权限（权限组 1 追加 `admin` 菜单） |
+| `update_v7.sql` | 进度智能内核 PIC（Step 1）：监控频率 / 方法 / 责任人、数值化基线、期末目标值、干预调整实体、评估 → IEP 溯源字段 |
+| `update_v8.sql` | 「教师的一天」今日工作台（Step 2）：为教学岗权限组开通「今日」菜单 |
+| `update_v9.sql` | 评估 → IEP 因果链闭合 + 目标起草助手留痕（Step 3） |
+| `update_v10.sql` | 转衔与家长闭环（Step 4）：可测量转衔目标、结构化家长意见 |
+| `update_v11.sql` | PIC 教学法修订：目标方向显式建模（递增 / 递减）、达标判定的目标辅助层级 |
+| `update_v12.sql` | 权限码治理：孤儿码显式授予、消除超管直通造成的隐式特权、新旧权限码别名接通 |
+| `update_v13.sql` | 目标领域口径统一：`dict_common.goal_area` 字典经接口下发、前端消费 |
+| `update_v14.sql` | 模板条目外键修正（改指 `assessment_templates`）+ 校本模板并入主库 + 在用模板条目补全 |
 | `init_demo_minimal.sql` | 可选：最小演示数据集（管理控制台「初始化演示数据」调用） |
 
 ### 2. 配置后端环境变量
@@ -140,6 +164,8 @@ php -S 0.0.0.0:8080 server_router.php
 | viewer1 | admin123 | 只读用户 |
 
 > 安全提醒：上述账号种子化于 `backend/sql/init.sql`，仅用于本地功能演示。任何公网 / 生产部署后必须立即修改默认密码并启用强密码策略。
+>
+> 家长账号另有独立的「家长自助登录」入口（手机号 + 密码，`/api/auth/parent-login`），与上方统一登录入口相互独立；家长登录后只能看到自己关联的学生。
 
 ## 开源骨架版说明
 
@@ -151,7 +177,7 @@ php -S 0.0.0.0:8080 server_router.php
 | 运行日志与审计脚本 | `backend/logs/` |
 | 数据库备份（含真实数据） | `backend/backups/` |
 | 依赖与构建产物 | `node_modules/`、`frontend/dist/` |
-| 演示数据包与生成脚本 | `demo_data/`、`backend/tools/`、`backend/sql/seed_demo_v4.py` |
+| 演示数据包与生成脚本 | `demo_data/`、`backend/tools/`、`backend/sql/seed_demo_v4.py`、根目录 `tools/`（本地回测路由与脚本，不属于交付成品） |
 | 内部过程文档 | 审计 / 回测 / 审查 / 整改 / 补齐 / 参评 / 交付说明 / 计划 / 截图 |
 | 二进制派生文档 | `docs/*.docx`（以同名 Markdown 为准） |
 | 过时部署手册 | `docs/IEP系统*部署手册.md`（早期 FlyEnv / 宝塔版，与环境变量方案不一致） |
@@ -208,6 +234,7 @@ env[IEP_DEBUG]  = false
 |------|------|---------|
 | V1.00 | 2025-01-15 | 初始版本：8 大功能模块、RBAC 角色权限（6 角色 / 42 项权限）、JWT 认证、Canvas 电子签名 |
 | V1.01 | 2025-02-20 | 数据权限与安全增强版：Data Scope V2、科任教师 IEP 参与 V3、权限组可配置 V3、SHA256 签名防篡改 |
+| V1.1.0 | 2026-10-12 | 教学决策系统版：进度决策内核 PIC（试次按辅助层级分组、撤提示证据、目标线、达标 / 倒退判定，数据点不足 4 个不出结论）、今日工作台、评估 → IEP 因果链与目标起草助手（仅草稿）、转衔与家长闭环、轻量校级协同、只读开放 API（默认关闭）；评估类型 / 目标领域以数据字典为唯一口径；权限码治理与审计补强；数据库迁移至 v14 |
 
 ## 开源协议
 

@@ -53,7 +53,7 @@ switch ($module) {
         handleRegistryAction($action);
         break;
     default:
-        jsonResponse(['success' => false, 'message' => '未知的系统模块: ' . $module]);
+        jsonResponse(['success' => false, 'message' => '未知的系统模块: ' . $module], 404);
 }
 
 // ============================================================
@@ -97,7 +97,7 @@ function handleSystemAction(string $action, string $subAction): void {
             break;
 
         default:
-            jsonResponse(['success' => false, 'message' => '未知的系统操作: ' . $action]);
+            jsonResponse(['success' => false, 'message' => '未知的系统操作: ' . $action], 404);
     }
 }
 
@@ -158,17 +158,20 @@ function handleUsersAction(string $action): void {
                     'message' => '查询成功'
                 ]);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '查询失败']);
+                jsonResponse(['success' => false, 'message' => '查询失败'], 500);
             }
             break;
 
         // GET /api/system/users/get - Get user detail
         case 'get':
             requireAuth();
+        // 只读端点同样需要鉴权：此前仅 requireAuth()，任何登录账号都能拉取
+        // 全校教职工手机号/登录 IP/权限树，构成社工与提权的现成素材。
+        requirePermission('user_manage');
 
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -185,12 +188,12 @@ function handleUsersAction(string $action): void {
                 $user = $stmt->fetch();
 
                 if (!$user) {
-                    jsonResponse(['success' => false, 'message' => '用户不存在']);
+                    jsonResponse(['success' => false, 'message' => '用户不存在'], 404);
                 }
 
                 jsonResponse(['success' => true, 'data' => $user, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
@@ -200,7 +203,7 @@ function handleUsersAction(string $action): void {
             requirePermission('user_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -209,7 +212,7 @@ function handleUsersAction(string $action): void {
             $realName = isset($input['real_name']) ? trim($input['real_name']) : '';
 
             if (empty($username) || empty($password)) {
-                jsonResponse(['success' => false, 'message' => '用户名和密码不能为空']);
+                jsonResponse(['success' => false, 'message' => '用户名和密码不能为空'], 400);
             }
 
             $phone = isset($input['phone']) ? trim($input['phone']) : '';
@@ -233,9 +236,9 @@ function handleUsersAction(string $action): void {
                 jsonResponse(['success' => true, 'data' => ['id' => $userId], 'message' => '创建成功']);
             } catch (PDOException $e) {
                 if ($e->getCode() == 23000) {
-                    jsonResponse(['success' => false, 'message' => '用户名已存在']);
+                    jsonResponse(['success' => false, 'message' => '用户名已存在'], 409);
                 }
-                jsonResponse(['success' => false, 'message' => '创建失败']);
+                jsonResponse(['success' => false, 'message' => '创建失败'], 500);
             }
             break;
 
@@ -245,13 +248,13 @@ function handleUsersAction(string $action): void {
             requirePermission('user_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
             $id = isset($input['id']) ? intval($input['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             $updatableFields = ['username', 'real_name', 'phone', 'email', 'role_id', 'department', 'is_active'];
@@ -267,7 +270,7 @@ function handleUsersAction(string $action): void {
             }
 
             if (empty($updates)) {
-                jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+                jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
             }
 
             $values[] = $id;
@@ -282,9 +285,9 @@ function handleUsersAction(string $action): void {
                 jsonResponse(['success' => true, 'message' => '更新成功']);
             } catch (PDOException $e) {
                 if ($e->getCode() == 23000) {
-                    jsonResponse(['success' => false, 'message' => '用户名已存在']);
+                    jsonResponse(['success' => false, 'message' => '用户名已存在'], 409);
                 }
-                jsonResponse(['success' => false, 'message' => '更新失败']);
+                jsonResponse(['success' => false, 'message' => '更新失败'], 500);
             }
             break;
 
@@ -294,13 +297,13 @@ function handleUsersAction(string $action): void {
             requirePermission('user_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
             $id = isset($input['id']) ? intval($input['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             // Cannot delete self
@@ -318,7 +321,7 @@ function handleUsersAction(string $action): void {
 
                 jsonResponse(['success' => true, 'message' => '删除成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '删除失败']);
+                jsonResponse(['success' => false, 'message' => '删除失败'], 500);
             }
             break;
 
@@ -328,7 +331,7 @@ function handleUsersAction(string $action): void {
             requirePermission('user_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -336,7 +339,7 @@ function handleUsersAction(string $action): void {
             $newPassword = isset($input['new_password']) ? $input['new_password'] : '';
 
             if ($id <= 0 || empty($newPassword)) {
-                jsonResponse(['success' => false, 'message' => '用户ID和新密码不能为空']);
+                jsonResponse(['success' => false, 'message' => '用户ID和新密码不能为空'], 400);
             }
 
             try {
@@ -347,12 +350,12 @@ function handleUsersAction(string $action): void {
 
                 jsonResponse(['success' => true, 'message' => '密码重置成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '密码重置失败']);
+                jsonResponse(['success' => false, 'message' => '密码重置失败'], 500);
             }
             break;
 
         default:
-            jsonResponse(['success' => false, 'message' => '未知的用户操作: ' . $action]);
+            jsonResponse(['success' => false, 'message' => '未知的用户操作: ' . $action], 404);
     }
 }
 
@@ -385,17 +388,20 @@ function handleRolesAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => $roles, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
         // GET /api/system/roles/get - Get role detail
         case 'get':
             requireAuth();
+        // 只读端点同样需要鉴权：此前仅 requireAuth()，任何登录账号都能拉取
+        // 全校教职工手机号/登录 IP/权限树，构成社工与提权的现成素材。
+        requirePermission('role_manage');
 
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -407,7 +413,7 @@ function handleRolesAction(string $action): void {
                 $role = $stmt->fetch();
 
                 if (!$role) {
-                    jsonResponse(['success' => false, 'message' => '角色不存在']);
+                    jsonResponse(['success' => false, 'message' => '角色不存在'], 404);
                 }
 
                 $permStmt = $pdo->prepare(
@@ -418,7 +424,7 @@ function handleRolesAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => $role, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
@@ -428,7 +434,7 @@ function handleRolesAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -436,7 +442,7 @@ function handleRolesAction(string $action): void {
             $code = isset($input['code']) ? trim($input['code']) : '';
 
             if (empty($name) || empty($code)) {
-                jsonResponse(['success' => false, 'message' => '角色名称和编码不能为空']);
+                jsonResponse(['success' => false, 'message' => '角色名称和编码不能为空'], 400);
             }
 
             $description = isset($input['description']) ? trim($input['description']) : '';
@@ -455,9 +461,9 @@ function handleRolesAction(string $action): void {
                 jsonResponse(['success' => true, 'data' => ['id' => $roleId], 'message' => '创建成功']);
             } catch (PDOException $e) {
                 if ($e->getCode() == 23000) {
-                    jsonResponse(['success' => false, 'message' => '角色编码已存在']);
+                    jsonResponse(['success' => false, 'message' => '角色编码已存在'], 409);
                 }
-                jsonResponse(['success' => false, 'message' => '创建失败']);
+                jsonResponse(['success' => false, 'message' => '创建失败'], 500);
             }
             break;
 
@@ -467,13 +473,13 @@ function handleRolesAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
             $id = isset($input['id']) ? intval($input['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -529,7 +535,7 @@ function handleRolesAction(string $action): void {
                 jsonResponse(['success' => true, 'message' => '更新成功']);
             } catch (PDOException $e) {
                 $pdo->rollBack();
-                jsonResponse(['success' => false, 'message' => '更新失败']);
+                jsonResponse(['success' => false, 'message' => '更新失败'], 500);
             }
             break;
 
@@ -539,13 +545,13 @@ function handleRolesAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
             $id = isset($input['id']) ? intval($input['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -557,10 +563,10 @@ function handleRolesAction(string $action): void {
                 $role = $checkStmt->fetch();
 
                 if (!$role) {
-                    jsonResponse(['success' => false, 'message' => '角色不存在']);
+                    jsonResponse(['success' => false, 'message' => '角色不存在'], 404);
                 }
                 if ($role['is_system']) {
-                    jsonResponse(['success' => false, 'message' => '系统内置角色不可删除']);
+                    jsonResponse(['success' => false, 'message' => '系统内置角色不可删除'], 409);
                 }
 
                 // Check if role has users
@@ -577,7 +583,7 @@ function handleRolesAction(string $action): void {
 
                 jsonResponse(['success' => true, 'message' => '删除成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '删除失败']);
+                jsonResponse(['success' => false, 'message' => '删除失败'], 500);
             }
             break;
 
@@ -587,7 +593,7 @@ function handleRolesAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -595,12 +601,12 @@ function handleRolesAction(string $action): void {
             $permissionIdsJson = isset($input['permission_ids']) ? $input['permission_ids'] : '[]';
 
             if ($roleId <= 0) {
-                jsonResponse(['success' => false, 'message' => '角色ID不能为空']);
+                jsonResponse(['success' => false, 'message' => '角色ID不能为空'], 400);
             }
 
             $permissionIds = is_string($permissionIdsJson) ? json_decode($permissionIdsJson, true) : $permissionIdsJson;
             if (!is_array($permissionIds)) {
-                jsonResponse(['success' => false, 'message' => '权限ID格式错误']);
+                jsonResponse(['success' => false, 'message' => '权限ID格式错误'], 403);
             }
 
             try {
@@ -627,12 +633,12 @@ function handleRolesAction(string $action): void {
                 jsonResponse(['success' => true, 'message' => '权限设置成功']);
             } catch (PDOException $e) {
                 $pdo->rollBack();
-                jsonResponse(['success' => false, 'message' => '设置失败']);
+                jsonResponse(['success' => false, 'message' => '设置失败'], 500);
             }
             break;
 
         default:
-            jsonResponse(['success' => false, 'message' => '未知的角色操作: ' . $action]);
+            jsonResponse(['success' => false, 'message' => '未知的角色操作: ' . $action], 404);
     }
 }
 
@@ -641,6 +647,9 @@ function handleRolesAction(string $action): void {
 // ============================================================
 function handleSystemPermissions(): void {
     requireAuth();
+    // 修复（Step 3 边界核查发现）：此前仅 requireAuth()，任何登录用户都可拉取全量权限码清单。
+    // 权限码清单可被用于针对性构造越权请求，属敏感信息，须由系统管理权限把关。
+    requirePermission('system.manage');
 
     try {
         $pdo = getDB();
@@ -661,7 +670,7 @@ function handleSystemPermissions(): void {
 
         jsonResponse(['success' => true, 'data' => array_values($tree), 'message' => '获取成功']);
     } catch (PDOException $e) {
-        jsonResponse(['success' => false, 'message' => '获取失败']);
+        jsonResponse(['success' => false, 'message' => '获取失败'], 500);
     }
 }
 
@@ -726,7 +735,7 @@ function handleAuditLogs(): void {
             'message' => '查询成功'
         ]);
     } catch (PDOException $e) {
-        jsonResponse(['success' => false, 'message' => '查询失败']);
+        jsonResponse(['success' => false, 'message' => '查询失败'], 500);
     }
 }
 
@@ -762,7 +771,7 @@ function handleSettings(): void {
 
             jsonResponse(['success' => true, 'data' => $settings, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
     } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // POST /api/system/settings - Update settings
@@ -789,7 +798,7 @@ function handleSettings(): void {
 
             jsonResponse(['success' => true, 'message' => '设置更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '设置更新失败']);
+            jsonResponse(['success' => false, 'message' => '设置更新失败'], 500);
         }
     }
 }
@@ -802,6 +811,9 @@ function handlePermissionsAction(string $action): void {
         // GET /api/permissions/roles_list - Role list
         case 'roles_list':
             requireAuth();
+        // 只读端点同样需要鉴权：此前仅 requireAuth()，任何登录账号都能拉取
+        // 全校教职工手机号/登录 IP/权限树，构成社工与提权的现成素材。
+        requirePermission('role_manage');
 
             try {
                 $pdo = getDB();
@@ -811,17 +823,20 @@ function handlePermissionsAction(string $action): void {
                 $roles = $stmt->fetchAll();
                 jsonResponse(['success' => true, 'data' => $roles, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
         // GET /api/permissions/roles_get - Get role detail
         case 'roles_get':
             requireAuth();
+        // 只读端点同样需要鉴权：此前仅 requireAuth()，任何登录账号都能拉取
+        // 全校教职工手机号/登录 IP/权限树，构成社工与提权的现成素材。
+        requirePermission('role_manage');
 
             $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -833,7 +848,7 @@ function handlePermissionsAction(string $action): void {
                 $role = $stmt->fetch();
 
                 if (!$role) {
-                    jsonResponse(['success' => false, 'message' => '角色不存在']);
+                    jsonResponse(['success' => false, 'message' => '角色不存在'], 404);
                 }
 
                 $permStmt = $pdo->prepare('SELECT permission_id FROM role_permissions WHERE role_id = ?');
@@ -842,7 +857,7 @@ function handlePermissionsAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => $role, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
@@ -852,7 +867,7 @@ function handlePermissionsAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -860,7 +875,7 @@ function handlePermissionsAction(string $action): void {
             $code = isset($input['code']) ? trim($input['code']) : '';
 
             if (empty($name) || empty($code)) {
-                jsonResponse(['success' => false, 'message' => '角色名称和编码不能为空']);
+                jsonResponse(['success' => false, 'message' => '角色名称和编码不能为空'], 400);
             }
 
             $description = isset($input['description']) ? trim($input['description']) : '';
@@ -879,9 +894,9 @@ function handlePermissionsAction(string $action): void {
                 jsonResponse(['success' => true, 'data' => ['id' => $roleId], 'message' => '创建成功']);
             } catch (PDOException $e) {
                 if ($e->getCode() == 23000) {
-                    jsonResponse(['success' => false, 'message' => '角色编码已存在']);
+                    jsonResponse(['success' => false, 'message' => '角色编码已存在'], 409);
                 }
-                jsonResponse(['success' => false, 'message' => '创建失败']);
+                jsonResponse(['success' => false, 'message' => '创建失败'], 500);
             }
             break;
 
@@ -891,13 +906,13 @@ function handlePermissionsAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
             $id = isset($input['id']) ? intval($input['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -949,7 +964,7 @@ function handlePermissionsAction(string $action): void {
                 jsonResponse(['success' => true, 'message' => '更新成功']);
             } catch (PDOException $e) {
                 $pdo->rollBack();
-                jsonResponse(['success' => false, 'message' => '更新失败']);
+                jsonResponse(['success' => false, 'message' => '更新失败'], 500);
             }
             break;
 
@@ -959,13 +974,13 @@ function handlePermissionsAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
             $id = isset($input['id']) ? intval($input['id']) : 0;
             if ($id <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -975,10 +990,10 @@ function handlePermissionsAction(string $action): void {
                 $role = $checkStmt->fetch();
 
                 if (!$role) {
-                    jsonResponse(['success' => false, 'message' => '角色不存在']);
+                    jsonResponse(['success' => false, 'message' => '角色不存在'], 404);
                 }
                 if ($role['is_system']) {
-                    jsonResponse(['success' => false, 'message' => '系统内置角色不可删除']);
+                    jsonResponse(['success' => false, 'message' => '系统内置角色不可删除'], 409);
                 }
 
                 $stmt = $pdo->prepare('DELETE FROM roles WHERE id = ?');
@@ -988,13 +1003,16 @@ function handlePermissionsAction(string $action): void {
 
                 jsonResponse(['success' => true, 'message' => '删除成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '删除失败']);
+                jsonResponse(['success' => false, 'message' => '删除失败'], 500);
             }
             break;
 
         // GET /api/permissions/permissions_tree - Permission tree
         case 'permissions_tree':
             requireAuth();
+        // 只读端点同样需要鉴权：此前仅 requireAuth()，任何登录账号都能拉取
+        // 全校教职工手机号/登录 IP/权限树，构成社工与提权的现成素材。
+        requirePermission('role_manage');
 
             try {
                 $pdo = getDB();
@@ -1014,17 +1032,20 @@ function handlePermissionsAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => array_values($tree), 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
         // GET /api/permissions/user_permissions - Get user permissions
         case 'user_permissions':
             requireAuth();
+        // 只读端点同样需要鉴权：此前仅 requireAuth()，任何登录账号都能拉取
+        // 全校教职工手机号/登录 IP/权限树，构成社工与提权的现成素材。
+        requirePermission('role_manage');
 
             $roleId = isset($_GET['role_id']) ? intval($_GET['role_id']) : 0;
             if ($roleId <= 0) {
-                jsonResponse(['success' => false, 'message' => '参数错误']);
+                jsonResponse(['success' => false, 'message' => '参数错误'], 400);
             }
 
             try {
@@ -1040,7 +1061,7 @@ function handlePermissionsAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => $permissions, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
@@ -1050,7 +1071,7 @@ function handlePermissionsAction(string $action): void {
             requirePermission('role_manage');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -1058,12 +1079,12 @@ function handlePermissionsAction(string $action): void {
             $permissionIdsJson = isset($input['permission_ids']) ? $input['permission_ids'] : '[]';
 
             if ($roleId <= 0) {
-                jsonResponse(['success' => false, 'message' => '角色ID不能为空']);
+                jsonResponse(['success' => false, 'message' => '角色ID不能为空'], 400);
             }
 
             $permissionIds = is_string($permissionIdsJson) ? json_decode($permissionIdsJson, true) : $permissionIdsJson;
             if (!is_array($permissionIds)) {
-                jsonResponse(['success' => false, 'message' => '权限ID格式错误']);
+                jsonResponse(['success' => false, 'message' => '权限ID格式错误'], 403);
             }
 
             try {
@@ -1088,12 +1109,12 @@ function handlePermissionsAction(string $action): void {
                 jsonResponse(['success' => true, 'message' => '权限设置成功']);
             } catch (PDOException $e) {
                 $pdo->rollBack();
-                jsonResponse(['success' => false, 'message' => '设置失败']);
+                jsonResponse(['success' => false, 'message' => '设置失败'], 500);
             }
             break;
 
         default:
-            jsonResponse(['success' => false, 'message' => '未知的权限操作: ' . $action]);
+            jsonResponse(['success' => false, 'message' => '未知的权限操作: ' . $action], 403);
     }
 }
 
@@ -1296,10 +1317,10 @@ function handleReportsAction(string $action): void {
                 break;
 
             default:
-                jsonResponse(['success' => false, 'message' => '未知的报表操作: ' . $action]);
+                jsonResponse(['success' => false, 'message' => '未知的报表操作: ' . $action], 404);
         }
     } catch (PDOException $e) {
-        jsonResponse(['success' => false, 'message' => '获取统计数据失败']);
+        jsonResponse(['success' => false, 'message' => '获取统计数据失败'], 500);
     }
 }
 
@@ -1336,7 +1357,7 @@ function handleRegistryAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => $menu, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
@@ -1352,7 +1373,7 @@ function handleRegistryAction(string $action): void {
 
                 jsonResponse(['success' => true, 'data' => $modules, 'message' => '获取成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '获取失败']);
+                jsonResponse(['success' => false, 'message' => '获取失败'], 500);
             }
             break;
 
@@ -1361,7 +1382,7 @@ function handleRegistryAction(string $action): void {
             requirePermission('system_settings');
 
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-                jsonResponse(['success' => false, 'message' => '请求方式错误']);
+                jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
             }
 
             $input = getInput();
@@ -1369,7 +1390,7 @@ function handleRegistryAction(string $action): void {
             $isActive = isset($input['is_active']) ? intval($input['is_active']) : 1;
 
             if ($moduleId <= 0) {
-                jsonResponse(['success' => false, 'message' => '模块ID不能为空']);
+                jsonResponse(['success' => false, 'message' => '模块ID不能为空'], 400);
             }
 
             try {
@@ -1379,7 +1400,7 @@ function handleRegistryAction(string $action): void {
 
                 jsonResponse(['success' => true, 'message' => '更新成功']);
             } catch (PDOException $e) {
-                jsonResponse(['success' => false, 'message' => '更新失败']);
+                jsonResponse(['success' => false, 'message' => '更新失败'], 500);
             }
             break;
 
@@ -1404,6 +1425,6 @@ function handleRegistryAction(string $action): void {
             break;
 
         default:
-            jsonResponse(['success' => false, 'message' => '未知的注册表操作: ' . $action]);
+            jsonResponse(['success' => false, 'message' => '未知的注册表操作: ' . $action], 404);
     }
 }

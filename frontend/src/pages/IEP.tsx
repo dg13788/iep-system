@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/authStore';
 import IEPList from './iep/IEPList';
@@ -17,6 +18,7 @@ import {
   fetchTeacherOptions,
   recordGoalProgress,
   saveGoals,
+  QualityGateError,
   submitIEP,
   updateIEP,
 } from '@/services/iep';
@@ -27,6 +29,7 @@ const LIST_PAGE_SIZE = 100;
 
 export default function IEP() {
   const { user, permissions } = useAuthStore();
+  const [searchParams] = useSearchParams();
   const iepLevel = permissions?.iep_level || 'full';
   const isParticipate = iepLevel === 'participate';
   const isFull = iepLevel === 'full';
@@ -153,6 +156,22 @@ export default function IEP() {
     setDetailOpen(true);
   }, []);
 
+  /**
+   * 深链支持：/iep?plan=<id>
+   *
+   * 今日工作台里点「目标详情 / 复审 / 审批」时，用户要落在这个计划的详情上，
+   * 而不是停在 21 条计划的列表里再自己找一遍。URL 带 plan 参数即在加载完成后自动展开。
+   */
+  const planIdParam = searchParams.get('plan');
+  useEffect(() => {
+    if (!planIdParam || plans.length === 0 || detailOpen) return;
+    const target = plans.find((p) => String(p.id) === planIdParam);
+    if (target) {
+      setViewingPlan(target);
+      setDetailOpen(true);
+    }
+  }, [planIdParam, plans, detailOpen]);
+
   const handleDelete = useCallback(async (plan: IEPPlan) => {
     // Only full permission users can delete
     if (!isFull) {
@@ -214,7 +233,20 @@ export default function IEP() {
       toast.error('您没有权限提交审核');
       return;
     }
-    await submitIEP(Number(plan.id));
+    try {
+      await submitIEP(Number(plan.id));
+    } catch (e) {
+      // v7：一致性质检不通过时，把具体问题逐条告诉老师，而不是一句「提交失败」
+      if (e instanceof QualityGateError) {
+        toast.error('未通过 IEP 一致性质检', {
+          description: e.brief.join('　'),
+          duration: 15000,
+        });
+        return;
+      }
+      toast.error(e instanceof Error ? e.message : '提交失败');
+      return;
+    }
     toast.success('IEP 计划已提交审核');
     await loadPlans();
   }, [isFull, loadPlans]);

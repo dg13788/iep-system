@@ -79,6 +79,8 @@ interface RawParent {
   last_login_at?: string | null;
   address?: string | null;
   created_at?: string | null;
+  /** v14：后端 list 下发的关联学生名（数组）；旧字段 student_names_csv 为逗号串兜底 */
+  student_names?: string[] | string | null;
 }
 
 interface RawCommunication {
@@ -149,7 +151,14 @@ export function adaptParent(raw: RawParent | null | undefined): ParentAccount {
     phone: str(r.phone),
     email: nullableStr(r.email),
     relation: str(r.relation),
-    student_names: [],
+    // v14：后端 list 已下发关联学生名（GROUP_CONCAT → 数组）。
+    // 原实现硬编码空数组，导致「关联学生」列表头有列、内容永远空白。
+    // 同时容忍逗号串形态（历史/其他端点），两种都解析为字符串数组。
+    student_names: Array.isArray(r.student_names)
+      ? r.student_names.map(String).filter((s) => s.trim() !== '')
+      : (typeof r.student_names === 'string' && r.student_names.trim() !== ''
+          ? r.student_names.split(',').map((s) => s.trim()).filter((s) => s !== '')
+          : []),
     student_ids: [],
     login_count: 0,
     last_login: nullableStr(r.last_login_at),

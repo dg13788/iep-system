@@ -112,28 +112,65 @@ switch ($action) {
             $total = intval($countStmt->fetchColumn());
 
             // Data
+            // v14 真实浏览器冒烟修复：原 SQL 未取 template_id/template_name，
+            // 前端只能用 assessment_type（initial）冒充「评估模板」列，表格里
+            // 「评估类型」「评估模板」两列显示同一个原始枚举值。
+            // 注意：students 表无 student_no 列（学号由前端按入学年份派生，
+            // 见 frontend/src/services/students.ts）——曾误加 s.student_no 导致
+            // 整个 list 500，字段假设必须以 schema 为准。
             $sql = 'SELECT a.id, a.student_id, s.name AS student_name, a.assessor_id, u.real_name AS assessor_name,
-                           a.assessment_date, a.assessment_type, a.total_score, a.max_score, a.score_percentage, a.status,
+                           a.assessment_date, a.assessment_type, a.template_id, t.name AS template_name,
+                           a.total_score, a.max_score, a.score_percentage, a.status,
                            a.summary, a.recommendations, a.created_at
                     FROM assessments a
                     LEFT JOIN students s ON a.student_id = s.id
                     LEFT JOIN users u ON a.assessor_id = u.id
+                    LEFT JOIN assessment_templates t ON a.template_id = t.id
                     WHERE ' . $whereStr . $scopeClause . ' ORDER BY a.assessment_date DESC LIMIT ' . $offset . ', ' . $pageSize;
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute($queryParams);
             $list = $stmt->fetchAll();
 
+            // v14：assessment_type 是字典枚举（initial/midterm/final/annual），
+            // 直接把原始码推给前端，表格「评估类型」列会显示 "initial"。
+            // ADR-033：字典是唯一口径，展示名由后端随列表下发；同时下发字典全集，
+            // 供前端筛选下拉消费（原下拉硬编码旧五类，对存量 initial 数据全部查不到）。
+            $typeLabels = [];
+            $labelStmt = $pdo->query(
+                "SELECT code, name FROM dict_common WHERE category = 'assessment_type' AND is_active = 1 ORDER BY sort_order, id"
+            );
+            foreach ($labelStmt->fetchAll() as $lr) {
+                $typeLabels[$lr['code']] = $lr['name'];
+            }
+            foreach ($list as &$lr) {
+                $code = (string)($lr['assessment_type'] ?? '');
+                $lr['assessment_type_label'] = $typeLabels[$code] ?? $code;
+            }
+            unset($lr);
+
             // Audit log
             logDataScopeAccess('assessments', $scope['type'], $total);
 
             jsonResponse([
                 'success' => true,
-                'data'    => ['list' => $list, 'total' => $total, 'page' => $page, 'pageSize' => $pageSize],
+                'data'    => [
+                    'list' => $list,
+                    'total' => $total,
+                    'page' => $page,
+                    'pageSize' => $pageSize,
+                    'assessment_types' => array_map(
+                        static fn($code, $name) => ['code' => $code, 'name' => $name],
+                        array_keys($typeLabels),
+                        array_values($typeLabels)
+                    ),
+                ],
                 'message' => '查询成功'
             ]);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '查询失败']);
+            // v14：500 不得静默——把真实 SQL 错误写进 error_log，否则线上只能看到"查询失败"
+            error_log('assessments/list PDO: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '查询失败'], 500);
         }
         break;
 
@@ -145,7 +182,7 @@ switch ($action) {
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：防 IDOR 越权读取评估记录
@@ -164,21 +201,33 @@ switch ($action) {
             $assessment = $stmt->fetch();
 
             if (!$assessment) {
-                jsonResponse(['success' => false, 'message' => '评估记录不存在']);
+                jsonResponse(['success' => false, 'message' => '评估记录不存在'], 404);
             }
 
             // Get assessment items
             $itemStmt = $pdo->prepare(
-                'SELECT id, dimension, item_name, item_description, score, max_score, score_level, notes, sort_order 
-                 FROM assessment_items 
+                'SELECT id, dimension, item_name, item_description, score, max_score, score_level, notes, sort_order
+                 FROM assessment_items
                  WHERE assessment_id = ? ORDER BY sort_order, id'
             );
             $itemStmt->execute([$id]);
             $assessment['items'] = $itemStmt->fetchAll();
 
+            // v14：详情与列表同口径——assessment_type 是字典枚举，展示名由后端下发。
+            // 缺此字段时前端只能回退显示原始编码（initial），与列表页的「初期评估」不一致。
+            $typeLabels = [];
+            $labelStmt = $pdo->query(
+                "SELECT code, name FROM dict_common WHERE category = 'assessment_type' AND is_active = 1"
+            );
+            foreach ($labelStmt->fetchAll() as $lr) {
+                $typeLabels[$lr['code']] = $lr['name'];
+            }
+            $typeCode = (string)($assessment['assessment_type'] ?? '');
+            $assessment['assessment_type_label'] = $typeLabels[$typeCode] ?? $typeCode;
+
             jsonResponse(['success' => true, 'data' => $assessment, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -190,7 +239,7 @@ switch ($action) {
         requirePermission('eval_create');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
@@ -198,7 +247,24 @@ switch ($action) {
         $assessmentType = isset($input['assessment_type']) ? trim($input['assessment_type']) : '';
 
         if ($studentId <= 0 || empty($assessmentType)) {
-            jsonResponse(['success' => false, 'message' => '学生ID和评估类型不能为空']);
+            jsonResponse(['success' => false, 'message' => '学生ID和评估类型不能为空'], 400);
+        }
+
+        // v14 口径修复（ADR-033 + ADR-018）：assessment_type 必须是字典内的编码
+        // （initial/midterm/final/annual）。此前前端把「模板分类」（课程本位/专项评估…）
+        // 直接塞进该字段，与字典、存量数据（全部 initial）三套口径互相矛盾，
+        // 且筛选下拉按字典值过滤时新建记录永远查不到。非字典值一律 400，不放行。
+        $pdo = getDB();
+        $validTypeStmt = $pdo->prepare(
+            "SELECT code FROM dict_common WHERE category = 'assessment_type' AND is_active = 1"
+        );
+        $validTypeStmt->execute();
+        $validTypes = $validTypeStmt->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array($assessmentType, $validTypes, true)) {
+            jsonResponse([
+                'success' => false,
+                'message' => '评估类型无效：' . $assessmentType . '（有效值：' . implode('/', $validTypes) . '）'
+            ], 400);
         }
 
         // 数据范围校验：禁止为范围外学生创建评估
@@ -265,7 +331,7 @@ switch ($action) {
             jsonResponse(['success' => true, 'data' => ['id' => $assessmentId], 'message' => '评估创建成功']);
         } catch (PDOException $e) {
             $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => '创建失败: ' . $e->getMessage()]);
+            jsonResponse(['success' => false, 'message' => '创建失败: ' . $e->getMessage()], 500);
         }
         break;
 
@@ -277,13 +343,13 @@ switch ($action) {
         requirePermission('eval_edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：禁止修改范围外评估记录
@@ -293,6 +359,23 @@ switch ($action) {
             'assessment_type', 'assessment_date', 'total_score', 'max_score',
             'summary', 'recommendations', 'status'
         ];
+
+        // v14：与 create 同一条字典校验，避免更新旁路把非字典值写进 assessment_type
+        if (isset($input['assessment_type'])) {
+            $pdo = getDB();
+            $validTypeStmt = $pdo->prepare(
+                "SELECT code FROM dict_common WHERE category = 'assessment_type' AND is_active = 1"
+            );
+            $validTypeStmt->execute();
+            $validTypes = $validTypeStmt->fetchAll(PDO::FETCH_COLUMN);
+            $newType = trim((string)$input['assessment_type']);
+            if (!in_array($newType, $validTypes, true)) {
+                jsonResponse([
+                    'success' => false,
+                    'message' => '评估类型无效：' . $newType . '（有效值：' . implode('/', $validTypes) . '）'
+                ], 400);
+            }
+        }
 
         $updates = [];
         $values = [];
@@ -324,21 +407,58 @@ switch ($action) {
         }
 
         if (empty($updates)) {
-            jsonResponse(['success' => false, 'message' => '没有需要更新的字段']);
+            jsonResponse(['success' => false, 'message' => '没有需要更新的字段'], 400);
         }
 
         $values[] = $id;
 
         try {
             $pdo = getDB();
+            $pdo->beginTransaction();
+
             $stmt = $pdo->prepare('UPDATE assessments SET ' . implode(', ', $updates) . ', updated_at = NOW() WHERE id = ? AND deleted_at IS NULL');
             $stmt->execute($values);
+
+            // v14：编辑评估时随主记录一起整体重写条目得分（先删后插，同事务）。
+            // 缺此能力时「继续编辑」只能改文字字段，条目评分永远是建评时的旧值。
+            if (isset($input['items'])) {
+                $items = is_string($input['items']) ? json_decode($input['items'], true) : $input['items'];
+                if (is_array($items)) {
+                    $delStmt = $pdo->prepare('DELETE FROM assessment_items WHERE assessment_id = ?');
+                    $delStmt->execute([$id]);
+                    if (count($items) > 0) {
+                        $itemStmt = $pdo->prepare(
+                            'INSERT INTO assessment_items (assessment_id, dimension, item_name,
+                             item_description, score, max_score, score_level, notes, sort_order, created_at)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+                        );
+                        foreach ($items as $index => $item) {
+                            $iMax = isset($item['max_score']) ? intval($item['max_score']) : 0;
+                            $iScore = isset($item['score']) ? intval($item['score']) : 0;
+                            $itemStmt->execute([
+                                $id,
+                                isset($item['dimension']) ? trim((string)$item['dimension']) : '',
+                                isset($item['item_name']) ? trim((string)$item['item_name']) : '',
+                                isset($item['item_description']) ? trim((string)$item['item_description']) : '',
+                                $iScore,
+                                $iMax,
+                                isset($item['score_level']) ? trim((string)$item['score_level']) : null,
+                                isset($item['notes']) ? trim((string)$item['notes']) : '',
+                                $index,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            $pdo->commit();
 
             auditLog('update', 'assessments', 'assessment', $id, '', null, null, '更新评估记录');
 
             jsonResponse(['success' => true, 'message' => '更新成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '更新失败']);
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;
 
@@ -350,13 +470,13 @@ switch ($action) {
         requirePermission('eval_delete');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $input = getInput();
         $id = isset($input['id']) ? intval($input['id']) : 0;
         if ($id <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         // 数据范围校验：禁止删除范围外评估记录
@@ -371,7 +491,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败']);
+            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
         }
         break;
 
@@ -394,7 +514,7 @@ switch ($action) {
             $templates = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $templates, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -406,7 +526,7 @@ switch ($action) {
 
         $templateId = isset($_GET['template_id']) ? intval($_GET['template_id']) : 0;
         if ($templateId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
 
         try {
@@ -420,7 +540,7 @@ switch ($action) {
             $items = $stmt->fetchAll();
             jsonResponse(['success' => true, 'data' => $items, 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -432,8 +552,11 @@ switch ($action) {
 
         $studentId = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
         if ($studentId <= 0) {
-            jsonResponse(['success' => false, 'message' => '参数错误']);
+            jsonResponse(['success' => false, 'message' => '参数错误'], 400);
         }
+        // 同文件的 get/update/delete 都做了范围校验，只有这个端点漏了：
+        // 传任意 student_id 就能拉取该生全部评估明细。
+        requireStudentInScope($studentId);
 
         try {
             $pdo = getDB();
@@ -460,7 +583,7 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => array_values($recommendations), 'message' => '获取成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '获取失败']);
+            jsonResponse(['success' => false, 'message' => '获取失败'], 500);
         }
         break;
 
@@ -473,7 +596,7 @@ switch ($action) {
 
         $format = isset($_GET['format']) ? strtolower(trim($_GET['format'])) : 'csv';
         if (!in_array($format, ['csv', 'json', 'md', 'markdown', 'xlsx', 'docx', 'pdf'], true)) {
-            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format]);
+            jsonResponse(['success' => false, 'message' => '不支持的导出格式: ' . $format], 400);
         }
 
         try {
@@ -544,13 +667,23 @@ switch ($action) {
             $stmt->execute($queryParams);
             $data = $stmt->fetchAll();
 
+            // v14：导出同样下发字典展示名，与列表口径一致（不外泄原始编码）
+            $exportTypeLabels = [];
+            $exportLabelStmt = $pdo->query(
+                "SELECT code, name FROM dict_common WHERE category = 'assessment_type' AND is_active = 1"
+            );
+            foreach ($exportLabelStmt->fetchAll() as $lr) {
+                $exportTypeLabels[$lr['code']] = $lr['name'];
+            }
+
             logDataScopeAccess('assessments', $scope['type'], count($data));
 
             $headers = ['学生姓名', '评估人', '评估日期', '评估类型', '总分', '满分', '得分率(%)', '状态', '评估摘要', '康复建议'];
-            $rows = array_map(function ($r) {
+            $rows = array_map(function ($r) use ($exportTypeLabels) {
+                $typeCode = (string)($r['assessment_type'] ?? '');
                 return [
                     $r['student_name'] ?? '', $r['assessor_name'] ?? '', $r['assessment_date'] ?? '',
-                    $r['assessment_type'] ?? '', $r['total_score'] ?? '', $r['max_score'] ?? '',
+                    $exportTypeLabels[$typeCode] ?? $typeCode, $r['total_score'] ?? '', $r['max_score'] ?? '',
                     $r['score_percentage'] ?? '', $r['status'] ?? '', $r['summary'] ?? '',
                     $r['recommendations'] ?? '',
                 ];
@@ -558,7 +691,7 @@ switch ($action) {
 
             io_download($format, '评估记录', $headers, $rows);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '导出失败']);
+            jsonResponse(['success' => false, 'message' => '导出失败'], 500);
         }
         break;
 
@@ -570,7 +703,7 @@ switch ($action) {
         requirePermission('eval_import');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            jsonResponse(['success' => false, 'message' => '请求方式错误']);
+            jsonResponse(['success' => false, 'message' => '请求方式错误'], 405);
         }
 
         $filename = isset($_FILES['file']['name']) ? $_FILES['file']['name'] : '';
@@ -592,7 +725,7 @@ switch ($action) {
 
         $map = io_map_columns($parsed['header'], $columnMap);
         if (!empty($map['missing'])) {
-            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])]);
+            jsonResponse(['success' => false, 'message' => '缺少必需列: ' . implode('、', $map['missing'])], 400);
         }
         $colIndex = $map['colIndex'];
 
@@ -604,6 +737,19 @@ switch ($action) {
         $userId = isset($user['sub']) ? intval($user['sub']) : 0;
         $scope = getDataScope();
 
+        // v14：评估类型字典（编码 ↔ 展示名双向映射）。
+        // 导入同时接受两种写法：代码（initial）或导出文件里的展示名（初期评估），
+        // 保证「导出 → 编辑 → 导回」往返不因口径切换而失败。
+        $importTypeLabels = [];
+        $importTypeCodes = [];
+        $importLabelStmt = $pdo->query(
+            "SELECT code, name FROM dict_common WHERE category = 'assessment_type' AND is_active = 1"
+        );
+        foreach ($importLabelStmt->fetchAll() as $lr) {
+            $importTypeLabels[$lr['code']] = $lr['name'];
+            $importTypeCodes[$lr['name']] = $lr['code'];
+        }
+
         foreach ($parsed['rows'] as $lineNo => $row) {
             $data = io_extract_row($row, $colIndex);
             if (trim($data['student_name']) === '' || trim($data['assessment_type']) === '') {
@@ -611,6 +757,18 @@ switch ($action) {
                 $errors[] = "第 " . ($lineNo + 2) . " 行：学生姓名与评估类型不能为空";
                 continue;
             }
+
+            // 展示名（初期评估）归一为编码（initial）；两者都不是则拒绝该行
+            $rawType = trim($data['assessment_type']);
+            if (isset($importTypeCodes[$rawType])) {
+                $rawType = $importTypeCodes[$rawType];
+            }
+            if (!isset($importTypeLabels[$rawType])) {
+                $failed++;
+                $errors[] = "第 " . ($lineNo + 2) . " 行：评估类型「" . $data['assessment_type'] . "」无效（有效值：" . implode('/', array_keys($importTypeLabels)) . "）";
+                continue;
+            }
+            $data['assessment_type'] = $rawType;
 
             $studentId = io_lookup_student_by_name($pdo, $data['student_name']);
             if ($studentId <= 0) {
@@ -665,5 +823,5 @@ switch ($action) {
         break;
 
     default:
-        jsonResponse(['success' => false, 'message' => '未知的评估操作: ' . $action]);
+        jsonResponse(['success' => false, 'message' => '未知的评估操作: ' . $action], 404);
 }

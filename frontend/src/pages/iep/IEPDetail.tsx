@@ -24,17 +24,8 @@ import {
   Edit3,
   Eye,
   Loader2,
+  Wand2,
 } from 'lucide-react';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from 'recharts';
 import { cn } from '@/lib/utils';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,21 +36,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IEPPlan, GoalStatus, IEPGoal, ProgressRecord } from './types';
+import type { IEPPlan, GoalStatus, IEPGoal } from './types';
 import { STATUS_COLORS, GOAL_AREA_COLORS, GOAL_STATUS_COLORS } from './types';
 import SignaturePad from './SignaturePad';
+import GoalProgressPanel, { ConsistencyPanel, DecisionSummary } from './GoalProgressPanel';
+import GoalDraftDrawer from './GoalDraftDrawer';
+import TransitionPanel from './TransitionPanel';
 import { useDataScopeConfig } from '@/utils/dataScope';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { exportIEPDetailToPDF, exportIEPDetailToWord } from '@/utils/documentExport';
-import { approveIEP, fetchIEP, signIEP, updateIEP, fetchIEPMeta } from '@/services/iep';
-import type { ApprovalDecision } from '@/services/iep';
+import {
+  approveIEP,
+  fetchConsistencyCheck,
+  fetchIEP,
+  fetchProgressAnalysis,
+  signIEP,
+  updateIEP,
+  fetchIEPMeta,
+} from '@/services/iep';
+import type { ApprovalDecision, ConsistencyCheck, PlanAnalysis } from '@/services/iep';
 import type { IEPLevel } from '@/store/authStore';
 import ObjectivesPanel from './ObjectivesPanel';
 import ServicesMeetingPanel from './ServicesMeetingPanel';
 
-type DetailTab = '基本信息' | '长短期目标' | '短期目标' | '进度追踪' | '服务与会议' | '审批记录' | '家长签名';
+type DetailTab = '基本信息' | '长短期目标' | '短期目标' | '进度追踪' | '转衔与家长' | '服务与会议' | '审批记录' | '家长签名';
 
-const tabs: DetailTab[] = ['基本信息', '长短期目标', '短期目标', '进度追踪', '服务与会议', '审批记录', '家长签名'];
+const tabs: DetailTab[] = ['基本信息', '长短期目标', '短期目标', '进度追踪', '转衔与家长', '服务与会议', '审批记录', '家长签名'];
 
 const actionIcons: Record<string, React.ReactNode> = {
   '提交草稿': <FileText className="w-4 h-4" />,
@@ -126,6 +128,8 @@ export default function IEPDetail({
 
   const [activeTab, setActiveTab] = useState<DetailTab>('基本信息');
   const [signatureSaved, setSignatureSaved] = useState(false);
+  /** Step 3：从评估起草目标抽屉 */
+  const [draftOpen, setDraftOpen] = useState(false);
 
   // ---- 详情数据（GET /iep/get）----
   const [detail, setDetail] = useState<Awaited<ReturnType<typeof fetchIEP>> | null>(null);
@@ -135,8 +139,51 @@ export default function IEPDetail({
   const [approveComment, setApproveComment] = useState('');
   const [signing, setSigning] = useState(false);
   const [savingProgress, setSavingProgress] = useState(false);
-  /** 后端没有进度历史查询接口，这里记录本次会话中真实提交过的记录用于趋势图 */
-  const [progressHistory, setProgressHistory] = useState<ProgressRecord[]>([]);
+  // v7（Step 1）：进度分析（目标线 / 趋势线 / 决策结论 / 干预调整）全部由后端统一计算，
+  // 前端不再本地拼装趋势数据 —— 此前这一版只能用「本次会话刚提交的那条记录」冒充趋势，
+  // 刷新即空，属于把「已入库的数据」浪费掉的功能性缺陷。
+  const [planAnalysis, setPlanAnalysis] = useState<PlanAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+  const loadAnalysis = useCallback(async () => {
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    try {
+      setPlanAnalysis(await fetchProgressAnalysis(Number(plan.id)));
+    } catch (e) {
+      setPlanAnalysis(null);
+      setAnalysisError(e instanceof Error ? e.message : '进度分析加载失败');
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [plan.id]);
+
+  useEffect(() => {
+    void loadAnalysis();
+  }, [loadAnalysis]);
+
+  // 提交前自检（error 级问题会在点「提交审核」时真正被后端拦下）
+  const [consistency, setConsistency] = useState<ConsistencyCheck | null>(null);
+  const [consistencyLoading, setConsistencyLoading] = useState(false);
+
+  const loadConsistency = useCallback(async () => {
+    setConsistencyLoading(true);
+    try {
+      setConsistency(await fetchConsistencyCheck(Number(plan.id)));
+    } catch {
+      setConsistency(null);
+    } finally {
+      setConsistencyLoading(false);
+    }
+  }, [plan.id]);
+
+  useEffect(() => {
+    void loadConsistency();
+  }, [loadConsistency]);
+
+  // 进度追踪页的整体加载态
+  const analysisLoadingAny = analysisLoading || consistencyLoading;
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -189,6 +236,12 @@ export default function IEPDetail({
     return [...allGoals.filter(isGoalEditable), ...allGoals.filter((g) => !isGoalEditable(g))];
   }, [allGoals, isFull, isParticipate, isGoalEditable]);
 
+  // v7：供进度决策面板判断「能否为该目标录入干预调整」
+  const editableGoalIds = useMemo(
+    () => new Set(allGoals.filter(isGoalEditable).map((g) => String(g.id))),
+    [allGoals, isGoalEditable],
+  );
+
   const approvalLogs = useMemo(() => detail?.approvalLogs ?? [], [detail]);
   const signature = useMemo(
     () => detail?.signatures.find((s) => s.status === '已签名') ?? null,
@@ -204,17 +257,6 @@ export default function IEPDetail({
     currentPlan.status === '已驳回' ? '草稿' : currentPlan.status,
   );
   const planProgress = currentPlan.progress_percent ?? 0;
-
-  // 趋势图数据：仅使用本会话真实提交的进度记录，没有则不展示图表
-  const goalProgressData = useMemo(
-    () =>
-      progressHistory.map((r) => ({
-        date: r.record_date,
-        score: r.max_score > 0 ? Math.round((r.score / r.max_score) * 100) : r.score,
-        promptLevel: r.prompt_level || '—',
-      })),
-    [progressHistory],
-  );
 
   // Open progress update sheet
   const openProgressSheet = (goal: IEPGoal) => {
@@ -232,27 +274,10 @@ export default function IEPDetail({
     setSavingProgress(true);
     try {
       await onUpdateGoalProgress?.(selectedGoalId, progressRate[0], progressStatus, progressNotes);
-      const today = new Date().toISOString().split('T')[0];
-      setProgressHistory((prev) => [
-        ...prev,
-        {
-          id: `local-${Date.now()}`,
-          goal_id: selectedGoalId,
-          record_date: today,
-          score: Math.round((progressRate[0] / 100) * 5),
-          max_score: 5,
-          prompt_level: progressStatus === '已完成' ? '独立' : '',
-          notes: progressNotes,
-          teacher: currentUserName,
-          created_at: today,
-        },
-      ]);
       setProgressSheetOpen(false);
       setSelectedGoalId(null);
-      await loadDetail();
+      await loadAnalysis();
       await onRefresh?.();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : '进度更新失败');
     } finally {
       setSavingProgress(false);
     }
@@ -610,6 +635,25 @@ export default function IEPDetail({
                     </p>
                   </div>
                 )}
+                {/* Step 3：从评估起草目标。目标是 IEP 的心脏，但"目标源自哪次评估"此前只存在
+                    于教师脑中；这里把它变成系统里可校验的事实（写 source_assessment_id）。 */}
+                {!readOnly && (
+                  <div className="flex items-center justify-between gap-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[#1E293B]">还没有目标或想补充目标？</p>
+                      <p className="text-[11px] text-[#64748B]">
+                        可从该生最近一次评估归纳需求领域，生成带溯源的目标草案，由您逐条确认后采纳。
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setDraftOpen(true)}
+                      className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#4F46E5] text-white text-xs font-medium hover:bg-[#4338CA] cursor-pointer"
+                    >
+                      <Wand2 className="w-3.5 h-3.5" />
+                      从评估起草
+                    </button>
+                  </div>
+                )}
                 {displayGoals.length === 0 ? (
                   <div className="text-center py-12">
                     <Target className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
@@ -737,6 +781,17 @@ export default function IEPDetail({
               </motion.div>
             )}
 
+            {activeTab === '转衔与家长' && (
+              <motion.div
+                key="transition"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <TransitionPanel planId={Number(plan.id)} canEdit={!readOnly} />
+              </motion.div>
+            )}
             {activeTab === '服务与会议' && (
               <motion.div
                 key="services-meeting"
@@ -756,236 +811,57 @@ export default function IEPDetail({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-6"
+                className="space-y-4"
               >
-                {/* Goal Progress Trend Chart */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="border border-[#E2E8F0] rounded-lg p-5"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-base font-semibold text-[#1E293B]">目标达成趋势</h4>
-                    <span className="text-xs text-[#94A3B8]">辅助级别变化</span>
-                  </div>
-                  {goalProgressData.length === 0 ? (
-                    <div className="h-[280px] flex flex-col items-center justify-center gap-3">
-                      <TrendingUp className="w-10 h-10 text-[#CBD5E1]" />
-                      <p className="text-sm text-[#64748B]">暂无进度记录，更新目标进度后显示趋势</p>
-                    </div>
-                  ) : (
-                  <>
-                  <div className="h-[280px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={goalProgressData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                        <defs>
-                          <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#977653" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#977653" stopOpacity={0} />
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fontSize: 12, fill: '#94A3B8' }}
-                          tickLine={false}
-                          axisLine={{ stroke: '#E2E8F0' }}
-                        />
-                        <YAxis
-                          domain={[0, 100]}
-                          tick={{ fontSize: 12, fill: '#94A3B8' }}
-                          tickLine={false}
-                          axisLine={{ stroke: '#E2E8F0' }}
-                        />
-                        <Tooltip
-                          content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              return (
-                                <div className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 shadow-sm">
-                                  <p className="text-xs text-[#94A3B8]">{label}</p>
-                                  <p className="text-sm font-semibold text-[#977653]">得分: {data.score}</p>
-                                  <p className="text-xs text-[#64748B]">辅助级别: {data.promptLevel}</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <ReferenceLine
-                          y={80}
-                          stroke="#10B981"
-                          strokeDasharray="6 3"
-                          strokeWidth={2}
-                          label={{ value: '目标线 80', position: 'right', fill: '#10B981', fontSize: 12 }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="score"
-                          stroke="#977653"
-                          strokeWidth={2.5}
-                          fill="url(#scoreGradient)"
-                          dot={{ r: 4, fill: '#977653', stroke: '#fff', strokeWidth: 2 }}
-                          activeDot={{ r: 6, fill: '#977653', stroke: '#fff', strokeWidth: 2 }}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </div>
-                  {/* Prompt level labels below chart */}
-                  <div className="mt-3 flex items-center justify-between px-2">
-                    {goalProgressData.map((item, index) => (
-                      <motion.div
-                        key={`${item.date}-${index}`}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 + index * 0.05 }}
-                        className="flex flex-col items-center"
-                      >
-                        <span className="text-[10px] text-[#977653] font-medium bg-[#F5F0EB] px-1.5 py-0.5 rounded">
-                          {item.promptLevel}
-                        </span>
-                      </motion.div>
-                    ))}
-                  </div>
-                  </>
-                  )}
-                </motion.div>
-
-                {/* Permission hint for participate users */}
-                {isParticipate && (
-                  <div className="bg-[#F5F3FF] rounded-lg p-3 border border-[#8B5CF6]/20">
-                    <p className="text-xs text-[#8B5CF6]">
-                      您只能更新自己负责的目标进度，其他目标仅可查看。
-                    </p>
+                {analysisLoadingAny && (
+                  <div className="h-24 flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#94A3B8]" />
                   </div>
                 )}
 
-                {allGoals.length === 0 ? (
-                  <div className="text-center py-12">
-                    <TrendingUp className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
-                    <p className="text-sm text-[#64748B]">暂无进度数据</p>
+                {!analysisLoading && analysisError && (
+                  <div className="rounded-md border border-[#FECACA] bg-[#FEF2F2] p-3 text-xs text-[#B91C1C]">
+                    {analysisError}
                   </div>
-                ) : (
-                  allGoals.map((goal) => {
-                    const records = progressHistory.filter((r) => r.goal_id === goal.id);
-                    const userIsOwner = isGoalEditable(goal);
-                    return (
-                      <motion.div
-                        key={goal.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={cn(
-                          "border rounded-lg p-5",
-                          userIsOwner ? "border-[#E2E8F0]" : "border-[#E2E8F0] bg-[#FAFBFC]"
-                        )}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                              style={{ backgroundColor: GOAL_AREA_COLORS[goal.area] || '#64748B' }}
-                            >
-                              {goal.area}
-                            </span>
-                            <span className="text-sm font-semibold text-[#1E293B]">{goal.title}</span>
-                            <span className={cn(
-                              'px-2 py-0.5 rounded-full text-xs font-medium',
-                              GOAL_STATUS_COLORS[goal.status]?.bg,
-                              GOAL_STATUS_COLORS[goal.status]?.text,
-                            )}>
-                              {goal.status}
-                            </span>
-                            {!userIsOwner && (isParticipate || isView) && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#F0F2F5] text-[#94A3B8]">
-                                <Eye className="w-3 h-3 inline mr-0.5" />
-                                只读
-                              </span>
-                            )}
-                          </div>
-                          {userIsOwner && (
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              onClick={() => openProgressSheet(goal)}
-                              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                              更新
-                            </motion.button>
-                          )}
-                        </div>
+                )}
 
-                        {/* Responsible teacher badge */}
-                        <div className="flex items-center gap-1 mb-2">
-                          <span className="text-xs text-[#94A3B8]">责任人:</span>
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-[#F5F0EB] text-[#7A5F42]">
-                            <User className="w-3 h-3" />
-                            {goal.responsible_teacher_name || goal.responsible_teacher}
-                            {userIsOwner && <span className="text-[#977653]">(我)</span>}
-                          </span>
-                        </div>
+                {!analysisLoading && !analysisError && planAnalysis && (
+                  <>
+                    <ConsistencyPanel check={consistency} loading={consistencyLoading} />
+                    <DecisionSummary summary={planAnalysis.summary} />
 
-                        {records.length === 0 ? (
-                          <p className="text-sm text-[#94A3B8] py-4">暂无教学记录</p>
-                        ) : (
-                          <div className="overflow-hidden rounded-lg border border-[#E2E8F0]">
-                            <table className="w-full">
-                              <thead className="bg-[#F7F6F4]">
-                                <tr>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-[#94A3B8]">日期</th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-[#94A3B8]">教师</th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-[#94A3B8]">得分</th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-[#94A3B8]">辅助级别</th>
-                                  <th className="px-3 py-2 text-left text-xs font-semibold text-[#94A3B8]">备注</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {records.map((record) => (
-                                  <tr key={record.id} className="border-t border-[#F1F5F9]">
-                                    <td className="px-3 py-2 text-sm text-[#1E293B]">{record.record_date}</td>
-                                    <td className="px-3 py-2 text-sm text-[#1E293B]">{record.teacher}</td>
-                                    <td className="px-3 py-2">
-                                      <span className={cn(
-                                        'text-sm font-medium',
-                                        record.score >= 4 ? 'text-[#10B981]' :
-                                        record.score >= 3 ? 'text-[#977653]' :
-                                        'text-[#F59E0B]'
-                                      )}>
-                                        {record.score}/{record.max_score}
-                                      </span>
-                                    </td>
-                                    <td className="px-3 py-2 text-sm text-[#64748B]">{record.prompt_level}</td>
-                                    <td className="px-3 py-2 text-sm text-[#64748B]">{record.notes}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
+                    {planAnalysis.goals.length === 0 ? (
+                      <div className="text-center py-12">
+                        <TrendingUp className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
+                        <p className="text-sm text-[#64748B]">该计划还没有长期目标，暂无进度数据</p>
+                      </div>
+                    ) : (
+                      planAnalysis.goals.map((g) => {
+                        const goal = allGoals.find((x) => String(x.id) === String(g.goal_id));
+                        return (
+                          <GoalProgressPanel
+                            key={g.goal_id}
+                            planId={plan.id}
+                            analysis={g}
+                            editable={editableGoalIds.has(String(g.goal_id))}
+                            onRecordProgress={goal && editableGoalIds.has(String(g.goal_id)) ? () => openProgressSheet(goal) : undefined}
+                            onChanged={() => {
+                              void loadAnalysis();
+                              void loadDetail();
+                            }}
+                          />
+                        );
+                      })
+                    )}
+                  </>
+                )}
 
-                        {/* Mini trend visualization */}
-                        {records.length > 1 && (
-                          <div className="mt-3 flex items-end gap-1 h-16">
-                            {records.map((r, i) => (
-                              <motion.div
-                                key={r.id}
-                                initial={{ height: 0 }}
-                                animate={{ height: `${(r.score / r.max_score) * 100}%` }}
-                                transition={{ duration: 0.3, delay: i * 0.05 }}
-                                className="flex-1 rounded-t"
-                                style={{
-                                  backgroundColor: r.score >= 4 ? '#10B981' : r.score >= 3 ? '#977653' : '#F59E0B',
-                                  minHeight: '4px',
-                                }}
-                                title={`${r.record_date}: ${r.score}/${r.max_score}`}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })
+                {isParticipate && (
+                  <div className="bg-[#F5F3FF] rounded-lg p-3 border border-[#8B5CF6]/20">
+                    <p className="text-xs text-[#8B5CF6]">
+                      您只能为自己负责的目标记录干预调整，其他目标仅可查看。
+                    </p>
+                  </div>
                 )}
               </motion.div>
             )}
@@ -1372,6 +1248,22 @@ export default function IEPDetail({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Step 3：从评估起草目标（覆盖在详情之上） */}
+        {draftOpen && (
+          <GoalDraftDrawer
+            planId={Number(plan.id)}
+            studentName={currentPlan?.student_name}
+            editable={!readOnly}
+            onClose={() => setDraftOpen(false)}
+            onAdopted={() => {
+              void loadDetail();
+              void loadAnalysis();
+              void loadConsistency();
+              void onRefresh?.();
+            }}
+          />
+        )}
       </motion.div>
     </div>
   );
@@ -1553,6 +1445,7 @@ function PlacementMeetingCard({
           </div>
         </div>
       )}
+
     </div>
   );
 }

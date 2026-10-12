@@ -508,7 +508,7 @@ export default function StudentList({
                     </td>
                     <td className="px-3 py-3 text-[#64748B]">{student.student_no}</td>
                     <td className="px-3 py-3 text-[#64748B]">{student.gender}</td>
-                    <td className="px-3 py-3 text-[#64748B]">{student.age}岁</td>
+                    <td className="px-3 py-3 text-[#64748B]">{student.age === null ? '—' : `${student.age}岁`}</td>
                     <td className="px-3 py-3">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#F0F2F5] text-[#405680]">
                         {student.class_name}

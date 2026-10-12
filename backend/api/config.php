@@ -5,6 +5,20 @@
  */
 
 // ============================================================
+// 时区：必须在任何 date()/time() 调用之前设定
+//
+// 2026-10-12 实测发现：php.ini 未设 date.timezone，PHP 默认 UTC，
+// 而 MySQL 与操作系统按本地时区（Asia/Shanghai）。两边差 8 小时，
+// 直接后果是——凌晨 0 点到 8 点之间，PHP 侧「今天是昨天」：
+//   · 今日工作台的基准日错一天
+//   · 逾期天数、临期时限全部偏移 1 天
+//   · 试次/审计等用 date() 落库的日期与真实日期不符
+// 本地私有化部署面向中国学校，时区显式钉死为 Asia/Shanghai
+// （可用环境变量 IEP_TIMEZONE 覆盖，便于境外部署）。
+// ============================================================
+date_default_timezone_set(getenv('IEP_TIMEZONE') ?: 'Asia/Shanghai');
+
+// ============================================================
 // Error Reporting - controlled by environment variable
 // Set IEP_DEBUG=true in development; never enable in production
 // ============================================================
@@ -167,7 +181,7 @@ function getDB(): PDO {
             $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             $pdo->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => 'Database connection failed']);
+            jsonResponse(['success' => false, 'message' => 'Database connection failed'], 500);
             exit;
         }
     }
@@ -368,6 +382,79 @@ function requireAuth(): array {
 // ============================================================
 // Check Permission (RBAC v3 - Permission Group Based)
 // ============================================================
+/**
+ * 权限码别名（新旧两套码的等价映射）
+ *
+ * 背景：permissions 表定义的是点分新码（iep.view），而 permission_groups.feature_permissions
+ * 里存的是下划线旧码（iep_view）。checkPermission 原本是严格字符串匹配，
+ * 结果就是：凡用新码校验的接口，对持旧码的教师岗一律 403 —— Step1~3 新增的端点
+ * （progress_analysis / consistency_check / goal_draft 等）对教师实际全部不可用。
+ *
+ * 这里做**等价别名**而不是放宽：旧码与新码是同一次重命名前后的两个名字，语义相同。
+ * 不映射 system.manage / role_manage / user_manage 等高危码，
+ * 也不把宽泛旧码（如 data_overview）提升到具体写权限。
+ */
+function iepPermissionAliases(string $code): array
+{
+    static $map = null;
+    static $rev = null;
+    if ($map === null) {
+        $map = [
+            'students.view'    => ['student_view'],
+            'students.create'  => ['student_create'],
+            'students.edit'    => ['student_edit'],
+            'students.delete'  => ['student_delete'],
+            'students.export'  => ['student_export'],
+            'assessments.view' => ['eval_view'],
+            'assessments.create' => ['eval_create'],
+            'assessments.edit' => ['eval_edit'],
+            'assessments.delete' => ['eval_delete'],
+            'assessments.audit' => ['eval_audit'],
+            'assessments.template_view'   => ['template_view'],
+            'assessments.template_manage' => ['template_manage'],
+            'iep.view'         => ['iep_view'],
+            'iep.create'       => ['iep_create'],
+            'iep.edit'         => ['iep_edit'],
+            'iep.delete'       => ['iep_delete'],
+            'iep.approve'      => ['iep_approve'],
+            'iep.sign'         => ['iep_sign'],
+            'iep.goal_manage'  => ['goal_update'],
+            'iep.progress'     => ['progress_record'],
+            'teaching.view'    => ['record_view'],
+            'teaching.create'  => ['record_create'],
+            'teaching.edit'    => ['record_edit'],
+            'teaching.delete'  => ['record_delete'],
+            'templates.view'   => ['template_view'],
+            'templates.create' => ['template_create'],
+            'templates.edit'   => ['template_edit'],
+            'templates.delete' => ['template_delete'],
+            'parents.view'     => ['parent_view'],
+            'parents.create'   => ['parent_create'],
+            'parents.edit'     => ['parent_edit', 'parent_manage'],
+            'parents.delete'   => ['parent_delete'],
+            // ADR-014 漏网补登记：代码用新码 parents.communication_create，
+            // 但各权限组持有的是旧码 communication_record，未登记别名 →
+            // 新码成孤儿，教师记录家长沟通被 403。新码与旧码等价。
+            'parents.communication_create' => ['communication_record'],
+            'parents.communication_view'   => ['parent_view', 'communication_record'],
+            'reports.dashboard' => ['data_overview', 'statistics_view'],
+            // reports.iep 此前既未授予任何组、也没有别名通道，
+            // 靠 school.php 里的 reports.dashboard 兜底才没暴露。
+            'reports.iep'      => ['report_generate', 'report_export'],
+        ];
+        $rev = [];
+        foreach ($map as $nw => $olds) {
+            foreach ($olds as $o) {
+                $rev[$o][] = $nw;
+            }
+        }
+    }
+    $out = [$code];
+    if (isset($map[$code])) $out = array_merge($out, $map[$code]);
+    if (isset($rev[$code])) $out = array_merge($out, $rev[$code]);
+    return array_values(array_unique($out));
+}
+
 function checkPermission(string $permissionCode): bool {
     $user = getCurrentUser();
     if (!$user) return false;
@@ -406,7 +493,11 @@ function checkPermission(string $permissionCode): bool {
             return false;
         }
 
-        return in_array($permissionCode, $features, true);
+        // 新旧码等价匹配：详见 iepPermissionAliases() 的说明
+        foreach (iepPermissionAliases($permissionCode) as $candidate) {
+            if (in_array($candidate, $features, true)) return true;
+        }
+        return false;
     } catch (PDOException $e) {
         error_log('CheckPermission error: ' . $e->getMessage());
         return false;
@@ -528,7 +619,9 @@ function auditLog(
             $userType = 'user';
 
             // Determine user type
-            if (isset($user['type']) && $user['type'] === 'parent') {
+            // 原判定只认 JWT type='parent'，users 表登录的家长角色账号会被记成 'user'，
+            // 审计里看不出这是家长本人的操作，追溯时与教职工混淆。
+            if (currentUserIsParent($user)) {
                 $userType = 'parent';
             } elseif ($userId === 0) {
                 $userType = 'system';
@@ -813,6 +906,26 @@ function isStudentInScope(int $studentId, ?array $scope = null): bool {
         }
     }
 
+    // 主责教师命中（teacher 类型）
+    // 必须与 pa_plan_scope_clause() 同口径：它认 p.primary_teacher_id，
+    // 此处若认，会出现「列表里看得到这条计划、点进去却被 403」的撕裂。
+    if ($type === 'teacher' && !empty($scope['teacher_id'])) {
+        try {
+            $pdo = getDB();
+            $stmt = $pdo->prepare(
+                'SELECT 1 FROM iep_plans
+                  WHERE student_id = ? AND primary_teacher_id = ? AND deleted_at IS NULL LIMIT 1'
+            );
+            $stmt->execute([$studentId, (int)$scope['teacher_id']]);
+            if ($stmt->fetchColumn()) {
+                return true;
+            }
+        } catch (PDOException $e) {
+            error_log('isStudentInScope primary_teacher check error: ' . $e->getMessage());
+            // 失败不提前返回 true；继续走后续班级判定，最终由 fail-closed 兜底
+        }
+    }
+
     // 再看班级归属（class_teacher / teacher 类型）
     if (in_array($type, ['class_teacher', 'teacher'], true)) {
         $classIds = array_map('intval', $scope['class_ids'] ?? []);
@@ -872,6 +985,40 @@ function requireClassInScope(int $classId, ?array $scope = null): void {
 /**
  * 断言指定 IEP 计划所属学生在数据范围内，否则返回 403
  */
+/**
+ * 断言指定家长在可见范围内，否则返回 403。
+ *
+ * 家长本身没有「班级/年级」这类归属维度，只能通过其关联学生反查：
+ * 只要该家长名下有任意一个学生在可见范围内，就允许查看。
+ * parents/get 此前只做 requireAuth()，等于任何登录账号都能遍历全校家长的
+ * 手机号 / 邮箱 / 住址 / 微信 openid —— 残障儿童家庭信息属监管红线级数据。
+ */
+function requireParentInScope(int $parentId, ?array $scope = null): void {
+    if ($parentId <= 0) {
+        jsonResponse(['success' => false, 'message' => '参数错误'], 400);
+    }
+    $scope = $scope ?? getDataScope();
+    if (($scope['type'] ?? 'none') === 'all') {
+        return;
+    }
+    try {
+        $pdo = getDB();
+        $stmt = $pdo->prepare('SELECT student_id FROM student_parents WHERE parent_id = ?');
+        $stmt->execute([$parentId]);
+        $ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    } catch (PDOException $e) {
+        error_log('requireParentInScope error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '数据校验失败'], 500);
+        return;
+    }
+    foreach ($ids as $sid) {
+        if (isStudentInScope((int)$sid, $scope)) {
+            return;
+        }
+    }
+    jsonResponse(['success' => false, 'message' => '无权访问该家长信息'], 403);
+}
+
 function requireIepInScope(int $planId, ?array $scope = null): void {
     if ($planId <= 0) {
         jsonResponse(['success' => false, 'message' => '参数错误'], 400);
@@ -1144,6 +1291,70 @@ function requireBipInScope(int $bipId, ?array $scope = null): void {
  *   2) 家长本人查看自己的孩子
  * 其余一律脱敏。
  */
+/**
+ * 当前用户是否为家长身份。
+ *
+ * 家长有两类账号，只认第一类会让第二类的家长端功能整体失效：
+ *   1) parents 表登录（手机号+密码） → JWT type='parent'
+ *   2) users 表里的家长角色账号      → type 缺省，靠 role_id / permission_group_id = 5 识别
+ */
+function currentUserIsParent(?array $user = null): bool
+{
+    $user = $user ?: getCurrentUser();
+    if (!$user) {
+        return false;
+    }
+    if (($user['type'] ?? 'user') === 'parent') {
+        return true;
+    }
+    return intval($user['role_id'] ?? 0) === 5 || intval($user['permission_group_id'] ?? 0) === 5;
+}
+
+/**
+ * 当前用户在 parents 表中的 id（非家长返回 null）。
+ *
+ * 历史陷阱：两类账号的 sub 含义不同——
+ *   1) parents 表登录：sub 本身就是 parents.id
+ *   2) users 表登录  ：sub 是 users.id，必须经 users.parent_ref_id 映射
+ * 直接把 users.id 当 parents.id 用，会读到另一个家庭的数据
+ * （例如演示家长 parent1 的 users.id=6，而 parents.id=6 是另一位学生的父亲），
+ * 轻则家长端列表空白，重则越权读取/代签他人子女信息。
+ * JWT 未携带 parent_ref_id 时回落到 DB 查询，避免「加了字段但旧 token 没接线」。
+ */
+function currentParentId(?array $user = null): ?int
+{
+    $user = $user ?: getCurrentUser();
+    if (!$user) {
+        return null;
+    }
+    if (($user['type'] ?? 'user') === 'parent') {
+        $id = intval($user['sub'] ?? 0);
+        return $id > 0 ? $id : null;
+    }
+    if (!currentUserIsParent($user)) {
+        return null;
+    }
+    $uid = intval($user['sub'] ?? 0);
+    if ($uid <= 0) {
+        return null;
+    }
+    if (!empty($user['parent_ref_id'])) {
+        $ref = intval($user['parent_ref_id']);
+        if ($ref > 0) {
+            return $ref;
+        }
+    }
+    try {
+        $pdo = getDB();
+        $st  = $pdo->prepare('SELECT parent_ref_id FROM users WHERE id = ? LIMIT 1');
+        $st->execute([$uid]);
+        $ref = $st->fetchColumn();
+        return $ref ? intval($ref) : null;
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
 function canViewSensitiveStudent(int $studentId): bool {
     if ($studentId <= 0) {
         return false;
@@ -1155,8 +1366,16 @@ function canViewSensitiveStudent(int $studentId): bool {
     if (checkPermission('student_view_sensitive')) {
         return true;
     }
-    // 家长看自己的孩子
-    if (($user['type'] ?? 'user') === 'parent') {
+    // 家长看自己的孩子。
+    // 注意家长有两类账号，原实现只认了第一类：
+    //   1) parents 表登录的账号      → JWT type='parent'
+    //   2) users 表里的家长角色账号  → type 仍是 'user'，靠 role_id/组 识别
+    // 漏掉第二类会导致「家长角色账号连自己孩子的联系电话都看不到」，
+    // 与「家长本人查看自己的孩子」的设计意图相反。
+    $isParent = (($user['type'] ?? 'user') === 'parent')
+        || intval($user['role_id'] ?? 0) === 5
+        || intval($user['permission_group_id'] ?? 0) === 5;
+    if ($isParent) {
         $scope = getDataScope();
         $ids = array_map('intval', $scope['student_ids'] ?? []);
         return in_array($studentId, $ids, true);

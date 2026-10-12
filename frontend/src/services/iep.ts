@@ -203,7 +203,7 @@ export type ApprovalDecision = 'approve' | 'reject';
  * 通用工具
  * ============================================================ */
 
-class ApiError extends Error {}
+export class ApiError extends Error {}
 
 /** 统一解包 { success, message, data }，失败时抛出带后端 message 的 Error */
 function unwrap<T>(res: { success: boolean; message?: string; data?: T }): T {
@@ -222,10 +222,26 @@ const str = (v: unknown): string => (v === null || v === undefined ? '' : String
 
 function parseTeamMembers(raw: string | string[] | null | undefined): string[] {
   if (!raw) return [];
-  if (Array.isArray(raw)) return raw.map(String);
+  // 兼容两种历史形态：字符串数组，以及 [{role, user_id}] 对象数组。
+  // 后端已归一化为「姓名（角色）」，此处仅作兜底——若直接 map(String)，
+  // 对象数组会渲染成 "[object Object]"（详情页与导出文档都会中招）。
+  if (Array.isArray(raw)) {
+    return raw
+      .map((m) => {
+        if (typeof m === 'string') return m.trim();
+        if (m && typeof m === 'object') {
+          const nm = (m as { name?: string }).name ?? '';
+          const role = (m as { role?: string }).role ?? '';
+          if (!nm) return role;
+          return role && role !== nm ? `${nm}（${role}）` : nm;
+        }
+        return '';
+      })
+      .filter(Boolean);
+  }
   try {
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed.map(String);
+    if (Array.isArray(parsed)) return parseTeamMembers(parsed);
   } catch {
     /* 非 JSON，按分隔符兜底 */
   }
@@ -475,10 +491,15 @@ interface RawStudentOption {
 
 /**
  * GET /system/users —— 教师下拉。
- * 该端点需要 user_manage 权限，普通教师会被后端拒绝，
- * 此时返回空数组，由调用方回退为“当前用户”。
+ * 该端点需要 user_manage 权限，普通教师会被后端拒绝。
+ * 前端先按登录时下发的功能权限判断：无 user_manage 直接返回空数组，
+ * 由调用方回退为“当前用户”——避免每次进页面都发出一次注定 403 的请求
+ * （冒烟测试 2026-10-11：该请求在 5 个非管理员角色上稳定产生 403 + console error）。
  */
 export async function fetchTeacherOptions(): Promise<TeacherOption[]> {
+  // 延迟引入避免 store ↔ service 循环依赖
+  const { useAuthStore } = await import('../store/authStore');
+  if (!useAuthStore.getState().hasFeature('user_manage')) return [];
   const res = await api.get<{ list?: unknown[] }>('/system/users', { page: 1, pageSize: 100 });
   if (!res.success) return [];
   const rows = res.data?.list ?? [];
@@ -658,10 +679,37 @@ export async function deleteIEP(id: number | string): Promise<void> {
   unwrap(res);
 }
 
-/** POST /iep/submit */
+/**
+ * 提交审核被「一致性质检」拦下时抛出的错误
+ * 后端返回 422 + data.check（完整问题清单）与 data.brief（可直接展示的要点）
+ */
+export class QualityGateError extends Error {
+  readonly brief: string[];
+  readonly issues: ConsistencyIssue[];
+  constructor(message: string, brief: string[], issues: ConsistencyIssue[]) {
+    super(message);
+    this.name = 'QualityGateError';
+    this.brief = brief;
+    this.issues = issues;
+  }
+}
+
+/** POST /iep/submit（v7：未通过一致性质检时抛 QualityGateError） */
 export async function submitIEP(id: number | string): Promise<void> {
-  const res = await api.post('/iep/submit', { id: num(id, 0) });
-  unwrap(res);
+  const res = await api.post<{ check?: ConsistencyCheck; brief?: string[] }>('/iep/submit', {
+    id: num(id, 0),
+  });
+  if (!res.success) {
+    const d = res.data as { check?: ConsistencyCheck; brief?: string[] } | undefined;
+    if (d?.check) {
+      throw new QualityGateError(
+        res.message || '未通过 IEP 一致性质检',
+        d.brief ?? [],
+        d.check.issues ?? [],
+      );
+    }
+    throw new ApiError(res.message || '提交失败');
+  }
 }
 
 /**
@@ -1067,6 +1115,8 @@ export interface IEPMeta {
   placement_types: string[];
   related_services: Array<{ code: string; name: string; category?: string | null; description?: string | null }>;
   communication_methods: Array<{ code: string; name: string; value?: string | null }>;
+  /** v13：目标领域（后端下发，口径唯一；前端常量仅作兜底） */
+  goal_areas: string[];
 }
 
 export async function fetchIEPMeta(): Promise<IEPMeta> {
@@ -1076,5 +1126,245 @@ export async function fetchIEPMeta(): Promise<IEPMeta> {
     placement_types: data?.placement_types ?? [],
     related_services: data?.related_services ?? [],
     communication_methods: data?.communication_methods ?? [],
+    goal_areas: data?.goal_areas ?? [],
   };
 }
+
+/* ============================================================
+ * v7 进度智能内核（Progress Intelligence Core）
+ *   算法全部在后端 backend/api/progress_analysis.php，
+ *   前端只负责呈现，不重复实现一套口径。
+ * ============================================================ */
+
+/** 一个进度数据点（已归一到 0-100 百分位） */
+export interface ProgressPoint {
+  date: string;
+  value: number;
+  raw?: string;
+  prompt_level?: string | null;
+  session_type?: string | null;
+}
+
+/**
+ * 目标线（aim line）
+ * valid=false 时 reason 说明为何画不出来——此时前端必须显示原因，
+ * 绝不能退回任何固定数值假装有一条目标线。
+ */
+export interface AimLine {
+  valid: boolean;
+  reason?: string;
+  start_date?: string;
+  start_value?: number;
+  end_date?: string;
+  end_value?: number;
+  slope?: number;
+  source?: { start?: string; end?: string; target_scale?: string };
+}
+
+/** 趋势线（最近 4 个点最小二乘拟合） */
+export interface TrendLine {
+  n: number;
+  start_date: string;
+  end_date: string;
+  start_value: number;
+  end_value: number;
+  slope: number;
+}
+
+/**
+ * 决策等级。
+ * regression（倒退）是决策内核新增的等级——补齐前前端类型不认识它，
+ * DECISION_META[level] 取到 undefined，渲染时会直接炸或显示空白。
+ * 严重度由高到低：regression > adjust > watch > stale > nodata > on_track > mastered
+ */
+export type DecisionLevel =
+  | 'adjust' | 'watch' | 'on_track' | 'stale' | 'mastered' | 'nodata' | 'regression';
+
+/** 目标方向：increase=越高越好；decrease=越低越好（如问题行为发生率） */
+export type GoalDirection = 'increase' | 'decrease';
+
+export interface DecisionResult {
+  level: DecisionLevel;
+  level_text: string;
+  reasons: string[];
+  evidence: {
+    points?: number;
+    below_window?: number;
+    below_count?: number;
+    trend_ratio?: number | null;
+    days_since_last?: number;
+    expected_days?: number | null;
+    /** 目标方向——递减型目标（发生率）的判定与递增型完全相反 */
+    direction?: GoalDirection;
+    /** 命中的规则编号，用于解释「为什么是这个结论」 */
+    rule_hit?: string[];
+    /** 判定所依据的辅助层级 */
+    judged_level?: string | null;
+  };
+  suggestions: Array<{ type: string; text: string }>;
+}
+
+export interface InterventionAdjustment {
+  id: number;
+  date: string;
+  trigger_type: string;
+  trigger_detail?: string | null;
+  change_type: string;
+  change_detail: string;
+  hypothesis?: string | null;
+  outcome: string;
+  review_due_date?: string | null;
+  decided_by_name?: string | null;
+}
+
+/** 序列来源与辅助层级元信息 */
+export interface SeriesMeta {
+  source?: string;
+  rating_points?: number;
+  trial_points?: number;
+  trial_points_mixed?: number;
+  observed_max?: number | null;
+  /** 达标判定所依据的辅助层级（默认 independent） */
+  target_level?: string | null;
+  /** 实际用于判定的层级：目标层级无数据时回退到最接近的一级 */
+  judged_level?: string | null;
+  /** true 表示发生了回退——判定用的不是目标层级，结论要谨慎 */
+  judged_level_faded?: boolean;
+  /** 本目标出现过的全部辅助层级 */
+  levels_available?: string[];
+}
+
+export interface GoalAnalysis {
+  goal_id: number;
+  title: string;
+  area: string;
+  /** 主序列：取判定层级的试次，不是各层级混算 */
+  points: ProgressPoint[];
+  /** 各层级混算的参考线（仅作对照，不用于判定） */
+  points_mixed?: ProgressPoint[];
+  /** 按辅助层级分组的独立序列——撤提示进展的证据 */
+  by_level?: Record<string, ProgressPoint[]>;
+  /** 目标方向 */
+  direction?: GoalDirection;
+  series?: SeriesMeta;
+  aim: AimLine;
+  trend: TrendLine | null;
+  decision: DecisionResult;
+  adjustments: InterventionAdjustment[];
+}
+
+/** 辅助层级由多到少的显示顺序（撤提示的方向） */
+export const PROMPT_LEVEL_ORDER = ['physical', 'model', 'gesture', 'verbal', 'independent'] as const;
+
+export const PROMPT_LEVEL_LABEL: Record<string, string> = {
+  physical: '肢体辅助',
+  model: '示范',
+  gesture: '手势',
+  verbal: '口头',
+  independent: '独立',
+};
+
+export interface PlanAnalysis {
+  goals: GoalAnalysis[];
+  summary: Record<DecisionLevel, number>;
+}
+
+/** GET /iep/progress_analysis?plan_id */
+export async function fetchProgressAnalysis(planId: number | string): Promise<PlanAnalysis> {
+  const res = await api.get<PlanAnalysis>('/iep/progress_analysis', { plan_id: num(planId, 0) });
+  const data = unwrap(res) ?? ({} as PlanAnalysis);
+  return {
+    goals: data.goals ?? [],
+    summary:
+      data.summary ??
+      ({ adjust: 0, watch: 0, on_track: 0, stale: 0, mastered: 0, nodata: 0 } as PlanAnalysis['summary']),
+  };
+}
+
+export type IssueLevel = 'error' | 'warn';
+
+export interface ConsistencyIssue {
+  code: string;
+  level: IssueLevel;
+  scope: 'plan' | 'goal';
+  title: string;
+  detail: string;
+  ref?: { count?: number; samples?: string[] };
+}
+
+export interface ConsistencyCheck {
+  passed: boolean;
+  error_count: number;
+  warn_count: number;
+  issues: ConsistencyIssue[];
+}
+
+/** GET /iep/consistency_check?plan_id */
+export async function fetchConsistencyCheck(planId: number | string): Promise<ConsistencyCheck> {
+  const res = await api.get<ConsistencyCheck>('/iep/consistency_check', { plan_id: num(planId, 0) });
+  const data = unwrap(res);
+  return {
+    passed: !!data?.passed,
+    error_count: num(data?.error_count, 0),
+    warn_count: num(data?.warn_count, 0),
+    issues: data?.issues ?? [],
+  };
+}
+
+export interface AdjustmentSavePayload {
+  id?: number;
+  plan_id?: number;
+  goal_id?: number;
+  adjusted_at?: string;
+  trigger_type?: string;
+  trigger_detail?: string;
+  hypothesis?: string;
+  change_type?: string;
+  change_detail: string;
+  review_due_date?: string;
+  outcome?: string;
+}
+
+/** POST /iep/adjustment_save */
+export async function saveAdjustment(payload: AdjustmentSavePayload): Promise<number> {
+  const res = await api.post<{ id?: number }>('/iep/adjustment_save', payload);
+  const data = unwrap(res) ?? {};
+  return num(data.id, 0);
+}
+
+/** POST /iep/adjustment_delete */
+export async function deleteAdjustment(id: number): Promise<void> {
+  const res = await api.post('/iep/adjustment_delete', { id });
+  unwrap(res);
+}
+
+/** 决策等级的展示元信息（颜色/文案），与后端 level 一一对应 */
+export const DECISION_META: Record<DecisionLevel, { label: string; bg: string; text: string; dot: string }> = {
+  regression: { label: '出现倒退',   bg: 'bg-[#7F1D1D]', text: 'text-[#FEE2E2]', dot: '#991B1B' },
+  adjust:   { label: '建议调整干预', bg: 'bg-[#FEF2F2]', text: 'text-[#B91C1C]', dot: '#DC2626' },
+  watch:    { label: '需关注',       bg: 'bg-[#FFFBEB]', text: 'text-[#B45309]', dot: '#D97706' },
+  on_track: { label: '进展符合预期', bg: 'bg-[#ECFDF5]', text: 'text-[#047857]', dot: '#059669' },
+  stale:    { label: '数据已过期',   bg: 'bg-[#F1F5F9]', text: 'text-[#475569]', dot: '#64748B' },
+  mastered: { label: '已达标待复核', bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]', dot: '#2563EB' },
+  nodata:   { label: '尚无数据',     bg: 'bg-[#F8FAFC]', text: 'text-[#64748B]', dot: '#94A3B8' },
+};
+
+export const CHANGE_TYPE_LABEL: Record<string, string> = {
+  dosage: '增加剂量',
+  prompt_level: '调整辅助层级',
+  material: '更换材料',
+  grouping: '调整分组',
+  schedule: '调整时段',
+  behavior_support: '增加行为支持',
+  reinforcement: '调整强化',
+  task_analysis: '重做任务分析',
+  environment: '调整环境',
+  other: '其他',
+};
+
+export const OUTCOME_LABEL: Record<string, string> = {
+  effective: '有效',
+  partially_effective: '部分有效',
+  ineffective: '未见效',
+  pending: '待观察',
+};
