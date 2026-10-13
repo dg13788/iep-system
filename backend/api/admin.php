@@ -821,7 +821,13 @@ function adminInit(): void {
     $input = getInput();
     $mode = isset($input['mode']) ? trim((string) $input['mode']) : 'reset';
     $password = isset($input['password']) ? (string) $input['password'] : '';
-    $confirm = isset($input['confirm']) ? trim((string) $input['confirm']) : '';
+    // 确认短语规范化：与前端 ConfirmPhraseInput 同口径——去首尾空白
+    // （含全角空格 U+3000 与零宽字符）。不可见字符不构成语义差异，
+    // 但前后端口径必须一致：前端按规范化放行，后端若只 trim ASCII 空白，
+    // 就会出现「按钮能点、一点就报短语不正确」的口径分裂。
+    $confirm = isset($input['confirm'])
+        ? (string) preg_replace('/^[\s\x{3000}\x{200B}-\x{200D}\x{FEFF}]+|[\s\x{3000}\x{200B}-\x{200D}\x{FEFF}]+$/u', '', (string) $input['confirm'])
+        : '';
 
     if (!in_array($mode, ['reset', 'demo'], true)) {
         jsonResponse(['success' => false, 'message' => '未知的初始化模式'], 400);

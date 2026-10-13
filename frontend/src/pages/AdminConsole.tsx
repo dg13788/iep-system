@@ -74,6 +74,22 @@ import type {
  * 通用：确认短语输入（一键复制 + 实时差异提示）
  * ADR-034：确认短语必须与界面呈现给用户的字面一致，且可自证。
  * ============================================================ */
+
+// 规范化确认短语：去首尾空白（含全角空格 U+3000、零宽字符）。
+// 与后端 adminInit 的同口径处理保持一致——前端放行、后端也必须放行，
+// 否则会出现「按钮能点、一点就报短语不正确」的口径分裂。
+function normalizePhrase(v: string): string {
+  return v.replace(/^[\s\u3000\u200B-\u200D\uFEFF]+|[\s\u3000\u200B-\u200D\uFEFF]+$/g, '');
+}
+
+// 把不可见字符渲染成肉眼可判的符号：尾随空格曾让「当前输入」与正确短语
+// 在提示里看起来一模一样（实测复现），用户没有任何线索差在哪。
+function visualizeInvisible(v: string): string {
+  return v
+    .replace(/[\u0020\u00A0\u3000]/g, '␣')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '·');
+}
+
 function ConfirmPhraseInput({
   phrase,
   value,
@@ -101,8 +117,12 @@ function ConfirmPhraseInput({
     }
   };
 
-  const matched = value === phrase;
+  // 按可见字符比较：首尾空白不构成语义差异，但不静默忽略——
+  // 原样值与规范化值的差异要显式告知（见下方提示分支）。
+  const normValue = normalizePhrase(value);
+  const matched = normValue === normalizePhrase(phrase);
   const touched = value !== '';
+  const hasPadding = value !== normValue;
 
   return (
     <div>
@@ -128,10 +148,13 @@ function ConfirmPhraseInput({
       </div>
       {touched && !matched && (
         <p className="text-xs text-[#DC2626] mt-1">
-          与「{phrase}」不一致（当前输入：{value || '空'}），请照「{phrase}」输入或点右上角复制
+          与「{phrase}」不一致（当前输入：{value === '' ? '空' : visualizeInvisible(value)}），请照「{phrase}」输入或点右上角复制
         </p>
       )}
-      {matched && <p className="text-xs text-[#16A34A] mt-1">确认短语正确</p>}
+      {matched && hasPadding && (
+        <p className="text-xs text-[#B45309] mt-1">已忽略首尾空格/不可见字符，按「{phrase}」匹配</p>
+      )}
+      {matched && !hasPadding && <p className="text-xs text-[#16A34A] mt-1">确认短语正确</p>}
     </div>
   );
 }
@@ -659,7 +682,7 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
     }
   };
 
-  const phraseOk = restoreTarget !== null && confirm === restoreTarget;
+  const phraseOk = restoreTarget !== null && normalizePhrase(confirm) === normalizePhrase(restoreTarget);
   const reasons: string[] = [];
   if (password === '') reasons.push('登录密码');
   if (!phraseOk) reasons.push('确认短语（须与文件名一致）');
@@ -771,7 +794,7 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
     mode: string; backup: string; cleared: number; seeded: number;
   } | null>(null);
 
-  const phraseOk = confirm === INIT_PHRASE;
+  const phraseOk = normalizePhrase(confirm) === INIT_PHRASE;
   const canRun = password !== '' && phraseOk;
   const reasons: string[] = [];
   if (password === '') reasons.push('登录密码');
@@ -780,7 +803,8 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
   const handleInit = async () => {
     setRunning(true);
     try {
-      const r = await initSystem({ mode, password, confirm });
+      // 提交规范化后的短语：与界面提示（「已忽略首尾空格…」）及后端口径一致
+      const r = await initSystem({ mode, password, confirm: normalizePhrase(confirm) });
       setReport({ mode: r.mode, backup: r.backup, cleared: r.cleared, seeded: r.seeded });
       toast.success(`初始化完成：清空 ${r.cleared} 张表${mode === 'demo' ? '，并写入最小演示数据' : ''}（初始化前备份：${r.backup}）`);
       setPassword('');
@@ -810,7 +834,7 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
 
       <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-4">
         <div>
-          <Label className="text-xs">初始化模式（「清空所有数据」= 选「清空业务数据」）</Label>
+          <Label className="text-xs">初始化模式</Label>
           <div className="flex gap-4 mt-2">
             {(['reset', 'demo'] as const).map((m) => (
               <label key={m} className="flex items-start gap-2 cursor-pointer">
@@ -822,7 +846,7 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
                   onChange={() => setMode(m)}
                 />
                 <span className="text-xs">
-                  <b>{m === 'reset' ? '清空所有数据（清空业务数据）' : '清空并重建最小演示数据'}</b>
+                  <b>{m === 'reset' ? '清空业务数据' : '清空并重建最小演示数据'}</b>
                   <span className="block text-[#94A3B8]">
                     {m === 'reset'
                       ? '业务数据全部清空，等待录入真实数据；账号/权限/字典/模板保留'
@@ -851,10 +875,13 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
           <p className="text-xs text-[#94A3B8]">还需完成：{reasons.join('、')}</p>
         )}
 
-        <Button variant="destructive" disabled={!canRun || running} onClick={handleInit} className="gap-1.5">
-          {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-          执行初始化
-        </Button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <Button variant="destructive" disabled={!canRun || running} onClick={handleInit} className="gap-1.5">
+            {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+            执行初始化
+          </Button>
+          <span className="text-xs text-[#94A3B8]">需点击此按钮才会执行，不会自动运行；执行前系统会自动备份当前数据</span>
+        </div>
       </div>
 
       {report && (

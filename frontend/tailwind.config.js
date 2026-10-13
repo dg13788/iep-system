@@ -36,6 +36,10 @@ module.exports = {
           600: '#334566',
           700: '#26344D',
         },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
         success: {
           50: '#ECFDF5',
           500: '#10B981',
