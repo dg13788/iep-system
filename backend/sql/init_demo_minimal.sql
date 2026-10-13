@@ -144,6 +144,11 @@ VALUES
   (18, 'teacher12', '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '唐美玲', 3, 3, '特教组', 1, NOW(), NOW())
 ON DUPLICATE KEY UPDATE id = id;
 
+-- ============================================================
 -- 幂等自证：这段必须能重复执行且不产生重复账号。
-SELECT CONCAT('[seed] 演示教师账号数（应为 10 + init.sql 的 6 = 16）: ',
-              (SELECT COUNT(*) FROM users)) AS check_result;
+-- 注意：**自证不要写在这里**。本文件会被管理控制台 admin/init 用
+-- adminSplitSql 逐条 exec 执行（mode=demo），任何会返回结果集的语句
+-- （如 SELECT）执行后无人 fetch，PDO 会报 2014「Cannot execute queries
+-- while other unbuffered queries are active」，把整个初始化打成 500。
+-- 实测踩过：2026-10-13 在本文件末尾加了一条 SELECT 自证，
+-- 当天 admin/init 即报 500。安装期需要自证请用 verify_install.sql。

@@ -52,5 +52,7 @@ SOURCE backend/sql/update_v13.sql
 SOURCE backend/sql/update_v14.sql
 SOURCE backend/sql/update_v15.sql
 SOURCE backend/sql/update_v16.sql
+SOURCE backend/sql/update_v17.sql
+SOURCE backend/sql/update_v18.sql
 
 SELECT '===== IEP 一键安装结束（请执行 verify_install.sql 自检）=====' AS step;

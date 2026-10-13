@@ -13,6 +13,7 @@
 --   C5 基线数据齐全（角色/权限/权限组/字典/账号/模块）
 --   C6 无重复数据（permissions.code / dict_common(category,name) / db_migrations.version）
 --   C7 视图可查询（定义未损坏）
+--   C8 评估模板内容基线（表在≠装全了，必须查行数）
 --
 -- 退出判定：末行输出 INSTALL_VERIFY: OK 即全通过；FAILED 则列出失败项数。
 --
@@ -125,7 +126,7 @@ SET @v_dict = (SELECT COUNT(*) FROM dict_common);
 SET @v_dtypes = (SELECT COUNT(*) FROM dict_disability_types);
 SET @v_users = (SELECT COUNT(*) FROM users);
 SET @v_modules = (SELECT COUNT(*) FROM modules);
-SET @v_base_fail = IF(@v_roles >= 6, 0, 1) + IF(@v_perms >= 47, 0, 1) + IF(@v_pgroups >= 6, 0, 1)
+SET @v_base_fail = IF(@v_roles >= 6, 0, 1) + IF(@v_perms >= 48, 0, 1) + IF(@v_pgroups >= 6, 0, 1)
                  + IF(@v_dict >= 52, 0, 1) + IF(@v_dtypes >= 15, 0, 1) + IF(@v_users >= 1, 0, 1)
                  + IF(@v_modules >= 8, 0, 1);
 SET @v_fail = @v_fail + @v_base_fail;
@@ -153,6 +154,27 @@ SET @v_view_stmt = IF(@cnt_view = 1,
   'SET @v_viewrows = (SELECT COUNT(*) FROM v_iep_goal_rollup)', 'SET @v_viewrows = -1');
 PREPARE _st FROM @v_view_stmt; EXECUTE _st; DEALLOCATE PREPARE _st;
 
+-- C8 评估模板内容基线（2026-10-13 新增）
+--   为什么必须查内容而不是只看表在不在：本次「库被快照覆盖后」表结构完好、
+--   C1~C7 全 OK，但 assessment_templates 里课程本位评估表整族消失，
+--   assessments 的演示评估引用的 template_id 全部悬空——**自检却显示通过**。
+--   这证明「对象齐全 + 字典齐全」仍不足以判定「装全了」，业务基线也要查。
+--   期望：101-123 课程本位 23 个 + 131-137 校本 7 个 = 30 个模板；
+--         这些模板的条目定义不少于 71 条；
+--         演示评估实际在用的 101/102/103/122/123 每个都至少有 1 条条目
+--         （否则教师端「录入评估」选到模板却无条目可打分）。
+SET @v_tpl = (SELECT COUNT(*) FROM assessment_templates
+  WHERE (id BETWEEN 101 AND 123) OR (id BETWEEN 131 AND 137));
+SET @v_tic = (SELECT COUNT(*) FROM template_items_custom
+  WHERE (template_id BETWEEN 101 AND 123) OR (template_id BETWEEN 131 AND 137));
+SET @v_tpl_item_ok = (SELECT COUNT(*) FROM (
+    SELECT 101 AS tid UNION ALL SELECT 102 UNION ALL SELECT 103
+    UNION ALL SELECT 122 UNION ALL SELECT 123) x
+  WHERE EXISTS (SELECT 1 FROM template_items_custom t WHERE t.template_id = x.tid));
+SET @v_tpl_fail = IF(@v_tpl >= 30, 0, 1) + IF(@v_tic >= 71, 0, 1)
+                + IF(@v_tpl_item_ok = 5, 0, 1);
+SET @v_fail = @v_fail + @v_tpl_fail;
+
 SELECT '===== IEP 安装自检明细 =====' AS step;
 
 SELECT 'C1 缺失数据库对象' AS check_item, @v_missing AS actual, 0 AS expected, IF(@v_missing = 0, 'OK', 'FAIL') AS result
@@ -163,12 +185,16 @@ UNION ALL SELECT 'C5 基线数据(角色/权限/组/字典/账号/模块)', @v_b
 UNION ALL SELECT 'C6 重复数据', @v_dup, 0, IF(@v_dup = 0, 'OK', 'FAIL')
 UNION ALL SELECT 'C7 视图可查询(行数)', @v_viewrows, -2, IF(@v_viewrows >= 0, 'OK', 'FAIL')
 UNION ALL SELECT 'C5b 字典分类明细齐全', @v_dict_cat_fail, 0, IF(@v_dict_cat_fail = 0, 'OK', 'FAIL')
+UNION ALL SELECT 'C8 评估模板内容基线(30模板/71条目/5在用有条目)', @v_tpl_fail, 0, IF(@v_tpl_fail = 0, 'OK', 'FAIL')
+UNION ALL SELECT '参考:模板101-123+131-137', @v_tpl, 30, 'INFO'
+UNION ALL SELECT '参考:上述模板条目数', @v_tic, 71, 'INFO'
+UNION ALL SELECT '参考:在用模板已有条目数', @v_tpl_item_ok, 5, 'INFO'
 UNION ALL SELECT '参考:dict_common.goal_area', @v_goal_area, 18, 'INFO'
 UNION ALL SELECT '参考:dict_common.service_place', @v_service_place, 4, 'INFO'
 UNION ALL SELECT '参考:dict_common.transition_type', @v_transition, 3, 'INFO'
 UNION ALL SELECT '参考:dict_common.assessment_type', @v_assessment_t, 4, 'INFO'
 UNION ALL SELECT '参考:roles', @v_roles, 6, 'INFO'
-UNION ALL SELECT '参考:permissions', @v_perms, 47, 'INFO'
+UNION ALL SELECT '参考:permissions', @v_perms, 48, 'INFO'
 UNION ALL SELECT '参考:permission_groups', @v_pgroups, 6, 'INFO'
 UNION ALL SELECT '参考:dict_common', @v_dict, 52, 'INFO'
 UNION ALL SELECT '参考:dict_disability_types', @v_dtypes, 15, 'INFO'
