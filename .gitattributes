@@ -1,0 +1,13 @@
+# SQL 迁移文件统一使用 LF 换行。
+#
+# 原因：backend/sql 下历史文件换行符混杂（update_v4/v5/v6 为 CRLF，其余为 LF）。
+# 其中含 DELIMITER 代码块的迁移对换行敏感：`DELIMITER ;\r` 会被 mysql 客户端
+# 解析成分隔符含回车，进而吞掉后续语句。虽然实测表明丢表的直接根因是
+# USE 硬编码（ADR-038），但统一 LF 仍是必要的一致性前提。
+#
+# 另：Windows 上 git 默认 core.autocrlf=true 会在检出时把 LF 改回 CRLF，
+# 本文件用于钉死行为，保证「仓库里和检出的都是 LF」。
+*.sql text eol=lf
+
+# 部署脚本是 Windows 批处理，必须 CRLF（LF 会导致 cmd 解析错乱吞行）
+*.bat text eol=crlf
