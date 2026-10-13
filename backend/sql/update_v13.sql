@@ -14,8 +14,6 @@
 --   dict_common.name  = 界面显示值（与 iep_goals.area 取值一致）
 --   dict_common.value = 课标归属说明（仅用于分组展示，不是显示名）
 
-USE iep_system;
-
 -- 显式指定连接字符集，避免与表（utf8mb4_0900_ai_ci）比较时触发 collation 混用错误
 SET NAMES utf8mb4;
 

@@ -705,7 +705,7 @@ INSERT INTO roles (id, name, code, description, is_system, is_active) VALUES
 (3, '班主任', 'class_teacher', '班级学生管理、IEP制定、教学记录、家校沟通', 1, 1),
 (4, '科任教师', 'teacher', '教学记录、目标进度录入、学生查看', 1, 1),
 (5, '家长', 'parent', '查看子女IEP、电子签名、家校沟通反馈', 1, 1),
-(6, '只读用户', 'viewer', '查看数据，无操作权限', 1, 1);
+(6, '只读用户', 'viewer', '查看数据，无操作权限', 1, 1) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 2. Permissions (42 permissions)
@@ -760,7 +760,7 @@ INSERT INTO permissions (id, name, code, module, description, is_active) VALUES
 (40, 'IEP统计', 'reports.iep', 'reports', '查看IEP统计', 1),
 (41, '教学统计', 'reports.teaching', 'reports', '查看教学统计', 1),
 -- System module
-(42, '系统管理', 'system.manage', 'system', '系统管理权限', 1);
+(42, '系统管理', 'system.manage', 'system', '系统管理权限', 1) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 3. Role-Permissions Mapping
@@ -773,7 +773,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 (1, 22), (1, 23), (1, 24), (1, 25),
 (1, 26), (1, 27), (1, 28), (1, 29), (1, 30),
 (1, 31), (1, 32), (1, 33), (1, 34), (1, 35), (1, 36),
-(1, 37), (1, 38), (1, 39), (1, 40), (1, 41), (1, 42);
+(1, 37), (1, 38), (1, 39), (1, 40), (1, 41), (1, 42) ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Director: view all + approve + audit + reports
 INSERT INTO role_permissions (role_id, permission_id) VALUES
@@ -782,7 +782,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 (2, 22), (2, 23), (2, 24), (2, 25),
 (2, 26), (2, 27), (2, 28), (2, 29),
 (2, 31), (2, 32), (2, 33), (2, 35), (2, 36),
-(2, 37), (2, 38), (2, 39), (2, 40), (2, 41);
+(2, 37), (2, 38), (2, 39), (2, 40), (2, 41) ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Class teacher: full students, iep, teaching, parents
 INSERT INTO role_permissions (role_id, permission_id) VALUES
@@ -792,7 +792,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 (3, 22), (3, 23), (3, 24), (3, 25),
 (3, 26), (3, 27), (3, 28),
 (3, 31), (3, 32), (3, 33), (3, 35), (3, 36),
-(3, 37);
+(3, 37) ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Teacher: view + create teaching, progress
 INSERT INTO role_permissions (role_id, permission_id) VALUES
@@ -800,21 +800,21 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 (4, 7),
 (4, 14), (4, 20), (4, 21),
 (4, 22), (4, 23), (4, 24),
-(4, 31), (4, 35);
+(4, 31), (4, 35) ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Parent: view own children IEP, sign, communication
 INSERT INTO role_permissions (role_id, permission_id) VALUES
-(5, 14), (5, 19), (5, 36);
+(5, 14), (5, 19), (5, 36) ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- Viewer: view only
 INSERT INTO role_permissions (role_id, permission_id) VALUES
-(6, 1), (6, 7), (6, 14), (6, 22), (6, 26), (6, 37);
+(6, 1), (6, 7), (6, 14), (6, 22), (6, 26), (6, 37) ON DUPLICATE KEY UPDATE role_id = role_id;
 
 -- --------------------------------------------------------
 -- 4. Default Admin User (password: admin123)
 -- --------------------------------------------------------
 INSERT INTO users (id, username, password_hash, real_name, phone, email, role_id, department, is_active, created_at, updated_at) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '系统管理员', '13800000000', 'admin@iep.edu', 1, '信息中心', 1, NOW(), NOW());
+(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '系统管理员', '13800000000', 'admin@iep.edu', 1, '信息中心', 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 5. Permission Groups
@@ -824,7 +824,7 @@ INSERT INTO permission_groups (id, name, description, data_scope_type, iep_level
 (1, '超级管理员', '系统最高权限，可管理所有数据和系统设置', 'all', 'full',
  '["dashboard","students","evaluation","iep","teaching","templates","parents","system"]',
  '["data_overview","statistics_view","student_view","student_create","student_edit","student_delete","class_manage","student_export","eval_view","eval_create","eval_edit","eval_delete","report_generate","report_export","iep_view","iep_create","iep_edit","iep_delete","iep_approve","signature_manage","goal_update","record_view","record_create","record_edit","record_delete","template_view","template_create","template_edit","template_delete","system_template_edit","parent_view","parent_manage","signature_send","communication_record","notification_send","user_view","user_manage","role_manage","audit_log","system_settings"]',
- 1, 1);
+ 1, 1) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 5b. 权限组 2-6（v4 数据权限基线）
@@ -919,7 +919,7 @@ INSERT INTO dict_disability_types (code, name, description, sort_order, is_activ
 ('down_syndrome', '唐氏综合征', '21三体综合征', 4, 1),
 ('multiple', '多重障碍', '两种及以上障碍', 5, 1),
 ('hearing', '听力障碍', '听力损失或耳聋', 6, 1),
-('visual', '视力障碍', '视力损失或失明', 7, 1);
+('visual', '视力障碍', '视力损失或失明', 7, 1) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 7. Common Dictionary Data
@@ -950,7 +950,7 @@ INSERT INTO dict_common (category, code, name, value, sort_order, is_active) VAL
 ('communication_type', 'online', '线上沟通', '线上沟通', 4, 1),
 ('disability_level', 'mild', '轻度', '轻度', 1, 1),
 ('disability_level', 'moderate', '中度', '中度', 2, 1),
-('disability_level', 'severe', '重度', '重度', 3, 1);
+('disability_level', 'severe', '重度', '重度', 3, 1) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 8. System Modules
@@ -963,43 +963,73 @@ INSERT INTO modules (name, code, parent_id, icon, sort_order, is_active, created
 ('模板管理', 'templates', 0, 'templates', 5, 1, NOW(), NOW()),
 ('家校协作', 'parents', 0, 'parents', 6, 1, NOW(), NOW()),
 ('统计报表', 'reports', 0, 'reports', 7, 1, NOW(), NOW()),
-('权限管理', 'permissions', 0, 'permissions', 8, 1, NOW(), NOW());
+('权限管理', 'permissions', 0, 'permissions', 8, 1, NOW(), NOW()) ON DUPLICATE KEY UPDATE id = id;
 
 -- --------------------------------------------------------
 -- 9. Sample Classes
 -- --------------------------------------------------------
-INSERT INTO student_classes (name, grade, capacity, description, is_active, created_at, updated_at) VALUES
-('一年级1班', '一年级', 10, '培智一年级1班', 1, NOW(), NOW()),
-('一年级2班', '一年级', 10, '培智一年级2班', 1, NOW(), NOW()),
-('二年级1班', '二年级', 12, '培智二年级1班', 1, NOW(), NOW()),
-('二年级2班', '二年级', 12, '培智二年级2班', 1, NOW(), NOW()),
-('三年级1班', '三年级', 12, '培智三年级1班', 1, NOW(), NOW()),
-('四年级1班', '四年级', 10, '培智四年级1班', 1, NOW(), NOW()),
-('五年级1班', '五年级', 10, '培智五年级1班', 1, NOW(), NOW()),
-('六年级1班', '六年级', 10, '培智六年级1班', 1, NOW(), NOW()),
-('七年级1班', '七年级', 12, '培智七年级1班', 1, NOW(), NOW()),
-('八年级1班', '八年级', 12, '培智八年级1班', 1, NOW(), NOW()),
-('九年级1班', '九年级', 12, '培智九年级1班', 1, NOW(), NOW());
+INSERT INTO student_classes (name, grade, capacity, description, is_active, created_at, updated_at)
+SELECT name, grade, capacity, description, is_active, created_at, updated_at FROM (
+  SELECT '一年级1班' AS name, '一年级' AS grade, 10 AS capacity, '培智一年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '一年级2班' AS name, '一年级' AS grade, 10 AS capacity, '培智一年级2班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '二年级1班' AS name, '二年级' AS grade, 12 AS capacity, '培智二年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '二年级2班' AS name, '二年级' AS grade, 12 AS capacity, '培智二年级2班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '三年级1班' AS name, '三年级' AS grade, 12 AS capacity, '培智三年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '四年级1班' AS name, '四年级' AS grade, 10 AS capacity, '培智四年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '五年级1班' AS name, '五年级' AS grade, 10 AS capacity, '培智五年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '六年级1班' AS name, '六年级' AS grade, 10 AS capacity, '培智六年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '七年级1班' AS name, '七年级' AS grade, 12 AS capacity, '培智七年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '八年级1班' AS name, '八年级' AS grade, 12 AS capacity, '培智八年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '九年级1班' AS name, '九年级' AS grade, 12 AS capacity, '培智九年级1班' AS description, 1 AS is_active, NOW() AS created_at, NOW() AS updated_at
+) s
+ WHERE NOT EXISTS (SELECT 1 FROM (SELECT name FROM student_classes) x WHERE x.name = s.name);
 
 -- --------------------------------------------------------
 -- 10. Sample Students
 -- --------------------------------------------------------
-INSERT INTO students (name, gender, birth_date, disability_type_id, disability_level, class_id, guardian_name, guardian_phone, guardian_relation, address, status, enrollment_date, created_at, updated_at) VALUES
-('张伟', '男', '2015-03-15', 1, '中度', 1, '张大明', '13800138001', '父亲', '北京市海淀区XX路1号', '在读', '2021-09-01', NOW(), NOW()),
-('李芳', '女', '2014-07-22', 2, '中度', 1, '李红', '13800138002', '母亲', '北京市海淀区XX路2号', '在读', '2021-09-01', NOW(), NOW()),
-('王强', '男', '2013-11-08', 1, '轻度', 3, '王刚', '13800138003', '父亲', '北京市海淀区XX路3号', '在读', '2020-09-01', NOW(), NOW()),
-('赵敏', '女', '2015-01-18', 3, '中度', 2, '赵丽', '13800138004', '母亲', '北京市海淀区XX路4号', '在读', '2021-09-01', NOW(), NOW()),
-('刘洋', '男', '2014-05-30', 4, '轻度', 3, '刘建国', '13800138005', '父亲', '北京市海淀区XX路5号', '在读', '2020-09-01', NOW(), NOW()),
-('陈静', '女', '2016-09-12', 1, '重度', 1, '陈华', '13800138006', '母亲', '北京市海淀区XX路6号', '在读', '2022-09-01', NOW(), NOW()),
-('杨波', '男', '2013-08-25', 5, '中度', 4, '杨志', '13800138007', '父亲', '北京市海淀区XX路7号', '在读', '2020-09-01', NOW(), NOW()),
-('黄丽', '女', '2015-12-03', 2, '轻度', 2, '黄梅', '13800138008', '母亲', '北京市海淀区XX路8号', '在读', '2021-09-01', NOW(), NOW()),
-('周杰', '男', '2014-04-17', 1, '中度', 3, '周国强', '13800138009', '父亲', '北京市海淀区XX路9号', '在读', '2020-09-01', NOW(), NOW()),
-('吴婷', '女', '2016-02-28', 6, '中度', 1, '吴敏', '13800138010', '母亲', '北京市海淀区XX路10号', '在读', '2022-09-01', NOW(), NOW()),
-('孙磊', '男', '2013-06-14', 7, '轻度', 4, '孙伟', '13800138011', '父亲', '北京市海淀区XX路11号', '在读', '2020-09-01', NOW(), NOW()),
-('朱琳', '女', '2015-10-09', 1, '轻度', 2, '朱红', '13800138012', '母亲', '北京市海淀区XX路12号', '在读', '2021-09-01', NOW(), NOW()),
-('马涛', '男', '2014-08-01', 2, '重度', 1, '马军', '13800138013', '父亲', '北京市海淀区XX路13号', '在读', '2021-09-01', NOW(), NOW()),
-('胡雪', '女', '2016-01-22', 3, '中度', 1, '胡丽', '13800138014', '母亲', '北京市海淀区XX路14号', '在读', '2022-09-01', NOW(), NOW()),
-('林峰', '男', '2013-03-19', 1, '中度', 4, '林志强', '13800138015', '父亲', '北京市海淀区XX路15号', '在读', '2020-09-01', NOW(), NOW());
+INSERT INTO students (name, gender, birth_date, disability_type_id, disability_level, class_id, guardian_name, guardian_phone, guardian_relation, address, status, enrollment_date, created_at, updated_at)
+SELECT name, gender, birth_date, disability_type_id, disability_level, class_id, guardian_name, guardian_phone, guardian_relation, address, status, enrollment_date, created_at, updated_at FROM (
+  SELECT '张伟' AS name, '男' AS gender, '2015-03-15' AS birth_date, 1 AS disability_type_id, '中度' AS disability_level, 1 AS class_id, '张大明' AS guardian_name, '13800138001' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路1号' AS address, '在读' AS status, '2021-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '李芳' AS name, '女' AS gender, '2014-07-22' AS birth_date, 2 AS disability_type_id, '中度' AS disability_level, 1 AS class_id, '李红' AS guardian_name, '13800138002' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路2号' AS address, '在读' AS status, '2021-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '王强' AS name, '男' AS gender, '2013-11-08' AS birth_date, 1 AS disability_type_id, '轻度' AS disability_level, 3 AS class_id, '王刚' AS guardian_name, '13800138003' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路3号' AS address, '在读' AS status, '2020-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '赵敏' AS name, '女' AS gender, '2015-01-18' AS birth_date, 3 AS disability_type_id, '中度' AS disability_level, 2 AS class_id, '赵丽' AS guardian_name, '13800138004' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路4号' AS address, '在读' AS status, '2021-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '刘洋' AS name, '男' AS gender, '2014-05-30' AS birth_date, 4 AS disability_type_id, '轻度' AS disability_level, 3 AS class_id, '刘建国' AS guardian_name, '13800138005' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路5号' AS address, '在读' AS status, '2020-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '陈静' AS name, '女' AS gender, '2016-09-12' AS birth_date, 1 AS disability_type_id, '重度' AS disability_level, 1 AS class_id, '陈华' AS guardian_name, '13800138006' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路6号' AS address, '在读' AS status, '2022-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '杨波' AS name, '男' AS gender, '2013-08-25' AS birth_date, 5 AS disability_type_id, '中度' AS disability_level, 4 AS class_id, '杨志' AS guardian_name, '13800138007' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路7号' AS address, '在读' AS status, '2020-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '黄丽' AS name, '女' AS gender, '2015-12-03' AS birth_date, 2 AS disability_type_id, '轻度' AS disability_level, 2 AS class_id, '黄梅' AS guardian_name, '13800138008' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路8号' AS address, '在读' AS status, '2021-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '周杰' AS name, '男' AS gender, '2014-04-17' AS birth_date, 1 AS disability_type_id, '中度' AS disability_level, 3 AS class_id, '周国强' AS guardian_name, '13800138009' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路9号' AS address, '在读' AS status, '2020-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '吴婷' AS name, '女' AS gender, '2016-02-28' AS birth_date, 6 AS disability_type_id, '中度' AS disability_level, 1 AS class_id, '吴敏' AS guardian_name, '13800138010' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路10号' AS address, '在读' AS status, '2022-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '孙磊' AS name, '男' AS gender, '2013-06-14' AS birth_date, 7 AS disability_type_id, '轻度' AS disability_level, 4 AS class_id, '孙伟' AS guardian_name, '13800138011' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路11号' AS address, '在读' AS status, '2020-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '朱琳' AS name, '女' AS gender, '2015-10-09' AS birth_date, 1 AS disability_type_id, '轻度' AS disability_level, 2 AS class_id, '朱红' AS guardian_name, '13800138012' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路12号' AS address, '在读' AS status, '2021-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '马涛' AS name, '男' AS gender, '2014-08-01' AS birth_date, 2 AS disability_type_id, '重度' AS disability_level, 1 AS class_id, '马军' AS guardian_name, '13800138013' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路13号' AS address, '在读' AS status, '2021-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '胡雪' AS name, '女' AS gender, '2016-01-22' AS birth_date, 3 AS disability_type_id, '中度' AS disability_level, 1 AS class_id, '胡丽' AS guardian_name, '13800138014' AS guardian_phone, '母亲' AS guardian_relation, '北京市海淀区XX路14号' AS address, '在读' AS status, '2022-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+  UNION ALL
+  SELECT '林峰' AS name, '男' AS gender, '2013-03-19' AS birth_date, 1 AS disability_type_id, '中度' AS disability_level, 4 AS class_id, '林志强' AS guardian_name, '13800138015' AS guardian_phone, '父亲' AS guardian_relation, '北京市海淀区XX路15号' AS address, '在读' AS status, '2020-09-01' AS enrollment_date, NOW() AS created_at, NOW() AS updated_at
+) s
+ WHERE NOT EXISTS (SELECT 1 FROM (SELECT name, birth_date FROM students) x WHERE x.name = s.name AND x.birth_date = s.birth_date);
 
 -- --------------------------------------------------------
 -- 10b. 演示账号数据范围关联修复段（原位于第5c节，因 student_classes
@@ -1024,16 +1054,17 @@ INSERT IGNORE INTO teacher_classes (teacher_id, class_id, subject, is_active) VA
 INSERT IGNORE INTO users (id, username, password_hash, real_name, phone, email, role_id, permission_group_id, department, is_active, created_at, updated_at) VALUES
 (6, 'parent1', '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '陈家长', '13800000006', 'parent1@iep.edu', 5, 5, '家长', 1, NOW(), NOW());
 
-INSERT INTO parents (name, phone, password_hash, email, relation, address, is_active, created_at, updated_at) VALUES
+INSERT IGNORE INTO parents (name, phone, password_hash, email, relation, address, is_active, created_at, updated_at) VALUES
 ('陈家长', '13800000006', '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', 'parent1@iep.edu', '父亲', '北京市海淀区XX路1号', 1, NOW(), NOW());
 
 INSERT INTO student_parents (student_id, parent_id, relation, is_primary, can_sign, created_at)
-SELECT 1, id, '父亲', 1, 1, NOW() FROM parents WHERE phone = '13800000006';
+SELECT 1, id, '父亲', 1, 1, NOW() FROM parents WHERE phone = '13800000006'
+ON DUPLICATE KEY UPDATE student_id = student_id;
 
 -- --------------------------------------------------------
 -- 11. DB Migration Record
 -- --------------------------------------------------------
 INSERT INTO db_migrations (version, description, applied_at) VALUES
-('1.0.0', 'Initial database setup with 28 tables and default data', NOW());
+('1.0.0', 'Initial database setup with 28 tables and default data', NOW()) ON DUPLICATE KEY UPDATE id = id;
 
 -- Done
