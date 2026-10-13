@@ -911,7 +911,7 @@ export default function IEPWizard({
             onClick={handlePrev}
             disabled={currentStep === 0}
             className={cn(
-              'flex items-center gap-1.5 h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium transition-colors cursor-pointer',
+              'flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium transition-colors cursor-pointer',
               currentStep === 0 ? 'text-[#94A3B8] cursor-not-allowed' : 'text-[#1E293B] hover:bg-[#F7F6F4]'
             )}
           >
@@ -922,7 +922,7 @@ export default function IEPWizard({
           {currentStep < 4 ? (
             <button
               onClick={handleNext}
-              className="flex items-center gap-1.5 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer"
             >
               下一步
               <ChevronRight className="w-4 h-4" />
@@ -931,7 +931,7 @@ export default function IEPWizard({
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onSave({ ...formData, status: '草稿' })}
-                className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
               >
                 保存为草稿
               </button>
@@ -941,7 +941,7 @@ export default function IEPWizard({
                 onClick={() => onSave({ ...formData, status: '审核中' })}
                 disabled={!allConfirmed}
                 className={cn(
-                  'flex items-center gap-1.5 h-10 px-4 rounded-md text-sm font-medium transition-colors cursor-pointer',
+                  'flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md text-sm font-medium transition-colors cursor-pointer',
                   allConfirmed
                     ? 'bg-[#977653] text-white hover:bg-[#7A5F42]'
                     : 'bg-[#E2E8F0] text-[#94A3B8] cursor-not-allowed'
@@ -1237,13 +1237,13 @@ function GoalModal({ onClose, onAdd, isParticipate, currentUserName, currentUser
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E2E8F0]">
           <button
             onClick={onClose}
-            className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+            className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
           >
             取消
           </button>
           <button
             onClick={handleAdd}
-            className="h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer"
+            className="h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer"
           >
             添加
           </button>

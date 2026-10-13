@@ -144,11 +144,16 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Username */}
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">
+              <label htmlFor="login-username" className="block text-sm font-medium text-[#1E293B] mb-1.5">
                 用户名
               </label>
               <input
+                id="login-username"
+                name="username"
                 type="text"
+                // autoComplete：让浏览器/密码管理器能自动填充。
+                // 教师每天开一次系统，却要手输账号密码，是最没必要的摩擦。
+                autoComplete="username"
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
@@ -156,7 +161,7 @@ export default function Login() {
                 }}
                 placeholder="请输入用户名"
                 className={`
-                  w-full h-10 px-3 rounded-md border text-sm
+                  w-full h-11 lg:h-10 px-3 rounded-md border text-sm
                   placeholder:text-[#94A3B8]
                   focus:outline-none focus:border-[#3B82F6] focus:shadow-focus
                   transition-colors
@@ -164,18 +169,21 @@ export default function Login() {
                 `}
               />
               {errors.username && (
-                <p className="mt-1 text-xs text-[#EF4444]">{errors.username}</p>
+                <p className="mt-1 text-xs text-[#EF4444]" role="alert">{errors.username}</p>
               )}
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">
+              <label htmlFor="login-password" className="block text-sm font-medium text-[#1E293B] mb-1.5">
                 密码
               </label>
               <div className="relative">
                 <input
+                  id="login-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
@@ -183,7 +191,7 @@ export default function Login() {
                   }}
                   placeholder="请输入密码"
                   className={`
-                    w-full h-10 px-3 pr-10 rounded-md border text-sm
+                    w-full h-11 lg:h-10 px-3 pr-12 rounded-md border text-sm
                     placeholder:text-[#94A3B8]
                     focus:outline-none focus:border-[#3B82F6] focus:shadow-focus
                     transition-colors
@@ -193,28 +201,40 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] cursor-pointer"
+                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                  aria-pressed={showPassword}
+                  // 触控尺寸：原来是 16px 的图标裸按钮，指尖几乎点不中
+                  className="absolute right-1 top-1/2 -translate-y-1/2 min-h-11 lg:min-h-9 min-w-11 lg:min-w-9 flex items-center justify-center rounded-md text-[#94A3B8] hover:text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-xs text-[#EF4444]">{errors.password}</p>
+                <p className="mt-1 text-xs text-[#EF4444]" role="alert">{errors.password}</p>
               )}
             </div>
 
             {/* Remember me & Forgot password */}
             <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 cursor-pointer">
+              {/* label 包裹 checkbox：点击「记住我」文字同样生效，
+                  实际可点区域远大于勾框本身（触控友好且符合无障碍） */}
+              <label htmlFor="login-remember" className="flex items-center gap-2 cursor-pointer min-h-11 lg:min-h-9">
                 <input
+                  id="login-remember"
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-[#CBD5E1] text-primary-500 focus:ring-primary-500"
+                  className="w-5 h-5 rounded border-[#CBD5E1] text-primary-500 focus:ring-primary-500 cursor-pointer"
                 />
                 <span className="text-sm text-[#64748B]">记住我</span>
               </label>
-              <button type="button" className="text-sm text-primary-500 hover:text-primary-600 cursor-pointer">
+              {/* 原本这个按钮点了没有任何反应——界面上不该存在没有行为的控件。
+                  本系统由学校自部署，重置密码只能走管理员，所以如实告知。 */}
+              <button
+                type="button"
+                onClick={() => toast.info('密码重置请联系本校系统管理员，无法自助重置。')}
+                className="text-sm text-primary-500 hover:text-primary-600 cursor-pointer rounded px-1 -mx-1 min-h-11 lg:min-h-9 press"
+              >
                 忘记密码？
               </button>
             </div>

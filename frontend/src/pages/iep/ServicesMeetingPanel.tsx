@@ -29,6 +29,7 @@ import {
   ATTENDANCE_CN,
 } from '@/services/iep';
 import type { IEPMeta, MeetingParticipant, RelatedService } from '@/services/iep';
+import { useConfirm } from '@/components/feedback/ConfirmProvider';
 
 const SERVICE_STATUS_COLORS: Record<string, string> = {
   planned: 'bg-[#F1F5F9] text-[#64748B]',
@@ -73,7 +74,21 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
     void load();
   }, [load]);
 
+  const confirm = useConfirm();
+
   const handleDeleteService = async (svc: RelatedService) => {
+    const ok = await confirm({
+      title: '删除这项相关服务？',
+      description: (
+        <>
+          将删除「{svc.service_name || '该服务项'}」。
+          <b className="text-[#B91C1C]">删除后不可撤销</b>
+          ，IEP 中的服务安排会相应减少。
+        </>
+      ),
+      confirmText: '删除',
+    });
+    if (!ok) return;
     try {
       await deleteRelatedService(planId, svc.id);
       toast.success('服务项已删除');
@@ -351,44 +366,44 @@ function ServiceSheet({
           <input
             value={serviceName}
             onChange={(e) => setServiceName(e.target.value)}
-            className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+            className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
           />
         )}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">提供者</label>
-          <input value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">提供者角色</label>
-          <input value={providerRole} onChange={(e) => setProviderRole(e.target.value)} placeholder="如：言语治疗师" className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input value={providerRole} onChange={(e) => setProviderRole(e.target.value)} placeholder="如：言语治疗师" className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">频次（次/周）</label>
-          <input type="number" min={0.5} max={20} step={0.5} value={frequency} onChange={(e) => setFrequency(Number(e.target.value) || 1)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input type="number" min={0.5} max={20} step={0.5} value={frequency} onChange={(e) => setFrequency(Number(e.target.value) || 1)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">单次时长（分钟）</label>
-          <input type="number" min={5} max={240} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 40)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input type="number" min={5} max={240} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 40)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">计划次数</label>
-          <input type="number" min={0} max={500} value={planned} onChange={(e) => setPlanned(Math.max(0, Number(e.target.value) || 0))} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input type="number" min={0} max={500} value={planned} onChange={(e) => setPlanned(Math.max(0, Number(e.target.value) || 0))} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">已完成次数</label>
-          <input type="number" min={0} max={planned || 500} value={completed} onChange={(e) => setCompleted(Math.max(0, Number(e.target.value) || 0))} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input type="number" min={0} max={planned || 500} value={completed} onChange={(e) => setCompleted(Math.max(0, Number(e.target.value) || 0))} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">地点</label>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">状态</label>
@@ -404,12 +419,12 @@ function ServiceSheet({
       </div>
       <div>
         <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">备注</label>
-        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <button onClick={onClose} disabled={saving} className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
-        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60">
+        <button onClick={onClose} disabled={saving} className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
+        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
           {saving ? '保存中...' : '保存'}
         </button>
@@ -464,7 +479,7 @@ function ParticipantSheet({
     <SheetShell title="添加 IEP 会议参与人" onClose={onClose}>
       <div>
         <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">姓名 *</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+        <input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -480,7 +495,7 @@ function ParticipantSheet({
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">角色</label>
-          <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="如：班主任/治疗师" className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="如：班主任/治疗师" className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -497,17 +512,17 @@ function ParticipantSheet({
         </div>
         <div>
           <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">签到时间</label>
-          <input type="datetime-local" value={signedAt} onChange={(e) => setSignedAt(e.target.value)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <input type="datetime-local" value={signedAt} onChange={(e) => setSignedAt(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
         </div>
       </div>
       <div>
         <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">备注</label>
-        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <button onClick={onClose} disabled={saving} className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
-        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60">
+        <button onClick={onClose} disabled={saving} className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
+        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
           {saving ? '保存中...' : '保存'}
         </button>

@@ -69,6 +69,7 @@ import type {
   ImportPrecheckResult,
   ImportExecuteResult,
 } from '@/services/admin';
+import ConfirmDialog from '@/components/feedback/ConfirmDialog';
 
 /* ============================================================
  * 通用：确认短语输入（一键复制 + 实时差异提示）
@@ -653,6 +654,8 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
     }
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
   const handleDelete = async (file: string) => {
     try {
       await deleteAdminBackup(file);
@@ -728,7 +731,7 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
                   <Button variant="ghost" size="sm" title="恢复" onClick={() => { setRestoreTarget(b.file); setConfirm(''); setPassword(''); }}>
                     <RotateCcw className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-[#DC2626]" title="删除" onClick={() => handleDelete(b.file)}>
+                  <Button variant="ghost" size="sm" className="text-[#DC2626]" title="删除" onClick={() => setDeleteTarget(b.file)}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </TableCell>
@@ -776,6 +779,24 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        title="删除这个备份文件？"
+        description={
+          <>
+            将删除备份 <code className="px-1 rounded bg-[#F1F5F9]">{deleteTarget}</code>。
+            <b className="text-[#B91C1C]">删除后该时间点的数据将无法恢复</b>
+            ，请先确认已不需要它。
+          </>
+        }
+        confirmText="删除备份"
+        onConfirm={async () => {
+          if (deleteTarget) await handleDelete(deleteTarget);
+          setDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

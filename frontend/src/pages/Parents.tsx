@@ -431,10 +431,10 @@ function ParentAccountsTab() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setDetailParent(p); setDetailOpen(true); }}>
+                    <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setDetailParent(p); setDetailOpen(true); }}>
                       <Eye size={14} className="text-[#64748B]" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditingParent(p); setDrawerOpen(true); }}>
+                    <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setEditingParent(p); setDrawerOpen(true); }}>
                       <Pencil size={14} className="text-[#64748B]" />
                     </Button>
                   </div>
@@ -881,7 +881,7 @@ function CommunicationTab() {
                 <TableCell className="text-sm text-[#1E293B] max-w-[200px] truncate" title={c.subject}>{c.subject}</TableCell>
                 <TableCell className="text-sm text-[#64748B]">{c.teacher_name}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setDetailComm(c); setDetailOpen(true); }}>
+                  <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setDetailComm(c); setDetailOpen(true); }}>
                     <Eye size={14} className="text-[#64748B]" />
                   </Button>
                 </TableCell>

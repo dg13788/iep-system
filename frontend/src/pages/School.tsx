@@ -72,7 +72,7 @@ export default function School() {
             <span className="ml-1 text-[#94A3B8]">（数据范围：{data.scope_type}）</span>
           </p>
         </div>
-        <Button variant="outline" className="h-8" onClick={() => void load()}>
+        <Button variant="outline" className="h-11 lg:h-8" onClick={() => void load()}>
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
           刷新
         </Button>

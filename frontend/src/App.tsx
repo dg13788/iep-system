@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router'
+import { useEffect, useState, lazy, Suspense } from 'react'
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation, useNavigationType } from 'react-router'
 import { MotionConfig } from 'framer-motion'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
@@ -7,18 +7,85 @@ import { useAuthStore } from '@/store/authStore'
 import { setUnauthorizedHandler } from '@/api'
 import Layout from '@/components/Layout'
 import ErrorBoundary from '@/components/feedback/ErrorBoundary'
+import { Skel, CardSkeleton } from '@/components/feedback/PageState'
+import { ConfirmProvider } from '@/components/feedback/ConfirmProvider'
 import Login from '@/pages/Login'
-import Dashboard from '@/pages/Dashboard'
-import School from '@/pages/School'
+
+// 首屏页面静态引入：教师打开系统第一眼看到的就是「今日工作台」，
+// 它必须在最快的时间里画出来，不该等别的东西。
 import Today from '@/pages/Today'
-import Students from '@/pages/Students'
-import Evaluation from '@/pages/Evaluation'
-import IEP from '@/pages/IEP'
-import Teaching from '@/pages/Teaching'
-import Templates from '@/pages/Templates'
-import Parents from '@/pages/Parents'
-import System from '@/pages/System'
-import AdminConsole from '@/pages/AdminConsole'
+
+// 其余页面按需加载。
+// 原先 11 个页面全量静态打包，首屏要背 906KB 主 chunk + 352KB 图表库
+// （Dashboard/Evaluation/IEP 图表都静态引入了 recharts），
+// 而教师早上真正打开的是 Today——它一行图表都不用。
+const Dashboard = lazy(() => import('@/pages/Dashboard'))
+const School = lazy(() => import('@/pages/School'))
+const Students = lazy(() => import('@/pages/Students'))
+const Evaluation = lazy(() => import('@/pages/Evaluation'))
+const IEP = lazy(() => import('@/pages/IEP'))
+const Teaching = lazy(() => import('@/pages/Teaching'))
+const Templates = lazy(() => import('@/pages/Templates'))
+const Parents = lazy(() => import('@/pages/Parents'))
+const System = lazy(() => import('@/pages/System'))
+const AdminConsole = lazy(() => import('@/pages/AdminConsole'))
+
+/**
+ * 路由切换时的加载占位。
+ * 用骨架屏而不是转圈：骨架屏保留了页面的大致形状，
+ * 教师知道「要来的是什么」，等待感明显更短；转圈只说明"在忙"，不说明"在忙什么"。
+ */
+function RouteFallback() {
+  return (
+    <div className="mx-auto max-w-[1100px] space-y-4" aria-busy="true" aria-label="页面加载中">
+      <Skel className="h-7 w-44" />
+      <CardSkeleton rows={4} />
+    </div>
+  )
+}
+
+/**
+ * 滚动位置管理
+ *  - 新进页面：回到顶部（教师点开一页就该从头看）
+ *  - 浏览器后退：回到离开时的位置（翻了半天的学生列表，不该被弹回第一行）
+ *
+ * 坑（实测踩到）：主内容区 <main id="main-content"> 虽然写了 overflow-y-auto，
+ * 但它的父容器用的是 min-h-[100dvh]，高度会被内容撑开，
+ * 所以 main 自身 scrollHeight === clientHeight，根本不滚动——
+ * 真正滚的是 window/document。第一版照着 main 滚，结果是空转，一点效果都没有。
+ * 现在改为滚 window，并对「懒加载还没渲染完、页面还不够高」做重试。
+ */
+function ScrollManager() {
+  const { pathname } = useLocation();
+  const navType = useNavigationType();
+
+  useEffect(() => {
+    const key = 'iep:scroll:' + pathname;
+    // POP = 后退/前进；其余（PUSH/REPLACE）视为新进页面
+    const target = navType === 'POP' ? Number(sessionStorage.getItem(key) || 0) : 0;
+    let tries = 0;
+    const apply = () => {
+      window.scrollTo(0, target);
+      // 路由懒加载时，页面可能还没撑到足够高，滚不动就等下一帧再试
+      if (Math.abs(window.scrollY - target) > 4 && tries++ < 12) {
+        requestAnimationFrame(apply);
+      }
+    };
+    apply();
+  }, [pathname, navType]);
+
+  useEffect(() => {
+    const key = 'iep:scroll:' + pathname;
+    const save = () => sessionStorage.setItem(key, String(window.scrollY));
+    window.addEventListener('scroll', save, { passive: true });
+    return () => {
+      save();
+      window.removeEventListener('scroll', save);
+    };
+  }, [pathname]);
+
+  return null;
+}
 
 /**
  * 认证守卫：未登录用户重定向到登录页
@@ -87,11 +154,24 @@ function NotFound() {
 export default function App() {
   const restore = useAuthStore((s) => s.restore)
   const [restored, setRestored] = useState(false)
+  // 手机上 Toast 固定在右上角会压住顶栏的菜单按钮，且底部还有标签栏，
+  // 窄屏改为居顶部居中并下移让开顶栏。
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches
+  )
 
   // 刷新页面后向后端换取真实权限，避免权限仅依赖 localStorage 中被篡改的副本
   useEffect(() => {
     restore().finally(() => setRestored(true))
   }, [restore])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)')
+    const apply = () => setNarrow(mq.matches)
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
 
   // 全局 401 处理：凭证失效时清理状态并回到登录页
   useEffect(() => {
@@ -119,7 +199,10 @@ export default function App() {
     // 在根节点统一接管，配合 index.css 里的 prefers-reduced-motion 兜底。
     <ErrorBoundary>
     <MotionConfig reducedMotion="user">
+    {/* 命令式二次确认：删除学生 / 删除 IEP 等不可逆操作在此统一兜底 */}
+    <ConfirmProvider>
     <HashRouter>
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
@@ -147,8 +230,16 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
-      <Toaster position="top-right" />
+      </Suspense>
+      <ScrollManager />
+      <Toaster
+        position={narrow ? 'top-center' : 'top-right'}
+        offset={narrow ? 72 : 16}
+        closeButton={narrow}
+        toastOptions={{ className: narrow ? 'w-[calc(100vw-2rem)]' : undefined }}
+      />
     </HashRouter>
+    </ConfirmProvider>
     </MotionConfig>
     </ErrorBoundary>
   )

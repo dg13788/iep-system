@@ -216,7 +216,7 @@ export default function StudentFormDrawer({
               </h2>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
+                className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

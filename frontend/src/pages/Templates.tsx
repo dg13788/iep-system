@@ -46,6 +46,7 @@ import {
   addTemplateItem,
   deleteTemplateItem,
 } from '@/services/templates';
+import Pagination from '@/components/ui/pagination';
 
 /* ─── Types ─── */
 
@@ -494,7 +495,7 @@ export default function Templates() {
           <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight tracking-[-0.02em]">模板管理</h1>
           <p className="text-sm text-[#64748B] mt-1">评估模板的创建、配置与复用</p>
         </div>
-        <Button onClick={openNewTemplate} className="h-10 bg-[#977653] hover:bg-[#7A5F42]">
+        <Button onClick={openNewTemplate} className="h-11 lg:h-10 bg-[#977653] hover:bg-[#7A5F42]">
           <Plus className="w-4 h-4 mr-2" />
           新建模板
         </Button>
@@ -515,7 +516,7 @@ export default function Templates() {
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.04 }}
               onClick={() => { setActiveCategory(cat.key); setPage(1); }}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+              className={`px-4 py-2 rounded-full text-sm min-h-11 lg:min-h-9 font-medium transition-all cursor-pointer ${
                 activeCategory === cat.key
                   ? 'bg-[#977653] text-white'
                   : 'bg-[#F7F6F4] text-[#64748B] hover:bg-[#EBE3DA] hover:text-[#5C4832]'
@@ -636,25 +637,25 @@ export default function Templates() {
               <div className="flex items-center gap-1 pt-3 border-t border-[#E2E8F0]">
                 <button
                   onClick={() => setPreviewTemplate(t)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#977653] transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs min-h-11 lg:min-h-9 text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#977653] transition-colors cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" /> 预览
                 </button>
                 <button
                   onClick={() => openEditTemplate(t)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#977653] transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs min-h-11 lg:min-h-9 text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#977653] transition-colors cursor-pointer"
                 >
                   <Pencil className="w-3.5 h-3.5" /> 编辑
                 </button>
                 <button
                   onClick={() => handleDuplicate(t)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#977653] transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs min-h-11 lg:min-h-9 text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#977653] transition-colors cursor-pointer"
                 >
                   <Copy className="w-3.5 h-3.5" /> 复制
                 </button>
                 <button
                   onClick={() => handleToggleStatus(t.id)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#F59E0B] transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs min-h-11 lg:min-h-9 text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#F59E0B] transition-colors cursor-pointer"
                 >
                   {t.status === 'active' ? (
                     <><XCircle className="w-3.5 h-3.5" /> 停用</>
@@ -664,7 +665,7 @@ export default function Templates() {
                 </button>
                 <button
                   onClick={() => handleDelete(t.id)}
-                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-colors cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-md text-xs min-h-11 lg:min-h-9 text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-colors cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> 删除
                 </button>
@@ -699,36 +700,13 @@ export default function Templates() {
 
       {/* Pagination */}
       {filteredTemplates.length > 0 && (
-        <div className="flex items-center justify-between mt-6">
-          <div className="text-sm text-[#64748B]">
-            共 {filteredTemplates.length} 个模板
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
-            >
-              上一页
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${p === page ? 'bg-[#977653] text-white' : 'text-[#64748B] hover:bg-white'}`}
-              >
-                {p}
-              </button>
-            ))}
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors"
-            >
-              下一页
-            </button>
-          </div>
-        </div>
+        <Pagination
+          className="mt-6"
+          page={page}
+          totalPages={totalPages}
+          onChange={setPage}
+          summary={`共 ${filteredTemplates.length} 个模板`}
+        />
       )}
 
       {/* ─── Editor Drawer ─── */}

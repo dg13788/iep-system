@@ -23,6 +23,7 @@ import {
   updateIEP,
 } from '@/services/iep';
 import type { StudentOption, TeacherOption } from '@/services/iep';
+import { useConfirm } from '@/components/feedback/ConfirmProvider';
 
 /** 列表一次性拉取上限（后端 pageSize 上限 100），前端再做分页/筛选 */
 const LIST_PAGE_SIZE = 100;
@@ -172,16 +173,30 @@ export default function IEP() {
     }
   }, [planIdParam, plans, detailOpen]);
 
+  const confirm = useConfirm();
+
   const handleDelete = useCallback(async (plan: IEPPlan) => {
     // Only full permission users can delete
     if (!isFull) {
       toast.error('您没有权限删除IEP计划');
       return;
     }
+    const ok = await confirm({
+      title: '删除这份 IEP 计划？',
+      description: (
+        <>
+          将删除该 IEP 计划，连同其下全部长期目标、短期目标、任务步骤与试次记录。
+          <b className="text-[#B91C1C]">删除后不可撤销</b>
+          ，学生的进度曲线会随之消失。如果只是填错了，建议改用编辑。
+        </>
+      ),
+      confirmText: '删除计划',
+    });
+    if (!ok) return;
     await deleteIEP(Number(plan.id));
     toast.success('IEP 计划已删除');
     await loadPlans();
-  }, [isFull, loadPlans]);
+  }, [isFull, loadPlans, confirm]);
 
   const persistPlan = useCallback(
     async (planId: number, data: WizardFormData) => {

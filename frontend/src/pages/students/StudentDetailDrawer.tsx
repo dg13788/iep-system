@@ -85,7 +85,7 @@ export default function StudentDetailDrawer({
                 <h2 className="text-lg font-semibold text-[#1E293B]">学生详情</h2>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
+                  className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -110,15 +110,15 @@ export default function StudentDetailDrawer({
                         {student.student_no} · {student.gender} · {student.age === null ? '年龄未填写' : `${student.age}岁`}
                       </p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#F0F2F5] text-[#405680]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#F0F2F5] text-[#405680]">
                           {student.class_name}
                         </span>
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                           disabilityBadgeColors[student.disability_type] || 'bg-[#F0F2F5] text-[#64748B]'
                         }`}>
                           {student.disability_type}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#F5F0EB] text-[#5C4832]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#F5F0EB] text-[#5C4832]">
                           {student.disability_level}
                         </span>
                       </div>

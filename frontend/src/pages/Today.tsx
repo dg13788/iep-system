@@ -163,7 +163,7 @@ export default function Today() {
         {/* 窄屏只留图标：省出的宽度给问候语，无障碍名补在 aria-label 上 */}
         <Button
           variant="outline"
-          className="h-9 shrink-0 press"
+          className="h-11 lg:h-9 min-w-11 shrink-0 press"
           onClick={load}
           aria-label="刷新今日待办"
           title="刷新"
@@ -217,7 +217,7 @@ export default function Today() {
             {wb.due.length > DUE_VISIBLE && (
               <button
                 onClick={() => setDueExpanded((v) => !v)}
-                className="mt-3 flex items-center gap-1 text-xs text-[#2563EB] hover:underline cursor-pointer"
+                className="mt-2 flex items-center gap-1 text-xs text-[#2563EB] cursor-pointer rounded-md px-2 -mx-2 min-h-11 lg:min-h-8 hover:bg-primary/5 press"
               >
                 {dueExpanded ? '收起' : `展开全部 ${wb.due.length} 项`}
                 <ChevronDown className={cn('w-3 h-3 transition-transform', dueExpanded && 'rotate-180')} />

@@ -558,10 +558,10 @@ function UserManagementTab() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditingUser(u); setDrawerOpen(true); }}>
+                    <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setEditingUser(u); setDrawerOpen(true); }}>
                       <Pencil size={14} className="text-[#64748B]" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setResetUser(u); setResetDialogOpen(true); }}>
+                    <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setResetUser(u); setResetDialogOpen(true); }}>
                       <KeyRound size={14} className="text-[#F59E0B]" />
                     </Button>
                   </div>

@@ -45,6 +45,7 @@ import {
   PROMPT_LEVEL_CN,
 } from '@/services/iep';
 import type { IEPObjective, ObjectiveRecord } from '@/services/iep';
+import ConfirmDialog from '@/components/feedback/ConfirmDialog';
 
 const OBJECTIVE_STATUS_COLORS: Record<string, string> = {
   not_started: 'bg-[#F1F5F9] text-[#64748B]',
@@ -285,6 +286,7 @@ function ObjectiveCard({
   onDelete: () => void;
 }) {
   const pct = Math.round(Number(obj.overall_pct) || 0);
+  const [confirmDel, setConfirmDel] = useState(false);
   return (
     <div className="px-4 py-4">
       <div className="flex items-start justify-between gap-3">
@@ -368,7 +370,7 @@ function ObjectiveCard({
             {canEdit && (
               <>
                 <button onClick={onEdit} className="h-7 px-2 rounded border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer">编辑</button>
-                <button onClick={onDelete} className="h-7 px-1.5 rounded border border-[#FECACA] text-xs text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer" title="删除">
+                <button onClick={() => setConfirmDel(true)} className="h-9 lg:h-7 px-2 lg:px-1.5 rounded border border-[#FECACA] text-xs text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer" title="删除">
                   <Trash2 className="w-3 h-3" />
                 </button>
               </>
@@ -379,6 +381,24 @@ function ObjectiveCard({
 
       {/* 历史试次记录 */}
       {historyOpen && <TrialHistory objectiveId={obj.id} />}
+
+      <ConfirmDialog
+        open={confirmDel}
+        onOpenChange={setConfirmDel}
+        title="删除这个短期目标？"
+        description={
+          <>
+            将删除「{obj.title}」及其下所有任务步骤与试次记录。
+            <b className="text-[#B91C1C]">删除后不可撤销</b>
+            ，长期目标的掌握度会随之重新计算。
+          </>
+        }
+        confirmText="删除"
+        onConfirm={async () => {
+          onDelete();
+          setConfirmDel(false);
+        }}
+      />
     </div>
   );
 }
@@ -531,7 +551,7 @@ function TrialRecordSheet({
                 type="date"
                 value={recordDate}
                 onChange={(e) => setRecordDate(e.target.value)}
-                className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
               />
             </div>
             <div>
@@ -571,7 +591,7 @@ function TrialRecordSheet({
                 max={500}
                 value={trialCount}
                 onChange={(e) => setTrialCount(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-                className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
               />
             </div>
             <div>
@@ -582,7 +602,7 @@ function TrialRecordSheet({
                 max={trialCount}
                 value={successCount}
                 onChange={(e) => setSuccessCount(Math.max(0, Math.min(trialCount, Number(e.target.value) || 0)))}
-                className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
               />
             </div>
           </div>
@@ -641,14 +661,14 @@ function TrialRecordSheet({
           <button
             onClick={onClose}
             disabled={saving}
-            className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
+            className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
           >
             取消
           </button>
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            className="flex items-center gap-1.5 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             {saving ? '保存中...' : '保存记录'}
@@ -759,7 +779,7 @@ function ObjectiveEditSheet({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="如：能使用勺子独立吃完一顿饭"
-              className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
             />
           </div>
           <div>
@@ -778,7 +798,7 @@ function ObjectiveEditSheet({
               value={criteria}
               onChange={(e) => setCriteria(e.target.value)}
               placeholder="如：连续3次课达成率≥80%"
-              className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -790,7 +810,7 @@ function ObjectiveEditSheet({
                 max={100}
                 value={masteryPct}
                 onChange={(e) => setMasteryPct(Math.max(50, Math.min(100, Number(e.target.value) || 80)))}
-                className="w-full h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
               />
             </div>
             <div>
@@ -864,14 +884,14 @@ function ObjectiveEditSheet({
           <button
             onClick={onClose}
             disabled={saving}
-            className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
+            className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
           >
             取消
           </button>
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            className="flex items-center gap-1.5 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             {saving ? '保存中...' : '保存'}

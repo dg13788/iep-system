@@ -383,7 +383,7 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickAction(action.label)}
-                  className={`${action.color} text-white flex items-center gap-2 px-5 h-10 rounded-lg text-sm font-medium transition-all cursor-pointer hover:opacity-90`}
+                  className={`${action.color} text-white flex items-center gap-2 px-5 h-11 lg:h-10 rounded-lg text-sm font-medium transition-all cursor-pointer hover:opacity-90`}
                 >
                   <Icon className="w-4 h-4" />
                   {action.label}
@@ -597,7 +597,7 @@ export default function Dashboard() {
                         <div className="text-xs text-[#94A3B8]">{item.message}</div>
                       </div>
                     </div>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeColors[item.status]}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${statusBadgeColors[item.status]}`}>
                       {item.daysLeft}天
                     </span>
                   </div>
@@ -619,7 +619,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={() => navigate('/system')}
-              className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-0.5 cursor-pointer"
+              className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-0.5 cursor-pointer rounded-md px-2 -mx-2 min-h-11 lg:min-h-8 hover:bg-primary/5 press"
             >
               查看全部
               <ChevronRight className="w-4 h-4" />
@@ -683,7 +683,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => navigate('/iep')}
-            className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-0.5 cursor-pointer"
+            className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-0.5 cursor-pointer rounded-md px-2 -mx-2 min-h-11 lg:min-h-8 hover:bg-primary/5 press"
           >
             查看全部
             <ChevronRight className="w-4 h-4" />
@@ -726,7 +726,7 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={() => navigate('/students')}
-            className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-0.5 cursor-pointer"
+            className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-0.5 cursor-pointer rounded-md px-2 -mx-2 min-h-11 lg:min-h-8 hover:bg-primary/5 press"
           >
             查看全部
             <ChevronRight className="w-4 h-4" />

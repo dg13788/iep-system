@@ -216,7 +216,7 @@ export default function StudentList({
           <Button
             variant="outline"
             size="sm"
-            className="h-10 px-4 text-[#64748B] border-[#E2E8F0] hover:bg-[#F7F6F4]"
+            className="h-11 lg:h-10 px-4 text-[#64748B] border-[#E2E8F0] hover:bg-[#F7F6F4]"
             onClick={onSwitchToClasses}
           >
             <FolderOpen className="w-4 h-4 mr-1.5" />
@@ -225,7 +225,7 @@ export default function StudentList({
           {!readOnly && (
             <Button
               size="sm"
-              className="h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white"
+              className="h-11 lg:h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white"
               onClick={onAdd}
             >
               <Plus className="w-4 h-4 mr-1.5" />
@@ -510,12 +510,12 @@ export default function StudentList({
                     <td className="px-3 py-3 text-[#64748B]">{student.gender}</td>
                     <td className="px-3 py-3 text-[#64748B]">{student.age === null ? '—' : `${student.age}岁`}</td>
                     <td className="px-3 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#F0F2F5] text-[#405680]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#F0F2F5] text-[#405680]">
                         {student.class_name}
                       </span>
                     </td>
                     <td className="px-3 py-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                         disabilityBadgeColors[student.disability_type] || 'bg-[#F0F2F5] text-[#64748B]'
                       }`}>
                         {student.disability_type}
@@ -533,7 +533,7 @@ export default function StudentList({
                       <div className="flex items-center gap-1">
                         {!readOnly && (
                           <button
-                            className="w-7 h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors"
+                            className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors"
                             title="编辑"
                             onClick={() => onEdit(student)}
                           >
@@ -542,7 +542,7 @@ export default function StudentList({
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="w-7 h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors">
+                            <button className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors">
                               <MoreVertical className="w-3.5 h-3.5" />
                             </button>
                           </DropdownMenuTrigger>
@@ -585,7 +585,7 @@ export default function StudentList({
             </span>
             <div className="flex items-center gap-1">
               <button
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+                className={`w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center transition-colors ${
                   currentPage === 1
                     ? 'text-[#CBD5E1] cursor-not-allowed'
                     : 'text-[#64748B] hover:bg-[#F7F6F4]'
@@ -598,7 +598,7 @@ export default function StudentList({
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
                 <button
                   key={p}
-                  className={`w-8 h-8 rounded-md flex items-center justify-center text-sm font-medium transition-colors ${
+                  className={`w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-sm font-medium transition-colors ${
                     p === currentPage
                       ? 'bg-primary-500 text-white'
                       : 'text-[#64748B] hover:bg-[#F7F6F4]'
@@ -609,7 +609,7 @@ export default function StudentList({
                 </button>
               ))}
               <button
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+                className={`w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center transition-colors ${
                   currentPage === totalPages
                     ? 'text-[#CBD5E1] cursor-not-allowed'
                     : 'text-[#64748B] hover:bg-[#F7F6F4]'

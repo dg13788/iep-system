@@ -194,7 +194,7 @@ export default function ClassManagement({
         {!readOnly && (
           <Button
             size="sm"
-            className="h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white"
+            className="h-11 lg:h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white"
             onClick={handleAdd}
           >
             <Plus className="w-4 h-4 mr-1.5" />
@@ -221,14 +221,14 @@ export default function ClassManagement({
               {!readOnly && (
                 <div className="flex items-center gap-1">
                   <button
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors"
+                    className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors"
                     title="编辑"
                     onClick={() => handleEdit(cls)}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    className="w-7 h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-danger-50 hover:text-danger-500 transition-colors"
+                    className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-danger-50 hover:text-danger-500 transition-colors"
                     title="删除"
                     onClick={() => handleDeleteClick(cls)}
                   >
@@ -321,7 +321,7 @@ export default function ClassManagement({
                   </h2>
                   <button
                     onClick={() => setFormOpen(false)}
-                    className="w-8 h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
+                    className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>

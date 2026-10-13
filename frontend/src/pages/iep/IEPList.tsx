@@ -225,7 +225,7 @@ export default function IEPList({
         {canCreate && (
           <button
             onClick={onCreate}
-            className="flex items-center gap-2 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] active:bg-[#5C4832] transition-colors cursor-pointer"
+            className="flex items-center gap-2 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] active:bg-[#5C4832] transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             制定 IEP
@@ -309,7 +309,7 @@ export default function IEPList({
                   transition={{ duration: 0.25, delay: index * 0.04 }}
                   onClick={() => { setActiveTab(tab.label); setCurrentPage(1); }}
                   className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-150 cursor-pointer',
+                    'flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-150 cursor-pointer min-h-11 lg:min-h-9',
                     isActive && color
                       ? `border-[${color}] bg-opacity-10`
                       : isActive && !color
@@ -431,7 +431,7 @@ export default function IEPList({
           <select
             value={studentFilter}
             onChange={(e) => { setStudentFilter(e.target.value); setCurrentPage(1); }}
-            className="h-10 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all cursor-pointer"
+            className="h-11 lg:h-10 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all cursor-pointer"
             style={{ width: '180px' }}
           >
             <option value="">全部学生</option>
@@ -444,7 +444,7 @@ export default function IEPList({
             <select
               value={teacherFilter}
               onChange={(e) => { setTeacherFilter(e.target.value); setCurrentPage(1); }}
-              className="h-10 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all cursor-pointer"
+              className="h-11 lg:h-10 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all cursor-pointer"
               style={{ width: '160px' }}
             >
               <option value="">全部制定人</option>
@@ -457,7 +457,7 @@ export default function IEPList({
           <select
             value={academicYearFilter}
             onChange={(e) => { setAcademicYearFilter(e.target.value); setCurrentPage(1); }}
-            className="h-10 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all cursor-pointer"
+            className="h-11 lg:h-10 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.15)] transition-all cursor-pointer"
             style={{ width: '160px' }}
           >
             <option value="">全部学年</option>
@@ -474,7 +474,7 @@ export default function IEPList({
                 setAcademicYearFilter('');
                 setCurrentPage(1);
               }}
-              className="h-10 px-3 rounded-md text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+              className="h-11 lg:h-10 px-3 rounded-md text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
             >
               重置
             </button>
@@ -504,7 +504,7 @@ export default function IEPList({
             <thead>
               <tr className="bg-[#F7F6F4]">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8] tracking-wider w-[45px]">
-                  <input type="checkbox" className="rounded border-[#CBD5E1]" />
+                  <input type="checkbox" className="w-6 h-6 rounded border-[#CBD5E1] cursor-pointer" />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8] tracking-wider">学生</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8] tracking-wider min-w-[180px]">IEP 期间</th>
@@ -583,7 +583,7 @@ export default function IEPList({
                         className="border-b border-[#F1F5F9] hover:bg-[#F7F6F4] transition-colors duration-150 group"
                       >
                         <td className="px-4 py-4">
-                          <input type="checkbox" className="rounded border-[#CBD5E1]" />
+                          <input type="checkbox" className="w-6 h-6 rounded border-[#CBD5E1] cursor-pointer" />
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
@@ -655,7 +655,7 @@ export default function IEPList({
                           <div className="flex items-center gap-1 relative">
                             <button
                               onClick={() => onView(plan)}
-                              className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors cursor-pointer"
+                              className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors cursor-pointer"
                               title="查看"
                             >
                               <Eye className="w-4 h-4" />
@@ -663,7 +663,7 @@ export default function IEPList({
                             {(canEdit(plan.status) && canEditPlan) && (
                               <button
                                 onClick={() => onEdit(plan)}
-                                className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors cursor-pointer"
+                                className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors cursor-pointer"
                                 title="编辑"
                               >
                                 <Pencil className="w-4 h-4" />
@@ -671,7 +671,7 @@ export default function IEPList({
                             )}
                             <button
                               onClick={() => setOpenMenuId(openMenuId === plan.id ? null : plan.id)}
-                              className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors cursor-pointer"
+                              className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors cursor-pointer"
                               title="更多"
                             >
                               <MoreHorizontal className="w-4 h-4" />
@@ -757,7 +757,7 @@ export default function IEPList({
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] disabled:text-[#CBD5E1] disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] disabled:text-[#CBD5E1] disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -766,7 +766,7 @@ export default function IEPList({
                   key={page}
                   onClick={() => setCurrentPage(page)}
                   className={cn(
-                    'min-w-[32px] h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer',
+                    'min-w-[44px] h-11 lg:h-8 px-2 rounded-md text-sm font-medium transition-colors cursor-pointer',
                     page === currentPage
                       ? 'bg-[#977653] text-white'
                       : 'text-[#64748B] hover:bg-[#F7F6F4]'
@@ -778,7 +778,7 @@ export default function IEPList({
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] disabled:text-[#CBD5E1] disabled:cursor-not-allowed transition-colors cursor-pointer"
+                className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] disabled:text-[#CBD5E1] disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -789,7 +789,7 @@ export default function IEPList({
               <select
                 value={pageSize}
                 onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                className="h-8 px-2 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] cursor-pointer"
+                className="h-11 lg:h-8 px-2 rounded-md border border-[#CBD5E1] text-sm text-[#1E293B] bg-white focus:outline-none focus:border-[#3B82F6] cursor-pointer"
               >
                 {pageSizeOptions.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>

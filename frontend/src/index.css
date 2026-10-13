@@ -217,3 +217,50 @@
     transform: none;
   }
 }
+
+/* ============================================================
+ * 表格横向滚动容器（全局增强）
+ * 学生/评估/IEP/教学等表格列数多，窄屏必须横滑。
+ * 三条增强，一处 CSS 覆盖全系统（ui/table 的 data-slot 容器 +
+ * 直接子元素为 table 的手写 overflow-x-auto 容器）：
+ *   1. overscroll-behavior-x: contain —— 防止横滑表格触发浏览器的
+ *      「侧滑返回」手势（教师在手机上翻表格时最容易被这个坑到）
+ *   2. 惯性滚动 —— iOS 上横滑跟手
+ *   3. 首列吸附 —— 滑到最右侧仍知道这一行是哪个学生
+ * ============================================================ */
+[data-slot='table-container'],
+.overflow-x-auto:has(> table) {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1023.98px) {
+  [data-slot='table-container'] > table :is(th, td):first-child,
+  .overflow-x-auto:has(> table) > table :is(th, td):first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    /* 吸附列必须有背景，否则下层内容会透上来 */
+    background-color: #fff;
+    box-shadow: 1px 0 0 0 rgba(15, 23, 42, 0.07);
+  }
+  /* 表头首列要压在普通单元格之上 */
+  [data-slot='table-container'] > table thead :is(th, td):first-child,
+  .overflow-x-auto:has(> table) > table thead :is(th, td):first-child {
+    z-index: 3;
+  }
+  /* 行悬停时吸附列跟随变色，避免出现「一块白贴在灰行上」 */
+  [data-slot='table-container'] > table tbody tr:hover > td:first-child,
+  .overflow-x-auto:has(> table) > table tbody tr:hover > td:first-child {
+    background-color: #f8fafc;
+  }
+}
+
+/* 窄屏 Toast 让开顶栏：sonner 的 offset 属性在本版本未生效（实测仍 top=16，
+   正好压在顶栏菜单按钮上），这里用 CSS 直接定位。
+   72px = 顶栏高度 + 一点呼吸空间。 */
+@media (max-width: 639px) {
+  [data-sonner-toaster] {
+    top: 72px !important;
+  }
+}

@@ -345,7 +345,7 @@ export default function IEPDetail({
           <p className="text-sm text-[#64748B]">您没有查看 IEP 详情的权限</p>
           <button
             onClick={onClose}
-            className="mt-4 h-10 px-4 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+            className="mt-4 h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
           >
             返回
           </button>
@@ -374,7 +374,7 @@ export default function IEPDetail({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer">
+            <button onClick={onClose} className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer">
               <X className="w-5 h-5" />
             </button>
             <h2 className="text-lg font-semibold text-[#1E293B]">IEP 详情 - {currentPlan.student_name}</h2>
@@ -562,7 +562,7 @@ export default function IEPDetail({
                 <p className="text-sm text-[#64748B]">{loadError}</p>
                 <button
                   onClick={() => void loadDetail()}
-                  className="mt-2 h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                  className="mt-2 h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
                 >
                   点击重试
                 </button>
@@ -895,14 +895,14 @@ export default function IEPDetail({
                       <button
                         onClick={() => void handleApprove('reject')}
                         disabled={approving}
-                        className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#DC2626] hover:bg-[#FEF2F2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#DC2626] hover:bg-[#FEF2F2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         驳回
                       </button>
                       <button
                         onClick={() => void handleApprove('approve')}
                         disabled={approving}
-                        className="h-10 px-4 rounded-md bg-[#10B981] text-white text-sm font-medium hover:bg-[#059669] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="h-11 lg:h-10 px-4 rounded-md bg-[#10B981] text-white text-sm font-medium hover:bg-[#059669] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {approving ? '提交中...' : '通过'}
                       </button>
@@ -1102,7 +1102,7 @@ export default function IEPDetail({
                   </div>
                   <button
                     onClick={() => setProgressSheetOpen(false)}
-                    className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                    className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1229,7 +1229,7 @@ export default function IEPDetail({
                   <button
                     onClick={() => setProgressSheetOpen(false)}
                     disabled={savingProgress}
-                    className="h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     取消
                   </button>
@@ -1238,7 +1238,7 @@ export default function IEPDetail({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => void handleSaveProgress()}
                     disabled={savingProgress}
-                    className="flex items-center gap-1.5 h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <CheckCircle className="w-4 h-4" />
                     {savingProgress ? '保存中...' : '保存更新'}

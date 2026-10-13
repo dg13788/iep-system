@@ -31,6 +31,8 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { filterByDataScope, useIsReadOnly, useDataScopeConfig } from '@/utils/dataScope';
 import ImportExportActions from '@/components/io/ImportExportActions';
+import Pagination from '@/components/ui/pagination';
+import { useConfirm } from '@/components/feedback/ConfirmProvider';
 
 /* ------------------------------------------------------------------ */
 /*  ID Mapping for Data Scope                                          */
@@ -190,7 +192,7 @@ function StarRating({
           onMouseEnter={() => !readOnly && setHover(s)}
           onMouseLeave={() => setHover(0)}
           className={cn(
-            'p-0.5 rounded transition-all',
+            'p-0.5 rounded transition-all flex items-center justify-center min-h-11 min-w-11 lg:min-h-5 lg:min-w-5',
             !readOnly && 'cursor-pointer hover:bg-warning-50',
           )}
         >
@@ -1252,7 +1254,21 @@ export default function Teaching() {
     }
   };
 
+  const confirm = useConfirm();
+
   const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: '删除这条教学记录？',
+      description: (
+        <>
+          删除后该次授课的试次与评分将一并消失，
+          <b className="text-[#B91C1C]">不可撤销</b>
+          ，也会影响目标掌握度的统计。
+        </>
+      ),
+      confirmText: '删除记录',
+    });
+    if (!ok) return;
     try {
       await deleteTeachingRecord(id);
       setRecords((prev) => prev.filter((r) => r.id !== id));
@@ -1288,10 +1304,10 @@ export default function Teaching() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between mb-6"
+        className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-6"
       >
-        <div>
-          <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight">教学记录</h1>
+        <div className="min-w-0">
+          <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight whitespace-nowrap">教学记录</h1>
           <p className="text-sm text-[#64748B] mt-1">日常教学记录、反思与效果评估</p>
         </div>
         <div className="flex items-center gap-3">
@@ -1304,7 +1320,7 @@ export default function Teaching() {
                   setRecordMode('quick');
                   setFormOpen(true);
                 }}
-                className="h-10 bg-[#F97316] hover:bg-[#EA580C] text-white gap-2"
+                className="h-11 lg:h-10 bg-[#F97316] hover:bg-[#EA580C] text-white gap-2"
               >
                 <Zap size={18} /> 快速记录
               </Button>
@@ -1315,7 +1331,7 @@ export default function Teaching() {
                   setRecordMode('full');
                   setFormOpen(true);
                 }}
-                className="h-10 bg-[#977653] hover:bg-[#7A5F42] text-white gap-2"
+                className="h-11 lg:h-10 bg-[#977653] hover:bg-[#7A5F42] text-white gap-2"
               >
                 <BookPlus size={18} /> 录入教学记录
               </Button>
@@ -1367,8 +1383,8 @@ export default function Teaching() {
             <span className="text-[#94A3B8]">-</span>
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[130px]" />
           </div>
-          <div className="flex items-center gap-2 ml-auto">
-            <label className="flex items-center gap-1.5 text-sm text-[#64748B] cursor-pointer">
+          <div className="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
+            <label className="flex items-center gap-1.5 text-sm text-[#64748B] cursor-pointer whitespace-nowrap">
               <Checkbox checked={keyOnlyFilter} onCheckedChange={(v) => setKeyOnlyFilter(v === true)} />
               仅关键记录
             </label>
@@ -1420,7 +1436,7 @@ export default function Teaching() {
           <button
             onClick={() => setViewMode('list')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors cursor-pointer',
+              'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors cursor-pointer min-h-11 lg:min-h-8',
               viewMode === 'list' ? 'bg-[#977653] text-white' : 'bg-white text-[#64748B] hover:bg-[#F7F6F4]',
             )}
           >
@@ -1429,7 +1445,7 @@ export default function Teaching() {
           <button
             onClick={() => setViewMode('calendar')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors cursor-pointer',
+              'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors cursor-pointer min-h-11 lg:min-h-8',
               viewMode === 'calendar' ? 'bg-[#977653] text-white' : 'bg-white text-[#64748B] hover:bg-[#F7F6F4]',
             )}
           >
@@ -1536,15 +1552,15 @@ export default function Teaching() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleViewRecord(record)}>
+                            <Button variant="ghost" size="sm" aria-label="查看记录" title="查看" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => handleViewRecord(record)}>
                               <Eye size={14} className="text-[#64748B]" />
                             </Button>
                             {!readOnly && (
                               <>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditingRecord(record); setFormOpen(true); }}>
+                                <Button variant="ghost" size="sm" aria-label="编辑记录" title="编辑" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setEditingRecord(record); setFormOpen(true); }}>
                                   <Pencil size={14} className="text-[#64748B]" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handleDelete(record.id)}>
+                                <Button variant="ghost" size="sm" aria-label="删除记录" title="删除" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => handleDelete(record.id)}>
                                   <X size={14} className="text-[#EF4444]" />
                                 </Button>
                               </>
@@ -1559,47 +1575,26 @@ export default function Teaching() {
 
               {/* Pagination */}
               {paginatedRecords.length > 0 && (
-                <div className="flex items-center justify-between px-4 py-3 border-t border-[#E2E8F0]">
-                  <div className="text-sm text-[#64748B]">
-                    共 {filteredRecords.length} 条
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline" size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(currentPage - 1)}
+                <Pagination
+                  className="px-4 py-3 border-t border-[#E2E8F0]"
+                  page={currentPage}
+                  totalPages={totalPages}
+                  onChange={setCurrentPage}
+                  summary={`共 ${filteredRecords.length} 条`}
+                  trailing={
+                    <Select
+                      value={String(pageSize)}
+                      onValueChange={(v) => { setPageSize(Number(v)); setCurrentPage(1); }}
                     >
-                      上一页
-                    </Button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setCurrentPage(p)}
-                        className={cn(
-                          'w-8 h-8 rounded-md text-sm transition-colors cursor-pointer',
-                          currentPage === p ? 'bg-[#977653] text-white' : 'text-[#64748B] hover:bg-[#F7F6F4]',
-                        )}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                    <Button
-                      variant="outline" size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                  <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setCurrentPage(1); }}>
-                    <SelectTrigger className="w-[80px] h-8"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10条</SelectItem>
-                      <SelectItem value="20">20条</SelectItem>
-                      <SelectItem value="50">50条</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                      <SelectTrigger className="w-[92px] h-10 lg:h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 条/页</SelectItem>
+                        <SelectItem value="20">20 条/页</SelectItem>
+                        <SelectItem value="50">50 条/页</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  }
+                />
               )}
             </div>
           </motion.div>

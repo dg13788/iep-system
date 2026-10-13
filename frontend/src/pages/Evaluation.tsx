@@ -74,6 +74,8 @@ import { fetchIEPList } from '@/services/iep';
 import GoalDraftDrawer from '@/pages/iep/GoalDraftDrawer';
 import { fetchStudents as fetchStudentsList } from '@/services/students';
 import { useAuthStore } from '@/store/authStore';
+import Pagination from '@/components/ui/pagination';
+import ConfirmDialog from '@/components/feedback/ConfirmDialog';
 
 /* ─── Data Scope Badge ─── */
 function DataScopeBadge() {
@@ -688,6 +690,8 @@ export default function Evaluation() {
     }
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<EvaluationRecord | null>(null);
+
   const handleDelete = async (id: string) => {
     try {
       await deleteAssessment(id);
@@ -767,7 +771,7 @@ export default function Evaluation() {
             }}
           />
           {!readOnly && (
-            <Button onClick={() => openNewAssessment()} className="h-10 bg-[#977653] hover:bg-[#7A5F42]">
+            <Button onClick={() => openNewAssessment()} className="h-11 lg:h-10 bg-[#977653] hover:bg-[#7A5F42]">
               <ClipboardPlus className="w-4 h-4 mr-2" />
               录入评估
             </Button>
@@ -942,7 +946,7 @@ export default function Evaluation() {
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openDetail(record)} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F5F0EB] hover:text-[#977653] transition-colors cursor-pointer" title="查看报告">
+                      <button onClick={() => openDetail(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F5F0EB] hover:text-[#977653] transition-colors cursor-pointer" title="查看报告">
                         <Eye className="w-4 h-4" />
                       </button>
                       {!readOnly && (record.status === 'draft' || record.status === 'in_progress') && (
@@ -952,10 +956,10 @@ export default function Evaluation() {
                       )}
                       {!readOnly && (
                         <>
-                          <button onClick={() => handleDuplicate(record)} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F5F0EB] hover:text-[#977653] transition-colors cursor-pointer" title="复制">
+                          <button onClick={() => handleDuplicate(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F5F0EB] hover:text-[#977653] transition-colors cursor-pointer" title="复制">
                             <Copy className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleDelete(record.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-colors cursor-pointer" title="删除">
+                          <button onClick={() => setDeleteTarget(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-colors cursor-pointer" title="删除">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
@@ -984,38 +988,33 @@ export default function Evaluation() {
           </div>
         )}
 
+        <ConfirmDialog
+          open={deleteTarget !== null}
+          onOpenChange={(o) => !o && setDeleteTarget(null)}
+          title="删除这条评估记录？"
+          description={
+            <>
+              将删除「{deleteTarget?.studentName ?? '该学生'}」的这条评估记录及其全部条目打分。
+              <b className="text-[#B91C1C]">删除后不可撤销</b>
+              ，后续做进度对比时会少一个数据点。
+            </>
+          }
+          confirmText="删除"
+          onConfirm={async () => {
+            if (deleteTarget) await handleDelete(deleteTarget.id);
+            setDeleteTarget(null);
+          }}
+        />
+
         {/* Pagination */}
         {filteredRecords.length > 0 && (
-          <div className="flex items-center justify-between p-4 border-t border-[#E2E8F0]">
-            <div className="text-sm text-[#64748B]">
-              第 {page} / {totalPages} 页，共 {filteredRecords.length} 条
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(Math.max(1, page - 1))}
-                disabled={page === 1}
-                className="px-3 py-1.5 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F7F6F4] transition-colors"
-              >
-                上一页
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${p === page ? 'bg-[#977653] text-white' : 'text-[#64748B] hover:bg-[#F7F6F4]'}`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                onClick={() => setPage(Math.min(totalPages, page + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1.5 rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F7F6F4] transition-colors"
-              >
-                下一页
-              </button>
-            </div>
-          </div>
+          <Pagination
+            className="p-4 border-t border-[#E2E8F0]"
+            page={page}
+            totalPages={totalPages}
+            onChange={setPage}
+            summary={`共 ${filteredRecords.length} 条`}
+          />
         )}
       </motion.div>
 

@@ -20,6 +20,7 @@ import {
   BIP_INTENSITIES,
 } from '@/services/intervention';
 import type { BipIncident, BipPlan, IncidentStat } from '@/services/intervention';
+import { useConfirm } from '@/components/feedback/ConfirmProvider';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-[#F1F5F9] text-[#64748B]',
@@ -56,7 +57,21 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
     void load();
   }, [load]);
 
+  const confirm = useConfirm();
+
   const handleDelete = async (bip: BipPlan) => {
+    const ok = await confirm({
+      title: '删除这份行为干预计划（BIP）？',
+      description: (
+        <>
+          将删除「{bip.target_behavior || '该计划'}」及其全部记录。
+          <b className="text-[#B91C1C]">删除后不可撤销</b>
+          。
+        </>
+      ),
+      confirmText: '删除',
+    });
+    if (!ok) return;
     try {
       await deleteBip(bip.id);
       toast.success('BIP 已删除');

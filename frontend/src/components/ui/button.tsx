@@ -20,13 +20,15 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
       },
+      // ADR-050：触控尺寸断点跟桌面断点 lg(1024) 走，不跟 sm(640)。
+      // iPad 竖屏 768 仍是手指操作，此前 36px/32px 不达 44px 触控下限。
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        default: "h-11 lg:h-9 px-4 py-2 has-[>svg]:px-3",
+        sm: "h-11 lg:h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
+        lg: "h-12 lg:h-10 rounded-md px-6 has-[>svg]:px-4",
+        icon: "size-11 lg:size-9",
+        "icon-sm": "size-10 lg:size-8",
+        "icon-lg": "size-12 lg:size-10",
       },
     },
     defaultVariants: {
