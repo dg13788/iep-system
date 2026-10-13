@@ -27,7 +27,11 @@
 
 SET NAMES utf8mb4;
 
--- ---------- 1. 课程本位评估表 / 能力检核表 101-123 + 校本模板 131-137 ----------
+-- ---------- 1. 模板基线 101-137 ----------
+--   101-123 课程本位/能力检核表 + 124-130 系统基础评估表 + 131-137 校本模板。
+--   其中 124-130 这 7 个原先**只存在于演示数据生成器**（init.sql 里没有），
+--   开发库因灌过演示数据而看不出缺失，全新部署却会少这 7 个基础模板 ——
+--   又一次 ADR-040。它们在备份与开发库中都没有条目定义，故只补模板定义本身。
 INSERT INTO assessment_templates
   (id, name, category, description, target_disability_types,
    applicable_age_min, applicable_age_max, is_system, is_active,
@@ -62,8 +66,14 @@ VALUES
   (134, '培智二年级生活数学课程本位评估（校本·数与运算）', '课程本位', '依据生活数学课标低年级段，聚焦「常见的量」与「数与运算」两项，每两周一测，用于课程本位评估追踪。', '[\"智力障碍\", \"自闭症谱系\", \"发展迟缓\", \"脑瘫\", \"多重障碍\"]', 6, 18, 0, 1, NULL, '2026-10-12 15:56:19', '2026-10-12 15:56:19'),
   (135, '生活适应·社区生活检核表（校本）', '课程本位', '围绕生活适应课标「社区生活」领域设计，检核学生使用社区资源与安全自护的实际表现。', '[\"智力障碍\", \"自闭症谱系\", \"发展迟缓\", \"脑瘫\", \"多重障碍\"]', 6, 18, 0, 1, NULL, '2026-10-12 15:56:19', '2026-10-12 15:56:19'),
   (136, '职业转衔能力评估（校本·职业段）', '专项评估', '面向职业高中段与毕业转衔期学生，评估就业准备度，输出转衔服务建议（岗位实习、支持性就业、庇护性就业）。', '[\"智力障碍\", \"自闭症谱系\", \"发展迟缓\", \"脑瘫\", \"多重障碍\"]', 6, 18, 0, 1, NULL, '2026-10-12 15:56:19', '2026-10-12 15:56:19'),
-  (137, '送教上门学生能力检核表（校本）', '能力本位', '面向无法到校、接受送教上门服务的重度/多重障碍学生，检核基础能力现状与家庭支持条件，支撑送教计划制定。', '[\"智力障碍\", \"自闭症谱系\", \"发展迟缓\", \"脑瘫\", \"多重障碍\"]', 6, 18, 0, 1, NULL, '2026-10-12 15:56:19', '2026-10-12 15:56:19')
-ON DUPLICATE KEY UPDATE
+  (137, '送教上门学生能力检核表（校本）', '能力本位', '面向无法到校、接受送教上门服务的重度/多重障碍学生，检核基础能力现状与家庭支持条件，支撑送教计划制定。', '[\"智力障碍\", \"自闭症谱系\", \"发展迟缓\", \"脑瘫\", \"多重障碍\"]', 6, 18, 0, 1, NULL, '2026-10-12 15:56:19', '2026-10-12 15:56:19'),
+(124,'特殊需要儿童入学评估系统（感知·运动·认知·言语沟通·社会适应）','专项评估','对齐七维「特殊需要儿童入学评估系统」的五领域口径，用于入学准备度判定，可按总分或单项排序。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29'),
+(125,'孤独症儿童发展评估表（试行）','专项评估','对齐七维「孤独症儿童发展评估表（试行）」，覆盖感知、模仿、认知、沟通、自理、社会适应领域。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29'),
+(126,'生态化评估表（家庭·社区·学校情境）','专项评估','对齐七维「生态化评估」：在自然情境中评估功能性表现，而非脱离情境的抽离式测验。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29'),
+(127,'普通学校特殊需要学生课程评估表（随班就读版）','课程本位','对齐七维「普通学校特殊需要学生课程评估系统」，评估随班就读学生在普通课程中的参与与达成。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29'),
+(128,'特殊儿童评估干预表（送教上门版）','专项评估','对齐七维「特殊儿童评估干预系统（送教上门）」，适用于无法到校学生的居家评估与干预。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29'),
+(129,'儿童注意力评估表（Posner 注意网络模型）','专项评估','对齐七维「儿童注意力游戏化评估与训练系统」，按警觉、定向、执行控制三网络分项。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29'),
+(130,'学前发展检核评估表','专项评估','对齐七维「学前检核评估」，用于学龄前段发展里程碑检核。','[\"intellectual\", \"autism\", \"multiple\", \"developmental_delay\", \"cerebral_palsy\", \"hearing\", \"visual\"]',3,22,1,1,1,'2026-10-10 15:55:29','2026-10-10 15:55:29')ON DUPLICATE KEY UPDATE
   name                    = VALUES(name),
   category                = VALUES(category),
   description             = VALUES(description),
@@ -154,13 +164,13 @@ ON DUPLICATE KEY UPDATE
   max_score        = VALUES(max_score),
   sort_order       = VALUES(sort_order);
 
--- ---------- 3. 自证（期望模板 23 个、哨兵残留 0） ----------
+-- ---------- 3. 自证（期望模板 37 个 = 101-137；条目数与备份一致） ----------
 SELECT
-  (SELECT COUNT(*) FROM assessment_templates WHERE id BETWEEN 101 AND 123 OR id BETWEEN 131 AND 137) AS v18_模板数_期望30,
+  (SELECT COUNT(*) FROM assessment_templates WHERE id BETWEEN 101 AND 137) AS v18_模板数_期望37,
   (SELECT COUNT(*) FROM template_items_custom  WHERE template_id BETWEEN 101 AND 123 OR template_id BETWEEN 131 AND 137) AS v18_条目数,
   (SELECT COUNT(*) FROM template_items_custom  WHERE template_id = 99999) AS v18_哨兵残留_期望0;
 
 -- ---------- 4. 版本登记 ----------
 INSERT INTO db_migrations (version, description, applied_at)
-VALUES ('update_v18', '固化评估模板基线 101-123 及其条目定义（此前只存在于活库）', NOW())
+VALUES ('update_v18', '固化评估模板基线 101-137（含只存在于生成器的 124-130）及其条目定义', NOW())
 ON DUPLICATE KEY UPDATE description = VALUES(description);
