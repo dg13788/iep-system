@@ -4,11 +4,11 @@ import { toast } from 'sonner';
 import {
   AlertTriangle,
   CalendarClock,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
   ClipboardList,
   Edit3,
-  Inbox,
   RefreshCw,
   Sparkles,
   Timer,
@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { CardSkeleton, EmptyState, ErrorState, Skel } from '@/components/feedback/PageState';
 import {
   Select,
   SelectContent,
@@ -73,6 +74,13 @@ function greeting(): string {
   return '晚上好';
 }
 
+/** 今天是什么日子：教师抬头就该看见，不必自己去任务栏确认 */
+function todayText(): string {
+  const d = new Date();
+  const week = '日一二三四五六'[d.getDay()];
+  return `${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week}`;
+}
+
 export default function Today() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -110,12 +118,17 @@ export default function Today() {
     [navigate],
   );
 
+  // 骨架屏而非转圈：教师等待时能看到"大概会来什么、有几块"，
+  // 而不是对着一个转圈猜系统是不是卡住了。
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-primary-200 border-t-primary-600" />
-          <p className="text-sm text-[#64748B]">正在排今天的安排…</p>
+      <div className="max-w-[980px] mx-auto pb-16">
+        <Skel className="h-6 w-52 mb-2" />
+        <Skel className="h-3.5 w-72 mb-5" />
+        <div className="space-y-5">
+          <CardSkeleton rows={4} />
+          <CardSkeleton rows={2} />
+          <CardSkeleton rows={2} />
         </div>
       </div>
     );
@@ -123,11 +136,8 @@ export default function Today() {
 
   if (error) {
     return (
-      <div className="max-w-[900px] mx-auto py-16 text-center">
-        <p className="text-sm text-[#B91C1C]">{error}</p>
-        <Button variant="outline" className="mt-4" onClick={load}>
-          重试
-        </Button>
+      <div className="max-w-[900px] mx-auto">
+        <ErrorState message={error} onRetry={() => void load()} />
       </div>
     );
   }
@@ -138,20 +148,28 @@ export default function Today() {
   return (
     <div className="max-w-[980px] mx-auto pb-16">
       {/* 头部 */}
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div>
-          <h1 className="text-xl font-semibold text-[#1E293B]">
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <div className="min-w-0">
+          <p className="text-xs text-[#94A3B8]">{todayText()}</p>
+          <h1 className="mt-0.5 text-xl sm:text-2xl font-semibold tracking-tight text-[#1E293B]">
             {greeting()}，{user?.name || '老师'}
           </h1>
-          <p className="mt-1 text-sm text-[#64748B]">
+          <p className="mt-1.5 text-sm text-[#64748B] leading-relaxed">
             {total === 0
               ? '今天没有待办，可以安心上课。'
               : `今天有 ${wb.counts.due} 项目标待采集、${wb.counts.attention} 个目标需要关注、${wb.counts.upcoming} 项事项临近时限。`}
           </p>
         </div>
-        <Button variant="outline" className="h-8 shrink-0" onClick={load}>
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          刷新
+        {/* 窄屏只留图标：省出的宽度给问候语，无障碍名补在 aria-label 上 */}
+        <Button
+          variant="outline"
+          className="h-9 shrink-0 press"
+          onClick={load}
+          aria-label="刷新今日待办"
+          title="刷新"
+        >
+          <RefreshCw className="w-3.5 h-3.5 sm:mr-1.5" />
+          <span className="hidden sm:inline">刷新</span>
         </Button>
       </div>
 
@@ -178,7 +196,11 @@ export default function Today() {
         }
       >
         {wb.due.length === 0 ? (
-          <Empty text="所有目标都在采集周期内，今天没有需要补记的数据。" />
+          <Empty
+            icon={<Timer className="w-5 h-5 text-[#94A3B8]" />}
+            title="今天没有需要补记的数据"
+            description="所有目标都在采集周期内。中途加练的试次可以随时从 IEP 计划里补记。"
+          />
         ) : (
           <>
             <div className="divide-y divide-[#F1F5F9]">
@@ -213,7 +235,11 @@ export default function Today() {
         hint="依据已采集数据自动判断，仅供参考，最终由 IEP 团队决定"
       >
         {wb.attention.length === 0 ? (
-          <Empty text="没有目标触发调整或关注信号。" />
+          <Empty
+            icon={<CheckCircle2 className="w-5 h-5 text-[#94A3B8]" />}
+            title="没有目标触发关注信号"
+            description="依据已采集数据判断，暂不需要调整干预。继续按计划采集即可。"
+          />
         ) : (
           <div className="divide-y divide-[#F1F5F9]">
             {wb.attention.map((it) => (
@@ -237,7 +263,11 @@ export default function Today() {
         hint="程序性时限：复审、审批、家长签署、干预效果复核"
       >
         {wb.upcoming.length === 0 ? (
-          <Empty text="30 天内没有到期的程序性事项。" />
+          <Empty
+            icon={<CalendarClock className="w-5 h-5 text-[#94A3B8]" />}
+            title="30 天内没有到期事项"
+            description="复审、审批、家长签署都在时限内。"
+          />
         ) : (
           <div className="divide-y divide-[#F1F5F9]">
             {wb.upcoming.map((it, i) => (
@@ -294,12 +324,15 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-5 rounded-xl border border-[#E2E8F0] bg-white overflow-hidden">
+    // 用极轻的阴影 + 留白表达"这是一张卡片"，而不是靠一圈重边框把界面切成表格
+    <section className="mb-5 rounded-xl border border-[#E2E8F0] bg-white shadow-card overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#F1F5F9]">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[#475569]">{icon}</span>
+          <span className="w-6 h-6 shrink-0 rounded-full bg-[#F1F5F9] flex items-center justify-center text-[#475569]">
+            {icon}
+          </span>
           <h2 className="text-sm font-semibold text-[#1E293B]">{title}</h2>
-          <span className="px-1.5 py-0.5 rounded-full bg-[#F1F5F9] text-[11px] font-medium text-[#475569]">
+          <span className="px-1.5 py-0.5 rounded-full bg-[#F1F5F9] text-[11px] font-medium text-[#475569] tabular">
             {count}
           </span>
         </div>
@@ -315,13 +348,9 @@ function Section({
   );
 }
 
-function Empty({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-2 py-6 justify-center text-xs text-[#94A3B8]">
-      <Inbox className="w-4 h-4" />
-      {text}
-    </div>
-  );
+/** 空状态必须说清"为什么空、要不要做点什么"，只写"暂无数据"等于没说 */
+function Empty({ title, description, icon }: { title: string; description: string; icon?: React.ReactNode }) {
+  return <EmptyState icon={icon} title={title} description={description} className="py-6" />;
 }
 
 /* ============================================================
@@ -343,7 +372,15 @@ function DueRow({
   const dueToday = item.days_overdue === 0;
 
   return (
-    <div className="flex items-center gap-3 py-2.5">
+    // 手机上竖排：信息在上、按钮在下且占满整行宽度（拇指最好按的位置）；
+    // 桌面上回到横排，保持信息密度。按钮在移动端 44px 高，桌面 36px。
+    <div className="relative flex flex-col gap-2 py-3 pl-3 sm:flex-row sm:items-center sm:gap-3 sm:pl-4">
+      {overdue && (
+        <span
+          className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-[#DC2626]"
+          aria-hidden="true"
+        />
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-[#1E293B]">{item.student_name}</span>
@@ -368,12 +405,16 @@ function DueRow({
         </p>
       </div>
       {readonly ? (
-        <Button variant="outline" className="h-8 shrink-0 text-xs" onClick={onOpen}>
+        <Button
+          variant="outline"
+          className="h-11 lg:h-9 w-full sm:w-auto shrink-0 text-xs press"
+          onClick={onOpen}
+        >
           查看
           <ChevronRight className="w-3 h-3 ml-0.5" />
         </Button>
       ) : (
-        <Button className="h-8 shrink-0" onClick={onRecord}>
+        <Button className="h-11 lg:h-9 w-full sm:w-auto shrink-0 press" onClick={onRecord}>
           <ClipboardList className="w-3.5 h-3.5 mr-1.5" />
           记录试次
         </Button>
@@ -400,8 +441,8 @@ function AttentionRow({
   const m = LEVEL_META[item.level] ?? LEVEL_META.watch;
   return (
     <div className="py-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-[#1E293B]">{item.student_name}</span>
             <span className={cn('px-1.5 py-0.5 rounded-full text-[10px] font-medium', m.bg, m.text)}>
@@ -413,13 +454,22 @@ function AttentionRow({
           </div>
           <p className="mt-0.5 text-xs text-[#475569] truncate">{item.goal_title}</p>
         </div>
+        {/* 两个操作在手机上等分整行（各 44px 高），桌面上回到紧凑尺寸 */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <Button variant="outline" className="h-7 text-xs" onClick={onOpen}>
+          <Button
+            variant="outline"
+            className="h-11 lg:h-8 flex-1 sm:flex-none text-xs press"
+            onClick={onOpen}
+          >
             目标详情
             <ChevronRight className="w-3 h-3 ml-0.5" />
           </Button>
           {!readonly && (
-            <Button variant="outline" className="h-7 text-xs" onClick={onAdjust}>
+            <Button
+              variant="outline"
+              className="h-11 lg:h-8 flex-1 sm:flex-none text-xs press"
+              onClick={onAdjust}
+            >
               <Edit3 className="w-3 h-3 mr-1" />
               登记调整
             </Button>

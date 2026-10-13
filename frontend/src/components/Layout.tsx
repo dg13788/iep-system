@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import MobileTabBar from './MobileTabBar';
 import { useAuthStore } from '@/store/authStore';
 
 export default function Layout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -29,7 +32,7 @@ export default function Layout() {
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)');
     const apply = () => {
-      const offset = mq.matches ? (sidebarCollapsed ? '64px' : '240px') : '0px';
+      const offset = mq.matches ? (sidebarCollapsed ? '68px' : '240px') : '0px';
       document.documentElement.style.setProperty('--sidebar-offset', offset);
     };
     apply();
@@ -37,23 +40,46 @@ export default function Layout() {
     return () => mq.removeEventListener('change', apply);
   }, [sidebarCollapsed]);
 
+  // 路由变化后自动收起移动端抽屉（此前跳转后抽屉会一直盖在页面上）
+  useEffect(() => {
+    setNavOpen(false);
+  }, [location.hash]);
+
   return (
     <div className="flex min-h-[100dvh]">
-      {/* Sidebar */}
+      {/* 键盘/读屏用户直达内容：跳过整条导航 */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:m-3 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:shadow-float"
+      >
+        跳到主要内容
+      </a>
+
       <Sidebar
         collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        onToggle={() => setSidebarCollapsed((v) => !v)}
+        mobileOpen={navOpen}
+        onCloseMobile={() => setNavOpen(false)}
       />
 
-      {/* Main Content Area */}
       <div
-        className="flex-1 flex flex-col min-h-[100dvh] min-w-0 transition-[margin] duration-350 ease-in-out"
+        className="flex-1 flex flex-col min-h-[100dvh] min-w-0 transition-[margin] duration-300 ease-out"
         style={{ marginLeft: 'var(--sidebar-offset, 0px)' }}
       >
-        <Topbar />
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 min-w-0 overflow-y-auto bg-[#F7F6F4]">
+        <Topbar onOpenNav={() => setNavOpen(true)} />
+        <main
+          id="main-content"
+          className="flex-1 px-4 py-5 sm:px-6 sm:py-6 min-w-0 overflow-y-auto bg-[#F7F6F4]"
+        >
           <Outlet />
+          {/* 底部标签栏占位：避免最后一条内容被标签栏压住 */}
+          <div
+            className="lg:hidden"
+            style={{ height: 'calc(60px + var(--safe-bottom))' }}
+            aria-hidden="true"
+          />
         </main>
+        <MobileTabBar onOpenMore={() => setNavOpen(true)} />
       </div>
     </div>
   );

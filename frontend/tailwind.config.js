@@ -104,8 +104,21 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
-        number: ['Inter', 'SF Mono', 'monospace'],
+        // 与 index.css 的 --font-sans / --font-number 同源（此前两边内容不一致）
+        sans: ['var(--font-sans)'],
+        number: ['var(--font-number)'],
+      },
+      screens: {
+        // 大屏手机（iPhone Pro Max 之类）与 640 之间此前是空白地带，
+        // 卡片在此区间会挤成一列却仍占满宽，需要单独一档。
+        xs: '420px',
+      },
+      minHeight: {
+        tap: '44px',
+        'tap-lg': '56px',
+      },
+      minWidth: {
+        tap: '44px',
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
@@ -121,6 +134,24 @@ module.exports = {
         lg: '0 8px 24px rgba(0,0,0,0.08)',
         xl: '0 16px 48px rgba(0,0,0,0.1)',
         focus: '0 0 0 3px rgba(59,130,246,0.15)',
+        // 层次阴影：用变量统一，避免各处手写阴影深浅不一
+        card: 'var(--shadow-card)',
+        raised: 'var(--shadow-raised)',
+        float: 'var(--shadow-float)',
+      },
+      transitionTimingFunction: {
+        // index.css 里 --ease-* 定义了却从未接入 Tailwind，
+        // 各文件只能硬编码 cubic-bezier 或沿用默认 linear/ease。此处接线。
+        out: 'var(--ease-out)',
+        'in-out': 'var(--ease-in-out)',
+        spring: 'var(--ease-spring)',
+      },
+      transitionDuration: {
+        // Layout.tsx 里出现过 duration-350——Tailwind 默认没有这一档，
+        // 该类名静默不生效（侧栏过渡时长实际是 0s）。补齐常用档位。
+        250: '250ms',
+        350: '350ms',
+        400: '400ms',
       },
       keyframes: {
         "accordion-down": {
@@ -135,11 +166,24 @@ module.exports = {
           "0%,70%,100%": { opacity: "1" },
           "20%,50%": { opacity: "0" },
         },
+        // 入场：内容「落位」而不是生硬出现（苹果的做法是让元素从它来的方向上浮出）
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+        // 数字/徽章变化时的回弹：让"我点到了"这件事被看见
+        pop: {
+          "0%": { transform: "scale(0.94)" },
+          "60%": { transform: "scale(1.04)" },
+          "100%": { transform: "scale(1)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "caret-blink": "caret-blink 1.25s ease-out infinite",
+        "fade-up": "fade-up 260ms var(--ease-out) both",
+        pop: "pop 260ms var(--ease-spring) both",
       },
     },
   },

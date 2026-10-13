@@ -1,246 +1,251 @@
-import { useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  CalendarCheck,
-  LayoutDashboard,
-  Users,
-  ClipboardCheck,
-  FileText,
-  BookOpen,
-  Layers,
-  Home,
-  Settings,
-  School as SchoolIcon,
-  ShieldAlert,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Brain,
-} from 'lucide-react';
+import { LogOut, X, Brain } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { MENU_KEY_BY_PATH, NAV_ITEMS } from './navConfig';
 
-interface NavItem {
-  path: string;
-  label: string;
-  icon: typeof CalendarCheck;
-  /** 恒可见（不参与菜单权限过滤） */
-  always?: boolean;
-}
-
-const navItems: NavItem[] = [
-  // 今日工作台取代统计仪表盘成为首页：教师打开系统第一眼应该是「今天要做什么」
-  { path: '/', label: '今日', icon: CalendarCheck, always: true },
-  { path: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
-  { path: '/students', label: '学生管理', icon: Users },
-  { path: '/evaluation', label: '评估管理', icon: ClipboardCheck },
-  { path: '/iep', label: 'IEP管理', icon: FileText },
-  { path: '/teaching', label: '教学记录', icon: BookOpen },
-  { path: '/templates', label: '模板管理', icon: Layers },
-  { path: '/parents', label: '家校协作', icon: Home },
-  { path: '/school', label: '教学健康度', icon: SchoolIcon },
-  { path: '/system', label: '系统管理', icon: Settings },
-  // 管理控制台：菜单权限 key 为 admin，仅超级管理员组（pg=1）持有
-  { path: '/admin', label: '管理控制台', icon: ShieldAlert },
-];
-
-// 路径到菜单权限key的映射
-const pathToMenuKey: Record<string, string> = {
-  '/': 'today',
-  '/dashboard': 'dashboard',
-  '/students': 'students',
-  '/evaluation': 'evaluation',
-  '/iep': 'iep',
-  '/teaching': 'teaching',
-  '/templates': 'templates',
-  '/parents': 'parents',
-  '/school': 'school',
-  '/system': 'system',
-  '/admin': 'admin',
-};
+/**
+ * 侧栏（桌面常驻 + 移动端抽屉）
+ *
+ * 改动要点：
+ *  1. 抽屉改为受控（由 Layout 持有状态），移动端入口移到顶栏的汉堡按钮。
+ *     原实现把汉堡按钮做成 fixed top-3 left-3 的浮层，压住了顶栏面包屑。
+ *  2. 抽屉补齐对话框语义与键盘支持：role=dialog / aria-modal / Esc 关闭 /
+ *     打开时锁定背景滚动 / 打开后焦点落在第一项。此前抽屉是纯 div，
+ *     键盘用户既进不去也出不来。
+ *  3. 导航项补 aria-current="page"，折叠态补 title 提示
+ *     （折叠后只剩图标，没有提示等于让用户猜）。
+ */
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
 }
 
-export default function Sidebar({ collapsed }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasMenu } = useAuthStore();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  // 根据用户权限过滤导航项
+  // 抽屉打开时：锁定背景滚动 + Esc 关闭 + 焦点进入面板
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseMobile();
+    };
+    window.addEventListener('keydown', onKey);
+    const t = window.setTimeout(() => {
+      // 焦点落第一个导航项（而不是关闭按钮）：打开导航的意图是"要去某个页面"
+      const first = panelRef.current?.querySelector<HTMLElement>('nav button, nav a');
+      first?.focus();
+    }, 60);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+      window.clearTimeout(t);
+    };
+  }, [mobileOpen, onCloseMobile]);
+
   // 首页（今日工作台）恒可见：它是登录后的落点，若因菜单权限缺失而隐藏，
   // 用户会看到「有页面却进不去」的空白感，侧栏也失去锚点。
-  const visibleNavItems = navItems.filter((item) => {
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
     if (item.always) return true;
-    const key = pathToMenuKey[item.path];
-    return hasMenu(key);
+    return hasMenu(MENU_KEY_BY_PATH[item.path]);
   });
 
-  const sidebarContent = (
-    <>
-      {/* Logo Area */}
-      <div className="flex items-center h-16 px-4 border-b border-[#334155]">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center">
-            <Brain className="w-5 h-5 text-white" />
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden whitespace-nowrap"
-              >
-                <span className="text-lg font-bold text-white">特教 IEP</span>
-              </motion.div>
+  const navList = (
+    <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="主导航">
+      {visibleNavItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.path}
+            type="button"
+            onClick={() => {
+              navigate(item.path);
+              onCloseMobile();
+            }}
+            aria-current={isActive ? 'page' : undefined}
+            title={collapsed ? item.label : undefined}
+            className={`relative flex items-center w-full min-tap-h px-3 gap-3 rounded-md press cursor-pointer ${
+              isActive
+                ? 'bg-[#334155] text-white'
+                : 'text-[#94A3B8] hover:bg-[#334155] hover:text-white'
+            }`}
+          >
+            {isActive && (
+              <motion.span
+                layoutId="sidebar-active"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#3B82F6] rounded-r-full"
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              />
             )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {visibleNavItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.path}
-              onClick={() => {
-                navigate(item.path);
-                setMobileOpen(false);
-              }}
-              className={`
-                relative flex items-center w-full h-11 px-3 gap-3 rounded-md
-                transition-colors duration-150 cursor-pointer
-                ${isActive
-                  ? 'bg-[#334155] text-white'
-                  : 'text-[#94A3B8] hover:bg-[#334155] hover:text-white'
-                }
-              `}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#3B82F6] rounded-r-full"
-                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-                />
+            <Icon className="flex-shrink-0 w-[18px] h-[18px]" />
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-sm whitespace-nowrap overflow-hidden"
+                >
+                  {item.label}
+                </motion.span>
               )}
-              <Icon className="flex-shrink-0 w-[18px] h-[18px]" />
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-sm whitespace-nowrap overflow-hidden"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
-          );
-        })}
-      </nav>
+            </AnimatePresence>
+          </button>
+        );
+      })}
+    </nav>
+  );
 
-      {/* User Section */}
-      <div className="px-3 py-4 border-t border-[#334155]">
-        <div className="flex items-center gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
-            <span className="text-xs font-bold text-white">
-              {user?.name?.[0] || '用'}
-            </span>
-          </div>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2 }}
-                className="flex-1 min-w-0 overflow-hidden"
-              >
-                <p className="text-sm text-white truncate">{user?.name || '当前用户'}</p>
-                <p className="text-xs text-[#94A3B8] truncate">
-                  {user?.permission_group_name || '用户'}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <AnimatePresence>
-            {!collapsed && (
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={handleLogout}
-                className="flex-shrink-0 p-1.5 rounded-md text-[#94A3B8] hover:text-white hover:bg-[#334155] transition-colors cursor-pointer"
-                title="退出登录"
-              >
-                <LogOut className="w-4 h-4" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+  const userBlock = (
+    <div className="px-3 py-4 border-t border-[#334155]">
+      <div className="flex items-center gap-3">
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
+          <span className="text-xs font-bold text-white">{user?.name?.[0] || '用'}</span>
         </div>
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex-1 min-w-0 overflow-hidden"
+            >
+              <p className="text-sm text-white truncate">{user?.name || '当前用户'}</p>
+              <p className="text-xs text-[#94A3B8] truncate">
+                {user?.permission_group_name || '用户'}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.button
+              type="button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleLogout}
+              aria-label="退出登录"
+              title="退出登录"
+              className="flex-shrink-0 p-2 rounded-md text-[#94A3B8] hover:text-white hover:bg-[#334155] press cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
-    </>
+    </div>
+  );
+
+  const logoBlock = (
+    <div className="flex items-center justify-between h-16 px-4 border-b border-[#334155]">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center">
+          <Brain className="w-5 h-5 text-white" />
+        </div>
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, width: 0 }}
+              animate={{ opacity: 1, width: 'auto' }}
+              exit={{ opacity: 0, width: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden whitespace-nowrap"
+            >
+              <span className="text-lg font-bold text-white">特教 IEP</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      {/* 移动端抽屉的关闭按钮（桌面侧栏不显示，那里用折叠箭头） */}
+      <button
+        type="button"
+        onClick={onCloseMobile}
+        aria-label="关闭主导航"
+        className="lg:hidden min-tap flex items-center justify-center -mr-2 rounded-lg text-[#94A3B8] hover:text-white press cursor-pointer"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
   );
 
   return (
     <>
-      {/* Mobile overlay */}
+      {/* 移动端遮罩：模糊而非纯黑，让"后面的内容还在"这件事被看见 */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={() => setMobileOpen(false)}
+            transition={{ duration: 0.2 }}
+            onClick={onCloseMobile}
+            className="fixed inset-0 z-40 bg-[#0F172A]/40 backdrop-blur-[2px] lg:hidden"
           />
         )}
       </AnimatePresence>
 
-      {/* Mobile toggle button */}
-      <button
-        onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-3 left-3 z-50 lg:hidden p-2 rounded-md bg-[#1E293B] text-white"
-      >
-        {mobileOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-      </button>
-
-      {/* Desktop Sidebar */}
+      {/* 桌面侧栏 */}
       <motion.aside
-        animate={{ width: collapsed ? 64 : 240 }}
-        transition={{ duration: 0.35, ease: [0.45, 0, 0.55, 1] as [number, number, number, number] }}
+        animate={{ width: collapsed ? 68 : 240 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-[#1E293B] z-30 overflow-hidden"
       >
-        {sidebarContent}
+        {logoBlock}
+        {navList}
+        {userBlock}
+        {/* 折叠开关：独立一行。
+            注：onToggle 此前从未被任何元素调用——桌面侧栏实际上永远折叠不了。 */}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
+          title={collapsed ? '展开侧栏' : '收起侧栏'}
+          className="hidden lg:flex min-tap-h items-center justify-center gap-1.5 border-t border-[#334155] text-xs text-[#94A3B8] hover:text-white hover:bg-[#334155] press cursor-pointer"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d={collapsed ? 'M6 3.5 L10.5 8 L6 12.5' : 'M10 3.5 L5.5 8 L10 12.5'}
+                  stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {!collapsed && <span>收起侧栏</span>}
+        </button>
       </motion.aside>
 
-      {/* Mobile Sidebar */}
+      {/* 移动端抽屉 */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.aside
-            initial={{ x: -240 }}
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="主导航"
+            initial={{ x: '-100%' }}
             animate={{ x: 0 }}
-            exit={{ x: -240 }}
-            transition={{ duration: 0.35, ease: [0.45, 0, 0.55, 1] as [number, number, number, number] }}
-            className="fixed lg:hidden left-0 top-0 w-[240px] h-screen bg-[#1E293B] z-50 flex flex-col"
+            exit={{ x: '-100%' }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed lg:hidden left-0 top-0 w-[min(84vw,300px)] h-[100dvh] bg-[#1E293B] z-50 flex flex-col"
+            style={{ paddingTop: 'var(--safe-top)' }}
           >
-            {sidebarContent}
+            {logoBlock}
+            {navList}
+            {userBlock}
           </motion.aside>
         )}
       </AnimatePresence>

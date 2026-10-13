@@ -1,5 +1,7 @@
 /*
- * 修复(P2-3)：此处原有一条 @import url('https://fonts.googleapis.com/...')。
+ * 设计系统底座
+ *
+ * 原文件顶部曾有一条 @import url('https://fonts.googleapis.com/...')。
  * CSS 内的 @import 是「渲染阻塞 + 串行请求」的：浏览器必须先下载本文件、解析到 @import，
  * 才会去请求 Google CDN。在校园内网 / 离线环境里 DNS 解析会长时间挂起，
  * 首屏白屏可达数十秒。字体已改由 index.html 以非阻塞方式异步加载（见该文件注释），
@@ -55,25 +57,163 @@
     --border-medium: #CBD5E1;
     --border-focus: #3B82F6;
 
+    /* 字体栈：全站唯一真源。
+       修复说明：此前 tailwind.config.js 的 fontFamily.sans 与本文件 body 的
+       font-family 是两套不同内容（config 缺 CJK 兜底），
+       `font-sans` 工具类与 body 默认渲染结果不一致——
+       离线环境下用 font-sans 的元素会掉到系统默认字体、中文出现豆腐块。
+       现在两处都指向同一个变量，改字体只需改这里。 */
+    --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei',
+                 'Noto Sans CJK SC', 'Source Han Sans SC', 'WenQuanYi Zen Hei',
+                 ui-sans-serif, system-ui, sans-serif;
+    --font-number: 'Inter', 'SF Mono', ui-monospace, monospace;
+
     /* Easing Functions */
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* 层次阴影：苹果的做法是用极轻的阴影 + 留白表达层级，
+       而不是靠一圈圈边框把界面切成表格。边框越重，内容越弱。 */
+    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04);
+    --shadow-raised: 0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 28px rgba(15, 23, 42, 0.08);
+    --shadow-float: 0 8px 20px rgba(15, 23, 42, 0.10), 0 28px 64px rgba(15, 23, 42, 0.14);
+
+    /* iOS 全面屏安全区：教师用 iPhone / iPad 在教室里竖屏操作，
+       底部 home indicator 会压住按钮，必须留出来。 */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
   }
 
   * {
     @apply border-border-light;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* 抽屉打开时锁滚动由组件控制，此处只防止移动端橡皮筋穿透 */
+    overscroll-behavior-y: none;
+  }
+
   body {
-    /* 兜底栈覆盖：macOS(PingFang) / Windows(微软雅黑) / Linux发行版(Noto Sans CJK、文泉驿)
-       / 思源黑体。远端 CDN 不可用时仍能正常显示中文，不会出现豆腐块。 */
-    font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei',
-                 'Noto Sans CJK SC', 'Source Han Sans SC', 'WenQuanYi Zen Hei',
-                 sans-serif;
-    background-color: #F7F6F4;
+    font-family: var(--font-sans);
+    background-color: var(--bg-main);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* 教师在教室走动时单手持平板，文字选中不应触发系统长按放大镜干扰点按 */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 键盘焦点环：只在键盘导航时出现，鼠标点击不出现。
+     此前自研布局（侧栏/顶栏/21 个自研抽屉）完全没有焦点样式，
+     键盘用户看不到自己在哪——这是纯键盘操作下的"失明"。 */
+  :focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+  /* 鼠标点击不画环，避免视觉噪音 */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* 数字用等宽字形：试次计数、达成率跳动时不会因为字宽变化而抖动 */
+  .tabular {
+    font-family: var(--font-number);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* 最小触控目标 44×44（iOS HIG 下限）。
+     教师在个训课上手忙脚乱、戴老花镜，32px 的按钮是点不中的。 */
+  .min-tap {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .min-tap-h {
+    min-height: 44px;
+  }
+
+  /* 按压反馈：苹果式的"按下去有回弹"，让点击有物理感 */
+  .press {
+    transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out),
+                box-shadow 140ms var(--ease-out), opacity 140ms var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  .pb-safe {
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+  }
+  .pl-safe {
+    padding-left: var(--safe-left);
+  }
+  .pr-safe {
+    padding-right: var(--safe-right);
+  }
+
+  /* 骨架屏微光：比单纯的 pulse 更像"内容正在成形" */
+  .shimmer {
+    background-image: linear-gradient(
+      90deg,
+      rgba(148, 163, 184, 0) 0%,
+      rgba(148, 163, 184, 0.18) 50%,
+      rgba(148, 163, 184, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s var(--ease-in-out) infinite;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 细滚动条：内容区滚动条不该抢内容的注意力 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #CBD5E1;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #94A3B8;
+}
+
+::selection {
+  background-color: rgba(59, 130, 246, 0.18);
+  color: inherit;
+}
+
+/* 尊重系统的「减弱动态效果」设置。
+   前庭敏感的用户（含部分孤独症谱系成人使用者）会因视差/缩放动效产生不适，
+   系统里既然服务特殊教育群体，这一条不能缺。 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .press:active {
+    transform: none;
   }
 }

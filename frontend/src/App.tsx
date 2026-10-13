@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router'
+import { MotionConfig } from 'framer-motion'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/store/authStore'
 import { setUnauthorizedHandler } from '@/api'
 import Layout from '@/components/Layout'
+import ErrorBoundary from '@/components/feedback/ErrorBoundary'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
 import School from '@/pages/School'
@@ -112,6 +114,11 @@ export default function App() {
   }
 
   return (
+    // reducedMotion="user"：framer-motion 全局尊重系统的「减弱动态效果」。
+    // 各页面散落着 295 处 motion 用法，逐个改不现实，也容易漏；
+    // 在根节点统一接管，配合 index.css 里的 prefers-reduced-motion 兜底。
+    <ErrorBoundary>
+    <MotionConfig reducedMotion="user">
     <HashRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -142,5 +149,7 @@ export default function App() {
       </Routes>
       <Toaster position="top-right" />
     </HashRouter>
+    </MotionConfig>
+    </ErrorBoundary>
   )
 }

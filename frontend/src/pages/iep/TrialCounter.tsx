@@ -32,6 +32,20 @@ interface TrialCounterProps {
 
 type Tap = { level: PromptLevel; ok: boolean };
 
+/**
+ * 触觉反馈：成功一下短振，失败两下。
+ * 个训课上教师的眼睛在孩子身上，不在屏幕上——
+ * 手上的反馈能让他不看屏幕也知道自己点中的是"成功"还是"失败"。
+ * 不支持振动的设备（多数 PC / iPad）静默跳过。
+ */
+function buzz(ok: boolean) {
+  try {
+    navigator.vibrate?.(ok ? 12 : [18, 45, 18]);
+  } catch {
+    /* 振动不可用时不影响记录 */
+  }
+}
+
 export default function TrialCounter({ item, onClose, onSaved }: TrialCounterProps) {
   const [level, setLevel] = useState<PromptLevel>('independent');
   const [taps, setTaps] = useState<Tap[]>([]);
@@ -39,19 +53,27 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
   const [result, setResult] = useState<TrialSaveResult | null>(null);
   const [notes, setNotes] = useState('');
 
+  const tap = useCallback(
+    (ok: boolean) => {
+      setTaps((p) => [...p, { level, ok }]);
+      buzz(ok);
+    },
+    [level],
+  );
+
   // 键盘快捷键：个训课上单手也能记。S=成功，F=失败，Backspace=撤销
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       const k = e.key.toLowerCase();
-      if (k === 's') { setTaps((p) => [...p, { level, ok: true }]); }
-      else if (k === 'f') { setTaps((p) => [...p, { level, ok: false }]); }
+      if (k === 's') { tap(true); }
+      else if (k === 'f') { tap(false); }
       else if (e.key === 'Backspace') { setTaps((p) => p.slice(0, -1)); }
       else if (e.key === 'Escape') { onClose(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [level, onClose]);
+  }, [tap, onClose]);
 
   const total = taps.length;
   const success = taps.filter((t) => t.ok).length;
@@ -98,7 +120,9 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
-      <div className="w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-xl">
+      {/* 移动端是底部抽屉：底部留出 iPhone home indicator 的安全区，
+          否则「保存本次试次」会被系统手势条压住 */}
+      <div className="w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-float pb-safe">
         {/* 头部 */}
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#E2E8F0]">
           <div className="min-w-0">
@@ -130,14 +154,18 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
             <p className="text-xs font-medium text-[#475569] mb-2">
               本次试次的辅助层级（记完可随时切换）
             </p>
+            {/* 层级按钮加大到 44px：戴老花镜、手上沾着教具时也要能点准 */}
             <div className="flex flex-wrap gap-2 mb-4">
               {PROMPT_LEVELS.map((p) => (
                 <button
                   key={p.value}
+                  type="button"
                   onClick={() => setLevel(p.value)}
                   title={p.hint}
+                  aria-pressed={level === p.value}
                   className={cn(
-                    'px-3 py-1.5 rounded-full text-xs border transition-colors cursor-pointer',
+                    // 触控尺寸的断点跟着桌面断点 lg 走：iPad 竖屏(768)仍是手指操作
+                    'h-11 lg:h-9 px-4 rounded-full text-xs border press cursor-pointer',
                     level === p.value
                       ? 'bg-[#1E293B] text-white border-[#1E293B]'
                       : 'bg-white text-[#475569] border-[#CBD5E1] hover:bg-[#F7F6F4]',
@@ -151,20 +179,22 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
             {/* 两个大按钮 */}
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => setTaps((p) => [...p, { level, ok: true }])}
-                className="h-28 rounded-xl bg-[#ECFDF5] border-2 border-[#A7F3D0] hover:bg-[#D1FAE5] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 cursor-pointer"
+                type="button"
+                onClick={() => tap(true)}
+                className="h-32 lg:h-28 rounded-xl bg-[#ECFDF5] border-2 border-[#A7F3D0] hover:bg-[#D1FAE5] shadow-card press flex flex-col items-center justify-center gap-1 cursor-pointer"
               >
                 <Check className="w-8 h-8 text-[#059669]" />
                 <span className="text-base font-semibold text-[#047857]">成功</span>
-                <span className="text-[10px] text-[#6EE7B7]">快捷键 S</span>
+                <span className="text-[10px] text-[#34D399]">快捷键 S</span>
               </button>
               <button
-                onClick={() => setTaps((p) => [...p, { level, ok: false }])}
-                className="h-28 rounded-xl bg-[#FEF2F2] border-2 border-[#FECACA] hover:bg-[#FEE2E2] active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-1 cursor-pointer"
+                type="button"
+                onClick={() => tap(false)}
+                className="h-32 lg:h-28 rounded-xl bg-[#FEF2F2] border-2 border-[#FECACA] hover:bg-[#FEE2E2] shadow-card press flex flex-col items-center justify-center gap-1 cursor-pointer"
               >
                 <X className="w-8 h-8 text-[#DC2626]" />
                 <span className="text-base font-semibold text-[#B91C1C]">失败</span>
-                <span className="text-[10px] text-[#FCA5A5]">快捷键 F</span>
+                <span className="text-[10px] text-[#F87171]">快捷键 F</span>
               </button>
             </div>
 
@@ -172,7 +202,12 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
             <div className="mt-4 border border-[#E2E8F0] rounded-lg p-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-xs text-[#64748B]">本次已记</span>
-                <span className="text-sm font-semibold text-[#1E293B]">
+                {/* key 变化触发回弹：让"我点到了"这件事被看见。
+                    tabular 等宽数字，避免数字跳动时整行宽度跟着抖 */}
+                <span
+                  key={`${total}-${success}`}
+                  className="animate-pop text-base sm:text-sm font-semibold text-[#1E293B] tabular"
+                >
                   {total} 试次 · {success} 成功 · {pct}%
                 </span>
               </div>
@@ -202,8 +237,9 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
 
               {total > 0 && (
                 <button
+                  type="button"
                   onClick={() => setTaps((p) => p.slice(0, -1))}
-                  className="mt-3 flex items-center gap-1 text-[11px] text-[#94A3B8] hover:text-[#475569] cursor-pointer"
+                  className="mt-2 min-tap-h flex items-center gap-1 text-[11px] text-[#94A3B8] hover:text-[#475569] press cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                   撤销最后一次（Backspace）
@@ -220,10 +256,14 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
             />
 
             <div className="mt-4 flex items-center justify-end gap-2">
-              <Button variant="outline" onClick={onClose} className="h-9">
+              <Button variant="outline" onClick={onClose} className="h-11 lg:h-9 flex-1 sm:flex-none press">
                 取消
               </Button>
-              <Button onClick={handleSave} disabled={saving || total === 0} className="h-9">
+              <Button
+                onClick={handleSave}
+                disabled={saving || total === 0}
+                className="h-11 lg:h-9 flex-1 sm:flex-none press"
+              >
                 <Save className="w-3.5 h-3.5 mr-1.5" />
                 {saving ? '保存中…' : '保存本次试次'}
               </Button>
