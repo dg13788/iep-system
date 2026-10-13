@@ -112,3 +112,38 @@ WHERE s.deleted_at IS NULL
   AND NOT EXISTS (
       SELECT 1 FROM student_parents sp WHERE sp.student_id = s.id AND sp.parent_id = p.id
   );
+
+-- ============================================================
+-- 追加段：演示教师账号（2026-10-13）
+--
+-- 为什么要补这段：演示数据生成器 gen_demo_v3.py 的 TEACHERS 按固定 id 引用
+-- 教师账号（3=李老师、4=王老师 来自 init.sql，另加 9~18 共 10 人）。其中
+-- 9~18 历史上只存在于开发活库里 —— 它们是演示账号，不是回归测试残留
+-- （用户名 teacher3~teacher12，姓名与生成器 TEACHERS 字典逐一对应）。
+--
+-- 后果：「从零重建演示库」这条路从未走通过。空库跑生成器必然在
+-- teacher_classes 上报 ERROR 1452（teacher_id=9 不存在），随后
+-- iep_plans.primary_teacher_id 失败、iep_goals / iep_objectives /
+-- assessment_items 等 20 余张表全部级联失败（实测 26 个错误，根因只有 1 个）。
+-- 于是只能靠 dump 活库来造演示数据 —— 库的状态又与代码脱钩，
+-- 与 ADR-040（字典只存在于演示数据生成器里）是同一类病。
+--
+-- 做法：id 固定 9~18 以匹配生成器硬编码引用，username 唯一键保证幂等。
+-- 统一密码 admin123（与既有演示账号一致），role_id=3 班主任 / permission_group_id=3。
+INSERT INTO users (id, username, password_hash, real_name, role_id, permission_group_id, department, is_active, created_at, updated_at)
+VALUES
+  (9,  'teacher3',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '周雨薇', 3, 3, '特教组', 1, NOW(), NOW()),
+  (10, 'teacher4',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '刘志远', 3, 3, '特教组', 1, NOW(), NOW()),
+  (11, 'teacher5',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '郑晓琳', 3, 3, '特教组', 1, NOW(), NOW()),
+  (12, 'teacher6',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '何俊峰', 3, 3, '特教组', 1, NOW(), NOW()),
+  (13, 'teacher7',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '高文博', 3, 3, '特教组', 1, NOW(), NOW()),
+  (14, 'teacher8',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '邓海燕', 3, 3, '特教组', 1, NOW(), NOW()),
+  (15, 'teacher9',  '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '许志强', 3, 3, '特教组', 1, NOW(), NOW()),
+  (16, 'teacher10', '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '潘丽华', 3, 3, '特教组', 1, NOW(), NOW()),
+  (17, 'teacher11', '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '曾宪明', 3, 3, '特教组', 1, NOW(), NOW()),
+  (18, 'teacher12', '$2y$10$w6w4GqEuWwSSvQBVm2dv7OXlj3At/MWiSFevhm.GItpQnAdX9IFWC', '唐美玲', 3, 3, '特教组', 1, NOW(), NOW())
+ON DUPLICATE KEY UPDATE id = id;
+
+-- 幂等自证：这段必须能重复执行且不产生重复账号。
+SELECT CONCAT('[seed] 演示教师账号数（应为 10 + init.sql 的 6 = 16）: ',
+              (SELECT COUNT(*) FROM users)) AS check_result;
