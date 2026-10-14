@@ -176,6 +176,7 @@ switch ($action) {
                 intval($g['sort_order'] ?? 0),
             ];
 
+            $act = 'update';
             if ($id > 0) {
                 // 更新前确认该目标确实属于本计划（防越权改他人数据）
                 $chk = $pdo->prepare(
@@ -193,6 +194,7 @@ switch ($action) {
                 );
                 $st->execute(array_merge($fields, [$id]));
             } else {
+                $act = 'create';
                 $st = $pdo->prepare(
                     'INSERT INTO iep_transition_goals (iep_plan_id, category, title, target_behavior,
                      criteria, baseline, baseline_value, baseline_date, target_value, start_date,
@@ -203,10 +205,14 @@ switch ($action) {
                 $id = (int)$pdo->lastInsertId();
             }
 
+            // 转衔目标属于法定内容，任何增删改都要留痕（ADR-018 审计覆盖）
+            auditLog($act, 'transition', 'transition_goal', (int)$id, $title, null, null,
+                     '转衔目标' . ($act === 'create' ? '新增' : '修改'));
+
             jsonResponse(['success' => true, 'data' => ['id' => $id], 'message' => '保存成功']);
         } catch (PDOException $e) {
             error_log('[transition] goal_save ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '保存失败'], 500);
+            jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
         }
         break;
 
@@ -233,9 +239,11 @@ switch ($action) {
                 // 否则越权删除会被伪装成"操作成功"。
                 jsonResponse(['success' => false, 'message' => '记录不存在或不属于该计划'], 404);
             }
+            auditLog('delete', 'transition', 'transition_goal', (int)$id, '', null, null, '删除转衔目标');
             jsonResponse(['success' => true, 'data' => ['deleted' => 1], 'message' => '已删除']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
+            error_log('[transition] goal_delete ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '删除失败', 'code' => 500], 500);
         }
         break;
 
@@ -277,18 +285,22 @@ switch ($action) {
                      end_date=?, frequency=?, outcome_note=?, sort_order=?, updated_at=NOW() WHERE id=?'
                 );
                 $st->execute(array_merge($args, [$id]));
+                $svAct = 'update';
             } else {
                 $st = $pdo->prepare(
                     'INSERT INTO iep_transition_services (iep_plan_id, service_name, provider, start_date,
                      end_date, frequency, outcome_note, sort_order, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())'
                 );
                 $st->execute($args);
-                $id = (int)$pdo->lastInsertId();
+                $id    = (int)$pdo->lastInsertId();
+                $svAct = 'create';
             }
+            auditLog($svAct, 'transition', 'transition_service', (int)$id, $name, null, null,
+                     '转衔服务' . ($svAct === 'create' ? '新增' : '修改'));
             jsonResponse(['success' => true, 'data' => ['id' => $id], 'message' => '保存成功']);
         } catch (PDOException $e) {
             error_log('[transition] service_save ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '保存失败'], 500);
+            jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
         }
         break;
 
@@ -312,9 +324,11 @@ switch ($action) {
                 // 否则越权删除会被伪装成"操作成功"。
                 jsonResponse(['success' => false, 'message' => '记录不存在或不属于该计划'], 404);
             }
+            auditLog('delete', 'transition', 'transition_service', (int)$id, '', null, null, '删除转衔服务');
             jsonResponse(['success' => true, 'data' => ['deleted' => 1], 'message' => '已删除']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
+            error_log('[transition] service_delete ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '删除失败', 'code' => 500], 500);
         }
         break;
 
@@ -364,14 +378,19 @@ switch ($action) {
                 $strengths, $concerns, $expects, $support,
                 $src, $uid,
             ]);
+            $newInputId = (int)$pdo->lastInsertId();
+            // 家长意见是「家长参与」的法定证据，写入即留痕（ADR-018）
+            auditLog('create', 'transition', 'parent_meeting_input', $newInputId,
+                     trim((string)($in['parent_name'] ?? '')), null, null,
+                     '记录家长意见（来源：' . $src . '）');
             jsonResponse([
                 'success' => true,
-                'data'    => ['id' => (int)$pdo->lastInsertId(), 'source' => $src],
+                'data'    => ['id' => $newInputId, 'source' => $src],
                 'message' => '家长意见已记录（作为参与证据存档）',
             ]);
         } catch (PDOException $e) {
             error_log('[transition] parent_input_save ' . $e->getMessage());
-            jsonResponse(['success' => false, 'message' => '保存失败'], 500);
+            jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
         }
         break;
 

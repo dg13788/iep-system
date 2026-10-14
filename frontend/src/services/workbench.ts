@@ -13,6 +13,7 @@
  */
 
 import { api } from '@/api';
+import type { DecisionLevel } from '@/services/iep';
 
 function unwrap<T>(res: { success: boolean; message?: string; data?: T }): T {
   if (!res.success) {
@@ -64,7 +65,9 @@ export interface AttentionItem {
   goal_id: number;
   goal_title: string;
   area: string | null;
-  level: 'adjust' | 'watch' | 'mastered';
+  // 后端已会把 regression（倒退）送进 attention —— 见 2026-10-14 审计修复。
+  // 此前这里只声明了三种等级，倒退会被静默丢弃在最前面最紧急的位置之外。
+  level: DecisionLevel;
   level_text: string;
   reasons: string[];
   evidence: {
@@ -74,8 +77,12 @@ export interface AttentionItem {
     trend_ratio?: number | null;
     days_since_last?: number;
     expected_days?: number | null;
+    direction?: string | null;
+    rule_hit?: string[] | string | null;
   };
-  suggestions: Array<{ type: string; text: string }>;
+  // id 由后端 pa_suggest_tagged() 产出（格式 "<level>:<type>"），前端只透传不自造。
+  // 教师勾选后回传，形成「系统建议 → 教师采纳」的可归因事件（北极星指标的可计数项）。
+  suggestions: Array<{ id?: string; type: string; text: string }>;
   points: number;
   last_date: string | null;
 }

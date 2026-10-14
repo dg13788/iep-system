@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
@@ -25,6 +25,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuthStore } from '@/store/authStore';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { CHANGE_TYPE_LABEL, saveAdjustment } from '@/services/iep';
 import {
   fetchWorkbench,
@@ -431,6 +433,62 @@ function DueRow({
  * 需要关注行
  * ============================================================ */
 
+const RULE_TEXT: Record<string, string> = {
+  A: '低于目标线',
+  B: '增速不足',
+  C: '数据已过期',
+  D: '出现倒退',
+  reached: '达到期末目标',
+};
+
+/**
+ * 把后端算出的判据体，翻成教师当场能质证的一行话。
+ *
+ * 为什么必须上屏（评估报告第七节排序第 2 位）：
+ *   progress_analysis 已经算出 evidence（用了几个点、窗口里几个低于目标线、
+ *   增速比、距上次采集天数）与 rule_hit（命中哪条规则），但前端只取了
+ *   judged_level 一个字符串。于是原则②「每个自动结论都可解释」
+ *   **只在数据层兑现**——教师看到「建议调整干预」，不知道凭什么，
+ *   既没法判断该不该信，也没法向家长解释，更不会据此改教学。
+ *
+ * 呈现原则：只显示后端真给出的字段；缺的就整项不显示，不补占位、不猜数值
+ * （ADR-002）。
+ */
+function evidenceChips(item: AttentionItem): string[] {
+  const ev = item.evidence ?? {};
+  const out: string[] = [];
+
+  if (typeof ev.points === 'number') {
+    out.push(`${ev.points} 个数据点`);
+  }
+  if (
+    typeof ev.below_count === 'number' &&
+    typeof ev.below_window === 'number' &&
+    ev.below_window > 0
+  ) {
+    out.push(`近 ${ev.below_window} 点中 ${ev.below_count} 个低于目标线`);
+  }
+  if (ev.trend_ratio !== null && ev.trend_ratio !== undefined) {
+    const pct = Math.round(ev.trend_ratio * 100);
+    out.push(ev.trend_ratio < 0 ? `方向与所需相反（${pct}%）` : `增速为所需速度的 ${pct}%`);
+  }
+  if (typeof ev.days_since_last === 'number') {
+    const exp =
+      ev.expected_days !== null && ev.expected_days !== undefined
+        ? `，设定约每 ${Math.round(ev.expected_days)} 天一次`
+        : '';
+    out.push(`距上次采集 ${ev.days_since_last} 天${exp}`);
+  }
+
+  const raw = ev.rule_hit;
+  const hits = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  if (hits.length > 0) {
+    out.push('命中规则：' + hits.map((h) => RULE_TEXT[h] ?? h).join('、'));
+  }
+
+  return out;
+}
+
 function AttentionRow({
   item,
   readonly,
@@ -443,6 +501,7 @@ function AttentionRow({
   onAdjust: () => void;
 }) {
   const m = LEVEL_META[item.level] ?? LEVEL_META.watch;
+  const chips = evidenceChips(item);
   return (
     <div className="py-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -488,6 +547,19 @@ function AttentionRow({
           </li>
         ))}
       </ul>
+
+      {chips.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {chips.map((c, i) => (
+            <span
+              key={i}
+              className="px-1.5 py-0.5 rounded text-[10px] bg-surface-2 text-ink-3 border border-line"
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
 
       {item.suggestions.length > 0 && (
         <div className="mt-2 flex items-start gap-1.5 bg-surface-3 rounded-md px-2.5 py-2">
@@ -548,12 +620,32 @@ function QuickAdjust({
 }) {
   const [detail, setDetail] = useState('');
   const [type, setType] = useState('other');
+  // 教师勾选「我采纳了这几条系统建议」——这是北极星指标（教师每周因系统数据
+  // 而改变教学决策的次数）在系统内唯一的可计数事件。此前系统只把建议当文本
+  // 展示，教师照做也无痕迹，回路是断的。
+  const [picked, setPicked] = useState<string[]>([]);
   const [due, setDue] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 14);
     return d.toISOString().slice(0, 10);
   });
   const [saving, setSaving] = useState(false);
+
+  // 本弹层是条件渲染（挂载=打开），走统一的焦点三件套：打开移入 / Tab 圈禁 /
+  // 关闭归还。此前它是裸 div，键盘用户 Tab 会直接穿到页面背景里（ADR-052）。
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, panelRef);
+  useDrawerA11y(true, onClose);
+
+  const togglePick = (sid: string, sugType: string) => {
+    const willAdd = !picked.includes(sid);
+    setPicked((prev) => (prev.includes(sid) ? prev.filter((x) => x !== sid) : [...prev, sid]));
+    // 联动「调整类型」：建议的 type 与调整类型共用一套枚举（dosage/prompt_level/…）。
+    // 仅当用户还没手动选过（仍是默认 other）时才自动带入，避免覆盖其判断。
+    if (willAdd && type === 'other' && sugType in CHANGE_TYPE_LABEL) {
+      setType(sugType);
+    }
+  };
 
   const save = async () => {
     if (detail.trim() === '') {
@@ -569,8 +661,13 @@ function QuickAdjust({
         trigger_type: item.level === 'adjust' ? 'below_aimline' : 'team_decision',
         trigger_detail: item.reasons.join('；'),
         review_due_date: due,
+        suggestion_ids: picked,
       });
-      toast.success('已登记干预调整，到期会提醒复核效果');
+      toast.success(
+        picked.length > 0
+          ? `已登记干预调整（采纳 ${picked.length} 条系统建议），到期会提醒复核效果`
+          : '已登记干预调整（团队自行决定），到期会提醒复核效果',
+      );
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '保存失败');
@@ -581,9 +678,17 @@ function QuickAdjust({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-overlay/40 p-0 sm:p-4">
-      <div className="w-full sm:max-w-[520px] bg-surface rounded-t-2xl sm:rounded-2xl shadow-xl">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="quick-adjust-title"
+        className="w-full sm:max-w-[520px] bg-surface rounded-t-2xl sm:rounded-2xl shadow-xl"
+      >
         <div className="px-5 py-4 border-b border-line">
-          <h3 className="text-base font-semibold text-ink">登记干预调整</h3>
+          <h3 id="quick-adjust-title" className="text-base font-semibold text-ink">
+            登记干预调整
+          </h3>
           <p className="mt-0.5 text-xs text-ink-2 truncate">
             {item.student_name} · {item.goal_title}
           </p>
@@ -598,6 +703,41 @@ function QuickAdjust({
               ))}
             </ul>
           </div>
+
+          {item.suggestions.length > 0 && (
+            <div className="mb-4">
+              <p className="text-xs font-medium text-ink-2 mb-1.5">
+                是否采纳了系统的候选方向？（可多选，也可不选）
+              </p>
+              <div className="rounded-lg border border-line divide-y divide-line">
+                {item.suggestions.map((s) => {
+                  const sid = s.id ?? `${item.level}:${s.type}`;
+                  const on = picked.includes(sid);
+                  return (
+                    <label
+                      key={sid}
+                      className={cn(
+                        'flex items-start gap-2.5 px-2.5 py-2.5 min-h-[44px] cursor-pointer',
+                        'text-[11px] leading-relaxed press',
+                        on ? 'bg-brand-soft text-ink' : 'text-ink-2 hover:bg-surface-3',
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => togglePick(sid, s.type)}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-brand"
+                      />
+                      <span>{s.text}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[11px] text-ink-3">
+                一条都不选 = 团队自行决定。这也是有用信息：说明系统给的方向不贴合实际，我们会据此改进规则。
+              </p>
+            </div>
+          )}
 
           <p className="text-xs font-medium text-ink-2 mb-1.5">调整类型</p>
           <Select value={type} onValueChange={setType}>

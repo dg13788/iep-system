@@ -37,6 +37,27 @@ function gd_fail(Throwable $e, string $msg): void
 }
 
 /**
+ * 回给前端的失败文案：只放行业务异常，数据库错误一律换成通用文案。
+ *
+ * 为什么需要：起草助手原先直接把 $e->getMessage() 回给客户端。
+ * 业务异常（评估不存在、计划不匹配）的消息可以给人看；但异常一旦从 PDO
+ * 层冒上来，原文会带表名、字段、SQL 片段与服务器路径 —— 那等于把库表
+ * 设计贴给调用方。这里做一道闸：认得出就原样给，认不出回通用文案，
+ * 详情只进日志（ADR-018 统一口径）。
+ */
+function gd_user_message(Throwable $e): string
+{
+    $msg = $e->getMessage();
+    if ($msg === '') return '请求无法完成，请稍后重试';
+
+    if (stripos($msg, 'SQLSTATE') !== false || stripos($msg, 'SQL syntax') !== false) {
+        error_log('[goal_draft] 拦截数据库异常原文外泄');
+        return '数据处理出错，请稍后重试';
+    }
+    return $msg;
+}
+
+/**
  * 校验计划在当前用户数据范围内，并返回计划与学生。
  * 归属校验复用 config.php 的 requireIepInScope()（学生级范围判定全库唯一实现），
  * 这里只负责取回行数据，不另写一套范围过滤（ADR-009）。
@@ -194,7 +215,7 @@ switch ($action) {
         } catch (PDOException $e) {
             gd_fail($e, '生成失败');
         } catch (RuntimeException $e) {
-            jsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
+            jsonResponse(['success' => false, 'message' => gd_user_message($e), 'code' => 400], 400);
         }
         break;
 
@@ -275,7 +296,7 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => '采纳失败'], 500);
         } catch (RuntimeException $e) {
             if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => $e->getMessage()], 400);
+            jsonResponse(['success' => false, 'message' => gd_user_message($e), 'code' => 400], 400);
         }
         break;
 

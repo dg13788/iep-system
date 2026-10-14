@@ -1323,6 +1323,12 @@ export interface AdjustmentSavePayload {
   change_detail: string;
   review_due_date?: string;
   outcome?: string;
+  /**
+   * 采纳的系统候选方向 id 列表（格式 "<level>:<type>"，来自 attention 的 suggestions[].id）。
+   * 传了即为「本次调整采纳了系统建议」，会落库到 adopted=1 供北极星指标计数。
+   * 一条都不传 = 团队自行决定（adopted=0），这同样是有效信号：说明系统给的方向不贴合。
+   */
+  suggestion_ids?: string[];
 }
 
 /** POST /iep/adjustment_save */

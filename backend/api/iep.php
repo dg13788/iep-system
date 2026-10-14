@@ -361,7 +361,10 @@ switch ($action) {
 
             jsonResponse(['success' => true, 'data' => ['id' => $planId, 'plan_code' => $planCode], 'message' => '创建成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '创建失败: ' . $e->getMessage()], 500);
+            // 详情只进日志：PDO 异常原文含表结构、SQL 片段与服务器路径，
+            // 直接回客户端等于把库表设计交给调用方（ADR-018 统一 500 口径）
+            error_log('iep/create error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '创建失败', 'code' => 500], 500);
         }
         break;
 
@@ -458,14 +461,68 @@ switch ($action) {
 
         try {
             $pdo = getDB();
-            $stmt = $pdo->prepare('UPDATE iep_plans SET deleted_at = NOW() WHERE id = ?');
+            $pdo->beginTransaction();
+
+            /**
+             * 级联软删（评估报告第六节工程债第 6 项）
+             *
+             * 原先只软删 iep_plans 一行，挂在它下面的目标 / 短期目标 /
+             * 干预调整 / 相关服务 / 起草草案全都留着 —— 它们只在
+             * `WHERE deleted_at IS NULL` 的查询里被一起过滤掉，于是
+             * 表面看不见、实际仍在库里：
+             *   · 全局统计（COUNT(*) FROM iep_goals）把它们算进去；
+             *   · 数据导出/迁移会把它们一起带走；
+             *   · 恢复计划（若将来做了）会重新挂上陈旧子表。
+             *
+             * 但要区分两类子表，不能一刀切：
+             *   · **内容构成**（目标 / 短期目标 / 干预调整 / 相关服务 / 草案）
+             *     —— 计划是它们唯一的归属，随计划一并软删；
+             *   · **程序性证据**（家长签名 / 会议参与人）—— **必须保留**。
+             *     它们是「谁签过、谁参加过」的法定凭据；计划删了就把签名
+             *     一起抹掉，等于给毁证据留了后门。
+             */
+            $cascade = [
+                // 短期目标先删：它挂在目标下，放在前面避免依赖顺序带来的歧义
+                'iep_objectives'               => 'iep_plan_id',
+                'iep_goals'                    => 'iep_plan_id',
+                'iep_related_services'         => 'iep_plan_id',
+                'iep_intervention_adjustments' => 'iep_plan_id',
+                'iep_goal_drafts'              => 'iep_plan_id',
+            ];
+
+            $removed = [];
+            foreach ($cascade as $table => $col) {
+                // 表名与列名均为本文件内固定的白名单常量，非外部输入
+                $s = $pdo->prepare(
+                    "UPDATE `$table` SET deleted_at = NOW() WHERE `$col` = ? AND deleted_at IS NULL"
+                );
+                $s->execute([$id]);
+                $removed[$table] = $s->rowCount();
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE iep_plans SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL'
+            );
             $stmt->execute([$id]);
 
-            auditLog('delete', 'iep', 'iep_plan', $id, '', null, null, '删除IEP计划');
+            $pdo->commit();
+
+            $parts = [];
+            foreach ($removed as $t => $c) {
+                if ($c > 0) $parts[] = $t . '×' . $c;
+            }
+            auditLog('delete', 'iep', 'iep_plan', $id, '', null, null,
+                     '删除IEP计划'
+                     . ($parts === [] ? '' : '（级联软删：' . implode('、', $parts) . '）')
+                     . '；家长签名与会议参与人按法定凭据保留');
 
             jsonResponse(['success' => true, 'message' => '删除成功']);
         } catch (PDOException $e) {
-            jsonResponse(['success' => false, 'message' => '删除失败'], 500);
+            if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('iep/delete error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '删除失败', 'code' => 500], 500);
         }
         break;
 
@@ -1166,7 +1223,8 @@ switch ($action) {
             jsonResponse(['success' => true, 'message' => '目标保存成功']);
         } catch (PDOException $e) {
             $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => '保存失败: ' . $e->getMessage()], 500);
+            error_log('iep/goals_save error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '保存失败', 'code' => 500], 500);
         }
         break;
 
@@ -2440,6 +2498,107 @@ case 'adjustments':
     break;
 
 // ----------------------------------------------------------------------------
+// GET /api/iep/decision_feedback - 决策反馈回路统计（北极星指标的可计数事件）
+//
+//  为什么补（评估报告第七节排序第 1 位）：
+//    本系统的北极星指标是「教师每周因系统数据而改变教学决策的次数」。
+//    此前 progress_analysis 算出了 evidence/rule_hit/suggestions，但
+//    教师照做之后系统里**不留任何痕迹**，于是这个指标在系统内
+//    **没有可计数的事件** —— 既无法度量，也无法据此迭代规则
+//    （不知道哪类建议被采纳、哪类被无视）。
+//
+//    本端点把「系统给了多少条候选方向 / 教师采纳了多少条 / 采纳后
+//    效果如何」变成可查询的事实，让回路闭合。
+//
+//  口径说明（ADR-002 不臆造）：
+//    · 窗口内无任何调整记录时，adoption_rate 返回 null 而不是 0 ——
+//      「没有数据」与「采纳率为零」是两件不同的事，混同会让管理者
+//      得出「系统建议毫无用处」的错误结论。
+//    · 历史记录（本迁移之前）无法回溯采纳情况，一律不计入采纳。
+// ----------------------------------------------------------------------------
+case 'decision_feedback':
+    requireAuth();
+    requirePermission('reports.dashboard');
+
+    $fbDays = isset($_GET['days']) ? intval($_GET['days']) : 7;
+    if ($fbDays <= 0 || $fbDays > 365) {
+        $fbDays = 7;
+    }
+
+    try {
+        $pdo   = getDB();
+        $scope = getDataScope();
+        [$fbScopeClause, $fbScopeParams] = pa_plan_scope_clause($scope);
+
+        $fbSql = 'SELECT a.id, a.adjusted_at, a.outcome, a.adopted, a.suggestion_ids,
+                         a.review_due_date, a.change_type
+                    FROM iep_intervention_adjustments a
+                    JOIN iep_plans p ON p.id = a.iep_plan_id
+                    JOIN students  s ON s.id = p.student_id
+                   WHERE a.deleted_at IS NULL
+                     AND p.deleted_at IS NULL
+                     AND a.adjusted_at > DATE_SUB(?, INTERVAL ? DAY)'
+                 . $fbScopeClause;
+
+        $fbStmt = $pdo->prepare($fbSql);
+        $fbStmt->execute(array_merge([pa_today(), $fbDays], $fbScopeParams));
+        $fbRows = $fbStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $fbTotal   = count($fbRows);
+        $fbAdopted = 0;
+        $fbOutcome = ['effective' => 0, 'partially_effective' => 0, 'ineffective' => 0, 'pending' => 0];
+        $fbPending = 0;
+        $fbSids    = [];
+
+        foreach ($fbRows as $r) {
+            if ((int)($r['adopted'] ?? 0) === 1) { $fbAdopted++; }
+            $oc = (string)($r['outcome'] ?? 'pending');
+            if (isset($fbOutcome[$oc])) { $fbOutcome[$oc]++; }
+
+            // 到期未复核：说好了要回头看效果，但没看 —— 这才是反馈回路真正的断点
+            $rd = (string)($r['review_due_date'] ?? '');
+            if ($oc === 'pending' && $rd !== '' && $rd < pa_today()) { $fbPending++; }
+
+            foreach (explode(',', (string)($r['suggestion_ids'] ?? '')) as $sid) {
+                $sid = trim($sid);
+                if ($sid !== '') {
+                    $fbSids[$sid] = ($fbSids[$sid] ?? 0) + 1;
+                }
+            }
+        }
+
+        arsort($fbSids);
+
+        jsonResponse([
+            'success' => true,
+            'data'    => [
+                'window_days'    => $fbDays,
+                'since'          => pa_date_add(pa_today(), -$fbDays),
+                'today'          => pa_today(),
+                'total'          => $fbTotal,
+                'adopted_count'  => $fbAdopted,
+                'self_decided'   => $fbTotal - $fbAdopted,
+                // 无样本时为 null：不把「没记录」伪装成「采纳率 0%」
+                'adoption_rate'  => $fbTotal > 0 ? round($fbAdopted / $fbTotal, 3) : null,
+                'outcome'        => $fbOutcome,
+                'pending_review' => $fbPending,
+                'top_suggestions'=> array_slice(
+                    array_map(fn($k, $v) => ['id' => $k, 'count' => $v], array_keys($fbSids), $fbSids),
+                    0, 5
+                ),
+                // 口径提示：让看数据的人知道这数字代表什么（原则②可解释）
+                'note' => 'adopted=1 表示教师登记干预调整时勾选了系统给出的候选方向；'
+                        . '历史记录无归因，不计入采纳。',
+            ],
+            'message' => '获取成功'
+        ]);
+    } catch (Throwable $e) {
+        error_log('iep/decision_feedback error: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'message' => '获取失败', 'code' => 500], 500);
+    }
+    break;
+
+// ----------------------------------------------------------------------------
 // POST /api/iep/adjustment_save - 记录一次干预调整（DBI Step 4）
 //   系统不替团队做决定：change_detail 必填且不得为空壳，
 //   hypothesis 与 review_due_date 鼓励填写，用于闭合 Step 3 与 Step 5。
@@ -2493,6 +2652,33 @@ case 'adjustment_save':
         $outcome = 'pending';
     }
 
+    // ---- 采纳归因：本次调整是否采纳了系统给出的候选方向 ----
+    //
+    //  为什么补：评估报告第七节排序第 1 位。此前系统算出 suggestions 后
+    //  只当文本展示，教师照做也无痕迹，于是「教师每周因系统数据而改变
+    //  教学决策的次数」（北极星指标）在系统内**没有可计数事件**。
+    //  让教师在登记调整时勾选「我采纳了这几条方向」，回路才闭合：
+    //    系统给证据 → 教师采纳具体方向 → 落库归因 → 到期复核效果。
+    //
+    //  口径：id 由后端 pa_suggest_tagged() 产出（格式 "<level>:<type>"），
+    //  前端只做透传、不得自造；不认识的 id 静默丢弃而非报错——
+    //  一次格式演进不该让教师存不进调整记录。一条没勾 = 团队自行决定
+    //  （adopted=0），这也是有效信号：说明系统给的方向不贴合。
+    $sidsRaw = $input['suggestion_ids'] ?? [];
+    if (!is_array($sidsRaw)) {
+        $sidsRaw = preg_split('/[,，]/', (string)$sidsRaw) ?: [];
+    }
+    $sidsClean = [];
+    foreach ($sidsRaw as $s) {
+        $s = trim((string)$s);
+        if ($s !== '' && preg_match('/^[a-z_]{2,20}:[a-z_]{1,30}$/', $s)) {
+            $sidsClean[] = $s;
+        }
+    }
+    $sidsClean = array_slice(array_values(array_unique($sidsClean)), 0, 10);
+    $adopted   = $sidsClean === [] ? 0 : 1;
+    $sidsDb    = $sidsClean === [] ? null : implode(',', $sidsClean);
+
     $adjustedAt = trim((string)($input['adjusted_at'] ?? ''));
     if ($adjustedAt === '') { $adjustedAt = date('Y-m-d'); }
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $adjustedAt)) {
@@ -2514,7 +2700,8 @@ case 'adjustment_save':
                 'UPDATE iep_intervention_adjustments SET
                     trigger_type = ?, trigger_detail = ?, hypothesis = ?,
                     change_type = ?, change_detail = ?, adjusted_at = ?,
-                    review_due_date = ?, outcome = ?, outcome_note = ?, decided_by = ?
+                    review_due_date = ?, outcome = ?, outcome_note = ?, decided_by = ?,
+                    adopted = ?, suggestion_ids = ?
                  WHERE id = ? AND iep_plan_id = ? AND deleted_at IS NULL'
             );
             $stmt->execute([
@@ -2528,6 +2715,8 @@ case 'adjustment_save':
                 $outcome,
                 trim((string)($input['outcome_note'] ?? '')) ?: null,
                 $userId,
+                $adopted,
+                $sidsDb,
                 $adjId, $planId2
             ]);
             $newId = $adjId;
@@ -2537,8 +2726,8 @@ case 'adjustment_save':
                 'INSERT INTO iep_intervention_adjustments
                  (iep_plan_id, goal_id, objective_id, adjusted_at, trigger_type, trigger_detail,
                   hypothesis, change_type, change_detail, decided_by, decided_by_name,
-                  review_due_date, outcome, created_by)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                  review_due_date, outcome, adopted, suggestion_ids, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute([
                 $planId2,
@@ -2554,6 +2743,8 @@ case 'adjustment_save':
                 $user['name'] ?? null,
                 $reviewDue !== '' ? $reviewDue : null,
                 $outcome,
+                $adopted,
+                $sidsDb,
                 $userId
             ]);
             $newId = intval($pdo->lastInsertId());

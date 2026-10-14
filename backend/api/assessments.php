@@ -331,7 +331,9 @@ switch ($action) {
             jsonResponse(['success' => true, 'data' => ['id' => $assessmentId], 'message' => '评估创建成功']);
         } catch (PDOException $e) {
             $pdo->rollBack();
-            jsonResponse(['success' => false, 'message' => '创建失败: ' . $e->getMessage()], 500);
+            // 详情只进日志：PDO 原文含表结构与 SQL 片段，不该回给客户端（ADR-018）
+            error_log('assessments/create error: ' . $e->getMessage());
+            jsonResponse(['success' => false, 'message' => '创建失败', 'code' => 500], 500);
         }
         break;
 

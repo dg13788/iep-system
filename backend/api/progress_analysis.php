@@ -248,7 +248,7 @@ if (!function_exists('pa_days_between')) {
             'SELECT id, iep_plan_id, area, title, criteria, baseline, evaluation_method,
                     monitor_frequency, monitor_method, monitor_owner_id,
                     baseline_value, baseline_date, target_value, target_score,
-                    direction, target_prompt_level,
+                    direction, target_prompt_level, measurement_scale,
                     start_date, target_date, responsible_teacher_id, status
                FROM iep_goals WHERE id = ? AND deleted_at IS NULL LIMIT 1'
         );
@@ -307,6 +307,45 @@ if (!function_exists('pa_days_between')) {
     //     - 终点值：target_value；缺失时回退 target_score
     //     - 终点日：goal.target_date；缺失时回退所属计划的 end_date
     // ========================================================================
+
+    /**
+     * 量纲显式化（ADR-003）：教师声明了量纲，就按声明把期末目标折算成百分制。
+     *
+     * 为什么补：系统此前只能拿 target_score 的数值去猜量纲（≤观测满分当原始分、
+     * >10 当百分制），猜不出来就退回「统一 80% 掌握标准」。这等于让系统替
+     * 教师决定「什么叫达成」，与个别化原则正面冲突：同一个 5 分，在 0-5
+     * 评级制下是满分，在百分制下是 5% —— 猜错一次，目标线整条错。
+     *
+     * 口径：仅在显式声明（非 auto/other）且未直接填写 target_value 时折算；
+     * 已填 target_value 的一律以显式百分制为准，优先级最高。
+     * 默认 auto → 原样返回，走 pa_aim_line() 的历史反推，存量数据零变化。
+     *
+     * @param array $goal 会被就地补全 target_value（引用传递）
+     */
+    function pa_apply_declared_scale(array &$goal, ?float $observedMax, ?float $masteryPct): void
+    {
+        $scale = strtolower(trim((string)($goal['measurement_scale'] ?? 'auto')));
+        if ($scale === '' || $scale === 'auto' || $scale === 'other') return;
+
+        // 已直接给了百分制期末目标值 —— 它是最权威的，不再折算
+        if (pa_num($goal['target_value'] ?? null) !== null) return;
+
+        $ts = pa_num($goal['target_score'] ?? null);
+        if ($ts === null) return;
+
+        if ($scale === 'percent') {
+            $goal['target_value'] = max(0.0, min(100.0, $ts));
+            return;
+        }
+
+        if ($scale === 'rating_5') {
+            // 0-5 评级制下「掌握」不等于「满分」：真正的标准是短期目标里写的
+            // mastery_pct（演示数据中为 80%）；没有 mastery 才按 5 分制折算。
+            $goal['target_value'] = ($masteryPct !== null && $masteryPct > 0)
+                ? max(0.0, min(100.0, $masteryPct))
+                : max(0.0, min(100.0, $ts * 100.0 / 5.0));
+        }
+    }
 
     function pa_aim_line(
         array   $goal,
@@ -542,6 +581,149 @@ if (!function_exists('pa_days_between')) {
         return $map[$level] ?? 0;
     }
 
+    /** 一个数据点背后有多少次试次 —— 从 raw（"成功数/总次数"）解析。
+     *  解析不到返回 null：旧数据或非试次来源的进度记录，调用方按「未知」处理。 */
+    function pa_point_trials(array $p): ?int
+    {
+        $raw = (string)($p['raw'] ?? '');
+        if ($raw !== '' && preg_match('#^\s*\d+\s*/\s*(\d+)\s*$#', $raw, $m)) {
+            $n = (int)$m[1];
+            return $n > 0 ? $n : null;
+        }
+        return null;
+    }
+
+    /**
+     * 倒退判定的幅度门槛 —— 随试次数缩放，而不是写死 8 个百分点。
+     *
+     * 为什么改（评估报告第七节排序第 3 位）：
+     *   原实现「变动 ≥ 8pt 即判倒退」与这一格数据由多少次试次构成完全无关。
+     *   但达成率的最小分辨率就是 100/n：
+     *     · 一次练习 5 次试次 —— 多对一次就是 ±20pt，随手波动就能越线；
+     *     · 一次练习 25 次试次 —— 一次成败只有 4pt，真掉 8pt 已是相当确定的下滑。
+     *   培智课堂里「每节课 5 次试次」极常见，固定阈值等于把噪声当倒退；
+     *   教师照着改方案，就会推翻本来有效的方法 —— 这是系统最不该犯的错。
+     *
+     * 口径：门槛 = max(8, ceil(100/n) × 2)，n 取最近两个数据点中较小的试次数。
+     *   —— 即「至少相当于连续两次试次由成转败」，偶然一次波动不足以触发。
+     *   试次数未知时退回 8pt 但不声称做了检验；n < 4 时判定「样本不足」不给倒退结论。
+     *
+     * @return array{0:float,1:bool,2:string} [门槛百分点, 样本是否足够, 口径来源]
+     */
+    function pa_regression_threshold(array $points): array
+    {
+        $recent = array_slice($points, -2);
+        $ns     = [];
+        foreach ($recent as $p) {
+            $n = pa_point_trials($p);
+            if ($n !== null) { $ns[] = $n; }
+        }
+
+        if ($ns === []) {
+            return [8.0, true, 'fallback'];      // 试次数未知，沿用原口径
+        }
+
+        $n = min($ns);
+        if ($n < 4) {
+            return [101.0, false, 'insufficient']; // 分辨率 < 25pt，不判倒退
+        }
+
+        return [max(8.0, ceil(100.0 / $n) * 2), true, 'scaled'];
+    }
+
+    /**
+     * 最小二乘斜率的 t 检验 —— 区分「趋势真的反了」与「看起来像反了」。
+     *
+     * 为什么补（评估报告第七节排序第 3 位）：
+     *   规则 B 原先只要 ratio < 0 就判 regression。但斜率是从数据点估出来的
+     *   统计量，不是事实本身：点少、试次少的时候，一次偶然波动就能把斜率
+     *   拉成负的。教师看到「出现倒退，优先复核」就去推翻方案，结果推翻的
+     *   可能是一个正在起效的方法 —— 这比漏报更伤。
+     *
+     *   专业上的做法（DBI / 单一被试设计的通行要求）是：方向性结论要过
+     *   显著性检验，而不是看估计值的符号。本函数算斜率的 t 值并与
+     *   df = n-2 的双尾 0.05 临界值比较。
+     *
+     * 口径：x 取距首个数据点的天数（等距采集时与序号等价，不等距时更准）。
+     *
+     * @return array{0:float,1:bool,2:int} [t 值, 是否显著, 样本点数]
+     */
+    function pa_slope_significance(array $points): array
+    {
+        // points 只有 date，没有现成的 x：这里用「距本序列首个数据点的天数」作为 x。
+        // 等距采集时与序号等价；不等距（补课、请假）时天数才是正确的自变量。
+        $xs   = [];
+        $ys   = [];
+        $base = null;
+        foreach ($points as $p) {
+            $d = substr((string)($p['date'] ?? ''), 0, 10);
+            if ($d === '') { continue; }
+            if ($base === null) { $base = $d; }
+            $xs[] = (float)pa_days_between($base, $d);
+            $ys[] = (float)$p['value'];
+        }
+        $n = count($xs);
+        if ($n < 4) { return [0.0, false, $n]; }
+
+        $mx = array_sum($xs) / $n;
+        $my = array_sum($ys) / $n;
+
+        $sxx = 0.0;
+        $sxy = 0.0;
+        $syy = 0.0;
+        for ($i = 0; $i < $n; $i++) {
+            $dx = $xs[$i] - $mx;
+            $dy = $ys[$i] - $my;
+            $sxx += $dx * $dx;
+            $sxy += $dx * $dy;
+            $syy += $dy * $dy;
+        }
+
+        if ($sxx <= 0.0) { return [0.0, false, $n]; }   // x 无变化，斜率不可估
+
+        $slope = $sxy / $sxx;
+        $sse   = max(0.0, $syy - $slope * $sxy);
+        $df    = $n - 2;
+        $mse   = $sse / $df;
+        if ($mse <= 0.0) {
+            // 残差为 0：完美线性。方向上要么严格为 0、要么确实反了，
+            // 此时任何非零斜率都应视为确定结论。
+            return [$slope == 0.0 ? 0.0 : 99.0, $slope != 0.0, $n];
+        }
+
+        $se = sqrt($mse / $sxx);
+        if ($se <= 0.0) { return [0.0, false, $n]; }
+
+        $t = $slope / $se;
+        $crit = pa_t_critical_95($df);
+        return [$t, abs($t) >= $crit, $n];
+    }
+
+    /** t 分布双尾 0.05 临界值（df = n-2），够用的小样本段位表。 */
+    function pa_t_critical_95(int $df): float
+    {
+        $table = [
+            1 => 12.706, 2 => 4.303, 3 => 3.182, 4 => 2.776, 5 => 2.571,
+            6 => 2.447, 7 => 2.365, 8 => 2.306, 9 => 2.262, 10 => 2.228,
+            11 => 2.201, 12 => 2.179, 13 => 2.160, 14 => 2.145, 15 => 2.131,
+            16 => 2.120, 17 => 2.110, 18 => 2.101, 19 => 2.093, 20 => 2.086,
+            25 => 2.060, 30 => 2.042, 40 => 2.021, 60 => 2.000, 120 => 1.980,
+        ];
+        if ($df <= 0) { return 12.706; }
+        if (isset($table[$df])) { return $table[$df]; }
+        if ($df > 120) { return 1.960; }
+        // 表内相邻两点线性插值，避免段位跳跃带来的判定抖动
+        $keys = array_keys($table);
+        $lo   = $keys[0];
+        $hi   = $keys[count($keys) - 1];
+        foreach ($keys as $k) {
+            if ($k <= $df) { $lo = $k; }
+            if ($k >= $df) { $hi = $k; break; }
+        }
+        if ($lo === $hi) { return $table[$lo]; }
+        return $table[$lo] + ($table[$hi] - $table[$lo]) * ($df - $lo) / ($hi - $lo);
+    }
+
     function pa_decide(array $points, ?array $aim, ?array $trend, ?string $monitorFrequency, string $direction = 'increase'): array
     {
         $reasons = [];
@@ -565,6 +747,9 @@ if (!function_exists('pa_days_between')) {
         };
 
         $mkEvidence = function (int $window, $belowCount, $ratio, $gap, $expected) use ($points, $direction, &$ruleHit) {
+            // 斜率显著性检验的结果一并带上：教师/教研看到「倒退」时，
+            // 应当同时看到这个结论是否过了显著性门槛（原则②可解释）。
+            [$tVal, $significant] = pa_slope_significance($points);
             return [
                 'points'          => count($points),
                 'below_window'    => $window,
@@ -573,6 +758,12 @@ if (!function_exists('pa_days_between')) {
                 'days_since_last' => $gap,
                 'expected_days'   => $expected,
                 'direction'       => $direction,
+                // 倒退门槛随试次数缩放（见 pa_regression_threshold）：让教师看到
+                // 「这条倒退不是随手一格波动，而是越过了 N 个百分点的线」——
+                // 原则②「每个自动结论都可解释」的一部分。
+                'regression_threshold' => pa_regression_threshold($points)[0],
+                'slope_t'             => round($tVal, 2),
+                'slope_significant'   => $significant,
                 'rule_hit'        => $ruleHit,
             ];
         };
@@ -584,7 +775,8 @@ if (!function_exists('pa_days_between')) {
                 'reasons'    => ['本目标还没有任何进度记录，无法判断是否有效'],
                 'evidence'   => ['points' => 0, 'direction' => $direction],
                 'suggestions' => [
-                    ['type' => 'record', 'text' => '先按设定的监控频率采集至少 4 个数据点，才能做趋势判断']
+                    ['id' => 'nodata:record', 'type' => 'record',
+                     'text' => '先按设定的监控频率采集至少 4 个数据点，才能做趋势判断']
                 ],
             ];
         }
@@ -612,10 +804,11 @@ if (!function_exists('pa_days_between')) {
                 '当前仅 %d 个数据点，按 DBI 4 点法则不足以做趋势判断（需 ≥ 4 点）',
                 count($points)
             );
-            $sug = [['type' => 'record', 'text' => sprintf(
+            $sug = [['id' => 'nodata:record', 'type' => 'record', 'text' => sprintf(
                 '继续按监控频率采集，累计满 4 个数据点后才能给出判断（当前 %d 个）', count($points))]];
             if ($stale) {
-                $sug[] = ['type' => 'record', 'text' => '上次采集已逾期，请先补采缺失日期的数据'];
+                $sug[] = ['id' => 'nodata:record_overdue', 'type' => 'record',
+                          'text' => '上次采集已逾期，请先补采缺失日期的数据'];
             }
             return [
                 'level'       => 'nodata',
@@ -632,7 +825,11 @@ if (!function_exists('pa_days_between')) {
             $ratio = (float)$trend['slope'] / (float)$aim['slope'];
         }
 
-        // ---- 规则 D：倒退（方向敏感 + 幅度阈值）----
+        // ---- 规则 D：倒退（方向敏感 + 随样本量缩放的幅度门槛）----
+        // 门槛不再写死 8pt：达成率的最小分辨率是 100/n，固定阈值会让
+        // 「每节课只做 5 次试次」的班级把一次偶然波动判成倒退。
+        // 教师据此推翻原本有效的方法，是系统最不该犯的错。口径见
+        // pa_regression_threshold()。
         $dropPct = null;
         if (count($points) >= 3) {
             $prev  = (float)$points[count($points) - 2]['value'];
@@ -641,12 +838,20 @@ if (!function_exists('pa_days_between')) {
             $monotone = $dec > 0 ? ($lastV <= $prev) : ($lastV >= $prev);
             if ($isWorse($lastV, $prev2) && $monotone) {
                 $dropPct = abs($lastV - $prev2);
-                // 阈值取 8 个百分点：单次试次的随机波动（±1~2 次）通常在这个量级以内，
-                // 低于它报警会把噪声当成倒退，反而淹没了真正的信号。
-                if ($dropPct >= 8.0) {
+                [$dropThreshold, $enoughTrials] = pa_regression_threshold($points);
+                if (!$enoughTrials) {
+                    // 最近数据点只由 3 次以内试次构成：此时说「倒退了」证明不了，
+                    // 比不说更糟（ADR-002 不臆造）。提示加密采集而非报警。
                     $reasons[] = sprintf(
-                        '最近三次出现%s：%.0f → %.0f → %.0f（变动 %.0f 个百分点）',
-                        $dec > 0 ? '回落' : '回升', $prev2, $prev, $lastV, $dropPct
+                        '最近出现%s（%.0f → %.0f → %.0f），但最近数据点的试次数过少，'
+                        . '无法区分真实倒退与随机波动——请先加密采集再判断',
+                        $dec > 0 ? '回落' : '回升', $prev2, $prev, $lastV
+                    );
+                } elseif ($dropPct >= $dropThreshold) {
+                    $reasons[] = sprintf(
+                        '最近三次出现%s：%.0f → %.0f → %.0f（变动 %.0f 个百分点，'
+                        . '超过本次样本量下 %.0f 个百分点的波动线）',
+                        $dec > 0 ? '回落' : '回升', $prev2, $prev, $lastV, $dropPct, $dropThreshold
                     );
                     $ruleHit[] = 'D';
                     $escalate('regression');
@@ -678,7 +883,7 @@ if (!function_exists('pa_days_between')) {
                 'level_text' => '已达标，建议复核',
                 'reasons'    => $reasons,
                 'evidence'   => $mkEvidence(4, null, null, $gap, $expected),
-                'suggestions' => pa_suggest('mastered', $points, $aim),
+                'suggestions' => pa_suggest_tagged('mastered', $points, $aim),
             ];
         }
 
@@ -727,12 +932,28 @@ if (!function_exists('pa_days_between')) {
         // 既看不出是倒退，也看不出有多严重。
         if ($ratio !== null) {
             if ($ratio < 0) {
-                $reasons[] = sprintf(
-                    '趋势方向与所需方向相反：变化速度为所需速度的 %.1f 倍，但方向相反（%s）',
-                    abs($ratio), $dec > 0 ? '在下滑而非上升' : '在上升而非下降'
-                );
-                $ruleHit[] = 'B';
-                $escalate('regression');
+                // 方向性结论必须过显著性检验，不能只看估计值的符号：
+                // 点少 / 试次少时一次偶然波动就能把斜率拉负，据此推翻方案更伤。
+                [$tVal, $significant] = pa_slope_significance($points);
+                if ($significant) {
+                    $reasons[] = sprintf(
+                        '趋势方向与所需方向相反：变化速度为所需速度的 %.1f 倍，但方向相反（%s），'
+                        . '且斜率检验显著（t=%.2f）',
+                        abs($ratio), $dec > 0 ? '在下滑而非上升' : '在上升而非下降', $tVal
+                    );
+                    $ruleHit[] = 'B';
+                    $escalate('regression');
+                } else {
+                    // 看起来反了但证不实：说「倒退了」是在臆造结论（ADR-002）。
+                    // 降级为「需关注」并明确要求先补数据，让教师有据可依。
+                    $reasons[] = sprintf(
+                        '趋势方向看起来与所需相反（%s），但当前样本量下不显著（t=%.2f）——'
+                        . '先按监控频率继续采集，暂不据此推翻方案',
+                        $dec > 0 ? '在下滑而非上升' : '在上升而非下降', $tVal
+                    );
+                    $ruleHit[] = 'B_weak';
+                    $escalate('watch');
+                }
             } elseif ($ratio < 0.5) {
                 $reasons[] = sprintf('实际变化速度约为目标所需速度的 %.0f%%，明显偏慢', $ratio * 100);
                 $ruleHit[] = 'B';
@@ -759,7 +980,7 @@ if (!function_exists('pa_days_between')) {
             'level_text'  => $levelTexts[$level] ?? $level,
             'reasons'     => $reasons ?: ['暂未发现异常信号'],
             'evidence'    => $mkEvidence($window, $belowCount, $ratio, $gap, $expected),
-            'suggestions' => pa_suggest($level, $points, $aim),
+            'suggestions' => pa_suggest_tagged($level, $points, $aim),
         ];
     }
 
@@ -821,6 +1042,28 @@ if (!function_exists('pa_days_between')) {
             if (!in_array($m, $out, true)) $out[] = $m;
         }
 
+        return $out;
+    }
+
+    /** 给候选方向打上稳定 id（格式 "<level>:<type>"），供教师采纳归因。
+     *
+     *  为什么必须补：此前 suggestions 只有 type/text，前端把它拼成一段纯文本
+     *  （Today.tsx「可考虑的方向：…」），教师看了、照做了，但系统里
+     *  **没有任何事件**能说明「教师因这条数据改变了教学决策」——
+     *  北极星指标（教师每周因系统数据而改变教学决策的次数）因此
+     *  在系统内不可度量，也无法据此迭代规则。
+     *
+     *  有了 id，登记调整时回传 suggestion_ids 落库，回路才闭合：
+     *  系统给证据 → 教师采纳具体方向 → 留下归因 → 到期复核效果。
+     */
+    function pa_suggest_tagged(string $level, array $points, ?array $aim): array
+    {
+        $out = pa_suggest($level, $points, $aim);
+        foreach ($out as $i => $s) {
+            if (empty($out[$i]['id'])) {
+                $out[$i]['id'] = $level . ':' . (string)($s['type'] ?? $i);
+            }
+        }
         return $out;
     }
 
@@ -907,6 +1150,8 @@ if (!function_exists('pa_days_between')) {
         $series       = pa_fetch_series($pdo, $goalId, 'auto', $goal);
         $points       = $series['points'];
         $mastery      = pa_fetch_mastery_pct($pdo, $goalId);
+        // 量纲显式化：声明了量纲就按声明折算，未声明（auto）保持历史反推口径
+        pa_apply_declared_scale($goal, $series['meta']['observed_max'] ?? null, $mastery);
         $aim          = pa_aim_line($goal, $points, $plan, $series['meta']['observed_max'] ?? null, $mastery);
         $trend        = pa_trend_line($points, 4);
         // 方向（increase/decrease）决定所有比较的符号；缺省按 increase，不臆造。
