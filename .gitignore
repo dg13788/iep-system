@@ -91,3 +91,13 @@ Thumbs.db
 
 # ===== Skeleton staging copy (duplicate of repo root, never commit) =====
 /iep-system/
+
+# ===== Legacy record-organization artifacts (Sep 2026 local archives: logs,
+#       old duplicates, internal backtest reports — kept on disk, never commit) =====
+/01-骨架包/
+/02-部署相关/
+/03-日志与运行记录/
+/04-项目文档/
+/05-回测报告/
+/06-征文参评/
+/目录整理说明.md
