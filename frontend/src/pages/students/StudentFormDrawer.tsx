@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,6 +82,11 @@ export default function StudentFormDrawer({
 
   // P3-1 修复：补充 Esc 关闭能力
   useDrawerA11y(open, onClose);
+  // 2026-10-14 实测修复：焦点移入 / Tab 圈禁 / 关闭后归还焦点。
+  // 此前打开抽屉后 activeElement 仍是 body，键盘用户要从页面头上一路 Tab 进来；
+  // 且 Tab 到最后一个字段会逃逸到页面背景，模态形同虚设。
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, panelRef);
 
   useEffect(() => {
     if (student) {
@@ -200,6 +206,7 @@ export default function StudentFormDrawer({
           />
           {/* Drawer */}
           <motion.div
+            ref={panelRef}
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -242,8 +249,10 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('name', e.target.value)}
                       placeholder="请输入姓名"
                       className={inputClass}
+                      aria-invalid={!!errors.name}
+                      aria-describedby={errors.name ? 'err-name' : undefined}
                     />
-                    {errors.name && <p className={errorClass}>{errors.name}</p>}
+                    {errors.name && <p id="err-name" role="alert" className={errorClass}>{errors.name}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>学号</Label>
@@ -264,7 +273,8 @@ export default function StudentFormDrawer({
                       className="flex gap-4 h-10 items-center"
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="男" id="male" />
+                        <RadioGroupItem value="男" id="male"  aria-invalid={!!errors.gender}
+                      aria-describedby={errors.gender ? 'err-gender' : undefined}/>
                         <Label htmlFor="male" className="text-sm text-ink cursor-pointer">男</Label>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -272,7 +282,7 @@ export default function StudentFormDrawer({
                         <Label htmlFor="female" className="text-sm text-ink cursor-pointer">女</Label>
                       </div>
                     </RadioGroup>
-                    {errors.gender && <p className={errorClass}>{errors.gender}</p>}
+                    {errors.gender && <p id="err-gender" role="alert" className={errorClass}>{errors.gender}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>
@@ -283,8 +293,9 @@ export default function StudentFormDrawer({
                       value={form.birth_date}
                       onChange={(e) => updateField('birth_date', e.target.value)}
                       className={inputClass}
-                    />
-                    {errors.birth_date && <p className={errorClass}>{errors.birth_date}</p>}
+                     aria-invalid={!!errors.birth_date}
+                      aria-describedby={errors.birth_date ? 'err-birth_date' : undefined}/>
+                    {errors.birth_date && <p id="err-birth_date" role="alert" className={errorClass}>{errors.birth_date}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>身份证号</Label>
@@ -304,15 +315,17 @@ export default function StudentFormDrawer({
                       value={form.enrollment_date}
                       onChange={(e) => updateField('enrollment_date', e.target.value)}
                       className={inputClass}
-                    />
-                    {errors.enrollment_date && <p className={errorClass}>{errors.enrollment_date}</p>}
+                     aria-invalid={!!errors.enrollment_date}
+                      aria-describedby={errors.enrollment_date ? 'err-enrollment_date' : undefined}/>
+                    {errors.enrollment_date && <p id="err-enrollment_date" role="alert" className={errorClass}>{errors.enrollment_date}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>
                       班级<span className={requiredClass}>*</span>
                     </Label>
                     <Select value={form.class_id} onValueChange={(v) => updateField('class_id', v)}>
-                      <SelectTrigger className={selectClass}>
+                      <SelectTrigger className={selectClass} aria-invalid={!!errors.class_id}
+                      aria-describedby={errors.class_id ? 'err-class_id' : undefined}>
                         <SelectValue placeholder="请选择班级" />
                       </SelectTrigger>
                       <SelectContent>
@@ -321,7 +334,7 @@ export default function StudentFormDrawer({
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.class_id && <p className={errorClass}>{errors.class_id}</p>}
+                    {errors.class_id && <p id="err-class_id" role="alert" className={errorClass}>{errors.class_id}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>
@@ -355,7 +368,8 @@ export default function StudentFormDrawer({
                       主要障碍类型<span className={requiredClass}>*</span>
                     </Label>
                     <Select value={form.disability_type} onValueChange={(v) => updateField('disability_type', v)}>
-                      <SelectTrigger className={selectClass}>
+                      <SelectTrigger className={selectClass} aria-invalid={!!errors.disability_type}
+                      aria-describedby={errors.disability_type ? 'err-disability_type' : undefined}>
                         <SelectValue placeholder="请选择" />
                       </SelectTrigger>
                       <SelectContent>
@@ -364,7 +378,7 @@ export default function StudentFormDrawer({
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.disability_type && <p className={errorClass}>{errors.disability_type}</p>}
+                    {errors.disability_type && <p id="err-disability_type" role="alert" className={errorClass}>{errors.disability_type}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>伴随障碍</Label>
@@ -455,8 +469,9 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('guardian_name', e.target.value)}
                       placeholder="请输入监护人姓名"
                       className={inputClass}
-                    />
-                    {errors.guardian_name && <p className={errorClass}>{errors.guardian_name}</p>}
+                     aria-invalid={!!errors.guardian_name}
+                      aria-describedby={errors.guardian_name ? 'err-guardian_name' : undefined}/>
+                    {errors.guardian_name && <p id="err-guardian_name" role="alert" className={errorClass}>{errors.guardian_name}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>监护人关系</Label>
@@ -480,8 +495,9 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('guardian_phone', e.target.value)}
                       placeholder="请输入电话"
                       className={inputClass}
-                    />
-                    {errors.guardian_phone && <p className={errorClass}>{errors.guardian_phone}</p>}
+                     aria-invalid={!!errors.guardian_phone}
+                      aria-describedby={errors.guardian_phone ? 'err-guardian_phone' : undefined}/>
+                    {errors.guardian_phone && <p id="err-guardian_phone" role="alert" className={errorClass}>{errors.guardian_phone}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>紧急联系人</Label>

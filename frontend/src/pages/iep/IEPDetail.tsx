@@ -1014,8 +1014,19 @@ export default function IEPDetail({
                         </div>
                       ) : (
                         <>
-                          {/* Parent can sign if they are the guardian */}
-                          {!readOnly && config.parentName && currentPlan.student_name.startsWith(config.parentName.substring(0, 1)) ? (
+                          {/*
+                            2026-10-14 实测修复：签名不再被 readOnly 挡死。
+                            原来写成 `!readOnly && config.parentName && …`，而家长组的
+                            iep_level 是 view → readOnly 恒为 true → 签名板对任何
+                            家长都不渲染，只显示「等待家长签名」——家长签名整条
+                            流程在 UI 上走不通（后端 iep/sign 本就只校验登录 +
+                            数据范围 + 监护人身份，没有 iep_level 门槛，设计意图
+                            就是让家长签）。
+                            签名与「编辑 IEP 内容」是两回事：家长不该改目标，
+                            但必须能签字。所以这里只判「是不是本学生的监护人」，
+                            不判 IEP 编辑级别。
+                          */}
+                          {config.parentName && currentPlan.student_name.startsWith(config.parentName.substring(0, 1)) ? (
                             <>
                               <SignaturePad
                                 signatureType="handwritten"

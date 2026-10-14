@@ -27,9 +27,23 @@ import { THEMES, useThemeStore, type ThemeId } from '@/store/themeStore';
 export function ThemeOptions({ onDone }: { onDone?: () => void }) {
   const { pref, setTheme } = useThemeStore();
 
-  const pick = (t: ThemeId | 'system') => {
+  /**
+   * 键盘 / 指针分流（2026-10-14 真实浏览器实测后修）
+   * ------------------------------------------------------------------
+   * 原来的写法是「选谁都会话面板」。鼠标无感，但键盘用户按方向键切换主题时，
+   * change 事件同样走进来 → 面板收起 → radio 随之卸载 → 焦点掉回 body：
+   * 每按一次方向键就"失焦"一次，想连续比较几个主题根本做不到。
+   *
+   * 现在按输入方式分流：
+   *   - 方向键切换：面板保持打开，焦点留在 radio 组内，可连续浏览
+   *   - 鼠标 / 触屏点选：面板收起（指针用户的预期）
+   *   - Enter / Space 键盘确认：选中并收起
+   * 判据用 pointerdown 旗标而不是嗅探事件构造器——方向键的 change 是裸
+   * Event，鼠标的也不带可靠特征，嗅探等于猜。
+   */
+  const pick = (t: ThemeId | 'system', via: 'pointer' | 'key' | 'confirm') => {
     setTheme(t);
-    onDone?.();
+    if (via !== 'key') onDone?.();
   };
 
   return (
@@ -38,7 +52,7 @@ export function ThemeOptions({ onDone }: { onDone?: () => void }) {
 
       <Option
         checked={pref === 'system'}
-        onSelect={() => pick('system')}
+        onSelect={(via) => pick('system', via)}
         title="跟随系统"
         desc="按操作系统的深浅色设置自动切换"
         swatches={[THEMES[0].preview.bg, THEMES[0].preview.fg, THEMES[1].preview.bg, THEMES[1].preview.fg]}
@@ -50,7 +64,7 @@ export function ThemeOptions({ onDone }: { onDone?: () => void }) {
         <Option
           key={t.id}
           checked={pref === t.id}
-          onSelect={() => pick(t.id)}
+          onSelect={(via) => pick(t.id, via)}
           title={t.name}
           desc={t.scene}
           swatches={[t.preview.bg, t.preview.fg, t.preview.accent]}
@@ -60,6 +74,7 @@ export function ThemeOptions({ onDone }: { onDone?: () => void }) {
   );
 }
 
+/** 单个主题选项。输入方式分流逻辑见 ThemeOptions 的 pick 注释。 */
 function Option({
   checked,
   onSelect,
@@ -68,14 +83,49 @@ function Option({
   swatches,
 }: {
   checked: boolean;
-  onSelect: () => void;
+  onSelect: (via: 'pointer' | 'key' | 'confirm') => void;
   title: string;
   desc: string;
   swatches: string[];
 }) {
+  // pointerdown 先于 change 发生：鼠标 / 触屏路径置 true，键盘方向键路径保持 false。
+  // 不用事件构造器嗅探——方向键的 change 是裸 Event，鼠标的也不带可靠特征。
+  const viaPointer = useRef(false);
+
   return (
-    <label className="block cursor-pointer">
-      <input type="radio" name="iep-theme" checked={checked} onChange={onSelect} className="peer sr-only" />
+    <label
+      className="block cursor-pointer"
+      onPointerDown={() => { viaPointer.current = true; }}
+      onClick={() => {
+        // 重点「当前已选中」的主题：radio 状态没变，不会触发 change，
+        // 面板就永远不关——用户点一下毫无反应（2026-10-14 实测发现）。
+        // 键盘 Enter/Space 已在 onKeyDown 里拦掉并 preventDefault，
+        // 不会走到这里，所以 onClick 一定是指针路径。
+        if (checked) onSelect('pointer');
+      }}
+      onKeyDown={(e) => {
+        // 方向键一来就清掉指针旗标：指针点过一次之后，
+        // 用户可能改用键盘，不清就会把方向键误判成指针路径。
+        if (e.key.startsWith('Arrow')) viaPointer.current = false;
+        // Enter / Space = 键盘「确认」：选中并收起面板。
+        // Space 默认会滚动页面，必须拦掉。
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect('confirm');
+        }
+      }}
+    >
+      <input
+        type="radio"
+        name="iep-theme"
+        checked={checked}
+        onChange={() => {
+          const via = viaPointer.current ? 'pointer' : 'key';
+          viaPointer.current = false;
+          onSelect(via);
+        }}
+        className="peer sr-only"
+      />
       <span
         data-on={checked}
         className="flex min-tap-h items-center gap-3 rounded-lg px-3 py-2.5 transition-colors
@@ -115,6 +165,8 @@ function Option({
 export function ThemeButton() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
   const { theme, pref } = useThemeStore();
   const current = THEMES.find((t) => t.id === theme);
 
@@ -134,6 +186,21 @@ export function ThemeButton() {
     };
   }, [open]);
 
+  /**
+   * 焦点归还（2026-10-14 实测后补）
+   * ------------------------------------------------------------------
+   * 面板收起时，里面的 radio 会随之卸载。若焦点当时在 radio 上
+   * （指针点选后也会聚焦到 radio），焦点会掉回 body——键盘用户下一次
+   * 按 Tab 从页面最头上开始，等于"被弹回了山顶"。
+   * 所以只要检测到焦点掉回 body，就还给触发按钮。
+   * wasOpen 守卫：避免页面初次加载（open 恒 false）就抢焦点。
+   */
+  useEffect(() => {
+    if (open) { wasOpen.current = true; return; }
+    if (!wasOpen.current) return;
+    if (document.activeElement === document.body) btnRef.current?.focus();
+  }, [open]);
+
   const label =
     pref === 'system'
       ? `换肤：当前跟随系统（${current?.name ?? ''}）`
@@ -143,6 +210,7 @@ export function ThemeButton() {
     <div className="relative" ref={ref}>
       <button
         type="button"
+        ref={btnRef}
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="true"
         aria-expanded={open}

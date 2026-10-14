@@ -202,6 +202,12 @@ export function useDataScopeConfig(): DataScopeConfig {
     const iepLevel = permissions.iep_level ?? 'none';
     // 无 IEP 参与级别（督导等只读账号）或仅查看级别（家长）→ 只读
     const readOnly = iepLevel === 'none' || iepLevel === 'view';
+    // 家长身份判定：own_only 数据范围在当前权限模型里唯一对应家长组
+    // （2026-10-14 实测修复：这里原来恒为 null，导致 IEPDetail 的家长签名板
+    //  对任何人都不渲染——config.parentName 永远取不到值，「等待家长签名」
+    //  成了死状态。签名流程的后端链路（iep/sign → currentParentId 映射 +
+    //  监护人强校验）本是完备的，断点只在前端这一个恒 null。）
+    const isParent = permissions.data_scope === 'own_only';
 
     return {
       type: permissions.data_scope ?? 'none',
@@ -209,7 +215,7 @@ export function useDataScopeConfig(): DataScopeConfig {
       studentIds: [],
       teacherId: user?.id ?? null,
       teacherName: user?.name ?? null,
-      parentName: null,
+      parentName: isParent ? (user?.name ?? null) : null,
       parentPhone: null,
       iepLevel,
       readOnly,

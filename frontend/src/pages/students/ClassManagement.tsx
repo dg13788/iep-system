@@ -338,8 +338,10 @@ export default function ClassManagement({
                         onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
                         placeholder="如：特教一班"
                         className={inputClass}
+                        aria-invalid={!!errors.name}
+                        aria-describedby={errors.name ? 'err-name' : undefined}
                       />
-                      {errors.name && <p className="text-danger-500 text-xs mt-1">{errors.name}</p>}
+                      {errors.name && <p id="err-name" role="alert" className="text-danger-500 text-xs mt-1">{errors.name}</p>}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-ink mb-1.5 block">所在年级</Label>
@@ -365,7 +367,7 @@ export default function ClassManagement({
                         value={form.teacher || ''}
                         onValueChange={(v) => setForm((p) => ({ ...p, teacher: v }))}
                       >
-                        <SelectTrigger className={selectClass}>
+                        <SelectTrigger className={selectClass} aria-invalid={!!errors.teacher} aria-describedby={errors.teacher ? 'err-teacher' : undefined}>
                           <SelectValue placeholder="请选择班主任" />
                         </SelectTrigger>
                         <SelectContent>
@@ -378,7 +380,7 @@ export default function ClassManagement({
                           )}
                         </SelectContent>
                       </Select>
-                      {errors.teacher && <p className="text-danger-500 text-xs mt-1">{errors.teacher}</p>}
+                      {errors.teacher && <p id="err-teacher" role="alert" className="text-danger-500 text-xs mt-1">{errors.teacher}</p>}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-ink mb-1.5 block">教室位置</Label>
@@ -401,8 +403,10 @@ export default function ClassManagement({
                         onChange={(e) => setForm((p) => ({ ...p, capacity: Number(e.target.value) }))}
                         placeholder="请输入容量上限"
                         className={inputClass}
+                        aria-invalid={!!errors.capacity}
+                        aria-describedby={errors.capacity ? 'err-capacity' : undefined}
                       />
-                      {errors.capacity && <p className="text-danger-500 text-xs mt-1">{errors.capacity}</p>}
+                      {errors.capacity && <p id="err-capacity" role="alert" className="text-danger-500 text-xs mt-1">{errors.capacity}</p>}
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-ink mb-1.5 block">班级描述</Label>
