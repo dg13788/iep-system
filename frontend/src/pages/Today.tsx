@@ -53,6 +53,10 @@ import TrialCounter from './iep/TrialCounter';
 const DUE_VISIBLE = 8;
 
 const LEVEL_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  // 倒退是全部判定里最需要教师立刻改变教学的信号（后端严重度 6，最高），
+  // 用实心强底色与「建议调整」区分；此前缺这一档，会静默兜底成 watch 的
+  // 「需关注」文案与配色，把最紧急的信号降级成普通提醒。
+  regression: { label: '出现倒退', bg: 'bg-danger-strong', text: 'text-surface', dot: 'rgb(var(--danger-strong))' },
   adjust:   { label: '建议调整干预', bg: 'bg-danger-soft', text: 'text-danger-strong', dot: 'rgb(var(--danger-strong))' },
   watch:    { label: '需关注',       bg: 'bg-warning-soft', text: 'text-warning-strong', dot: 'rgb(var(--warning-strong))' },
   mastered: { label: '已达标待复核', bg: 'bg-info-soft', text: 'text-info-strong', dot: 'rgb(var(--info-strong))' },

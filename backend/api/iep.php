@@ -808,6 +808,24 @@ switch ($action) {
             $prevRaw    = $prevStmt->fetchColumn();
             $prevStatus = ($prevRaw === false || $prevRaw === null) ? null : (string)$prevRaw;
 
+            // 状态机闭环（2026-10-14 审计 P0）：家长签名使 IEP 产生法律效力，
+            // 前提是计划已完成审批。原实现无条件 SET status='signed'，而
+            // submit 限 draft/rejected、approve 限 reviewing —— 唯独 sign 没有前置校验，
+            // 家长（经 requireIepInScope 即可调用）能给「草稿 / 审核中 / 已驳回」的
+            // 计划盖出「已签署」记录，产出错误的法律凭据、审批链断裂。
+            // 判据用「禁止未审批态」而非「白名单 approved」：实测库内已签署计划
+            // 的状态以 active 为主（9 条），approved/signed 次之，若按 approved
+            // 白名单会误伤正常签署（ADR-025：修越权不得让有权者被拒）。
+            if (in_array($prevStatus, ['draft', 'reviewing', 'rejected'], true)) {
+                $pdo->rollBack();
+                jsonResponse([
+                    'success' => false,
+                    'message' => '该计划尚未通过审批，不可签署（当前状态：' . $prevStatus . '）',
+                    'code'    => 409,
+                ], 409);
+                return;
+            }
+
             // Update IEP status to signed
             $stmt = $pdo->prepare('UPDATE iep_plans SET status = "signed", updated_at = NOW() WHERE id = ?');
             $stmt->execute([$planId]);
@@ -2351,7 +2369,9 @@ case 'progress_analysis':
         }
 
         // 计划级汇总：为「今日工作台 / 需关注目标」预留的统一统计口径
-        $summary = ['adjust' => 0, 'watch' => 0, 'on_track' => 0, 'stale' => 0, 'mastered' => 0, 'nodata' => 0];
+        // 补 regression：原数组缺这一档，isset() 判定为假 → 倒退目标被静默丢弃，
+        // 统计上表现为「本计划没有目标倒退」，与单目标页面的判定自相矛盾。
+        $summary = ['regression' => 0, 'adjust' => 0, 'watch' => 0, 'on_track' => 0, 'stale' => 0, 'mastered' => 0, 'nodata' => 0];
         foreach ($list as $it) {
             $lv = $it['decision']['level'] ?? 'nodata';
             if (isset($summary[$lv])) $summary[$lv]++;

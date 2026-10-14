@@ -1124,6 +1124,26 @@ function handlePermissionsAction(string $action): void {
 function handleReportsAction(string $action): void {
     requireAuth();
 
+    // 安全修复（2026-10-14 审计 P0）：全校聚合统计此前只有 requireAuth()，
+    // 任何已登录账号（含家长组、科任教师——二者在 role_permissions 中
+    // 均无 reports.* 授权）都能取走全校在校学生数、障碍类型分布、性别分布、
+    // 班级分布与 6 个月教学趋势。按 action 映射权限码，与 openapi.php 对
+    // 同类数据集的校验口径保持一致（openapi.php:157）。
+    // 实测授权面：系统管理员 / 教学管理员持全部 5 项，班主任与只读仅 dashboard，
+    // 家长与科任教师无——因此本次收紧不会误伤有权者（ADR-025）。
+    $reportPermMap = [
+        'dashboard'   => 'reports.dashboard',
+        'students'    => 'reports.students',
+        'assessments' => 'reports.assessments',
+        'iep'         => 'reports.iep',
+        'teaching'    => 'reports.teaching',
+    ];
+    if (!isset($reportPermMap[$action])) {
+        jsonResponse(['success' => false, 'message' => '未知的报表类型'], 400);
+        return;
+    }
+    requirePermission($reportPermMap[$action]);
+
     try {
         $pdo = getDB();
 

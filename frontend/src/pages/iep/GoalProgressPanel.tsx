@@ -684,7 +684,9 @@ export function PromptFadePanel({ analysis }: { analysis: GoalAnalysis }) {
 }
 
 export function DecisionSummary({ summary }: { summary: Partial<Record<DecisionLevel, number>> }) {
-  const order: DecisionLevel[] = ['adjust', 'watch', 'stale', 'nodata', 'on_track', 'mastered'];
+  // 补 regression：概览漏掉倒退计数时，教师看到的是「本计划没有倒退目标」，
+  // 与后端判定不符（后端 regression 严重度最高）。
+  const order: DecisionLevel[] = ['regression', 'adjust', 'watch', 'stale', 'nodata', 'on_track', 'mastered'];
   const total = order.reduce((s, k) => s + (summary[k] ?? 0), 0);
   if (total === 0) return null;
 

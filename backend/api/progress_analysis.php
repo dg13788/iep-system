@@ -1508,7 +1508,12 @@ if (!function_exists('pa_days_between')) {
                 if (!isset($goalSeen[$gid]) && !in_array((string)$r['goal_status'], ['discontinued'], true)) {
                     $goalSeen[$gid] = true;
                     $a = pa_analyze_goal($pdo, $gid);
-                    if ($a !== null && in_array($a['decision']['level'], ['adjust', 'watch', 'mastered'], true)) {
+                    // 2026-10-14 审计修复：原过滤只收 adjust/watch/mastered，
+                    // 把 regression（倒退）排除在教师主视角之外。倒退在
+                    // pa_level_weight() 里严重度为 6（全表最高），却恰恰是
+                    // 「最该改变教学决策」的信号——它被吞掉直接压低北极星指标
+                    // （教师每周因系统数据而改变教学决策的次数）。
+                    if ($a !== null && in_array($a['decision']['level'], ['adjust', 'watch', 'mastered', 'regression'], true)) {
                         $attention[] = [
                             'student_id'   => (int)$plan['student_id'],
                             'student_name' => $plan['student_name'],
@@ -1536,7 +1541,10 @@ if (!function_exists('pa_days_between')) {
             return strcmp((string)$x['student_name'], (string)$y['student_name']);
         });
 
-        $levelWeight = ['adjust' => 0, 'watch' => 1, 'mastered' => 2];
+        // 排序权重与 pa_level_weight() 对齐：倒退(6) 最紧急、排最前。
+        // 原数组缺 regression，使其落到默认权重 9（排到最后）——最严重的信号
+        // 反而最晚被看到（ADR-048 同族：值算对了但排序把它藏起来）。
+        $levelWeight = ['regression' => 0, 'adjust' => 1, 'watch' => 2, 'mastered' => 3];
         usort($attention, function ($x, $y) use ($levelWeight) {
             $wx = $levelWeight[$x['level']] ?? 9;
             $wy = $levelWeight[$y['level']] ?? 9;
