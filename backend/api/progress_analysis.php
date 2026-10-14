@@ -1505,56 +1505,18 @@ if (!function_exists('pa_days_between')) {
      * @return array{0:string,1:array} [以 AND 开头的 SQL 片段, 绑定参数]；
      *                                 调用方需保证 SQL 中存在别名 p(iep_plans) 与 s(students)
      */
+    /**
+     * IEP 计划查询的统一范围过滤（ADR-009：全库仅此一份计划范围实现）
+     *
+     * 2026-10-15 整改：决策逻辑收敛到 config.php 的 dataScopeRule()——
+     * 此前 assessments / parents 各有手写副本并已发生真实漂移（export 的
+     * teacher 分支带 assessor_id、list 不带）。本函数保留为「计划」形态的
+     * 入口：teacher 分支的「本人经手」对计划即 p.primary_teacher_id。
+     * 输出 SQL 与参数顺序与整改前逐字节一致（单测 pa_scope_units 矩阵比对）。
+     */
     function pa_plan_scope_clause(array $scope): array
     {
-        $type = $scope['type'] ?? 'viewer';
-
-        if ($type === 'all') {
-            return ['', []];
-        }
-
-        if ($type === 'class_teacher') {
-            // fail-closed：班主任未关联任何班级时，一条都看不到
-            if (empty($scope['class_ids'])) {
-                return [' AND p.id = -1', []];
-            }
-            $ph = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-            return [" AND s.class_id IN ($ph)", $scope['class_ids']];
-        }
-
-        if ($type === 'teacher') {
-            $conds  = [];
-            $params = [];
-            if (!empty($scope['teacher_id'])) {
-                $conds[]  = 'p.primary_teacher_id = ?';
-                $params[] = (int)$scope['teacher_id'];
-            }
-            if (!empty($scope['class_ids'])) {
-                $ph       = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                $conds[]  = "s.class_id IN ($ph)";
-                $params   = array_merge($params, $scope['class_ids']);
-            }
-            if (!empty($scope['student_ids'])) {
-                $ph       = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                $conds[]  = "p.student_id IN ($ph)";
-                $params   = array_merge($params, $scope['student_ids']);
-            }
-            if (empty($conds)) {
-                return [' AND p.id = -1', []];
-            }
-            return [' AND (' . implode(' OR ', $conds) . ')', $params];
-        }
-
-        if ($type === 'parent') {
-            if (empty($scope['student_ids'])) {
-                return [' AND p.id = -1', []];
-            }
-            $ph = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-            return [" AND p.student_id IN ($ph)", $scope['student_ids']];
-        }
-
-        // viewer / none / 未知类型：一律 fail-closed
-        return [' AND p.id = -1', []];
+        return applyStudentKeyedScope($scope, 'p', ['owner_col' => 'p.primary_teacher_id']);
     }
 
     /** 需要每天被照看的计划状态（已批准、已签署、执行中） */

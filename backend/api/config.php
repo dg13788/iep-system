@@ -817,56 +817,6 @@ function getDataScope(): array {
 }
 
 /**
- * Apply data scope to a SQL query
- * Returns WHERE clause and params array
- */
-function applyDataScope(string $tableAlias = ''): array {
-    $scope = getDataScope();
-    $prefix = $tableAlias ? $tableAlias . '.' : '';
-
-    switch ($scope['type']) {
-        case 'all':
-            return ['', []];
-
-        case 'class_teacher':
-            if (empty($scope['class_ids'])) {
-                return [$prefix . 'class_id = -1', []]; // No classes assigned
-            }
-            $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-            return [$prefix . 'class_id IN (' . $placeholders . ')', $scope['class_ids']];
-
-        case 'teacher':
-            $conditions = [];
-            $params = [];
-            if (!empty($scope['class_ids'])) {
-                $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                $conditions[] = $prefix . 'class_id IN (' . $placeholders . ')';
-                $params = array_merge($params, $scope['class_ids']);
-            }
-            if (!empty($scope['student_ids'])) {
-                $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                $conditions[] = $prefix . 'student_id IN (' . $placeholders . ')';
-                $params = array_merge($params, $scope['student_ids']);
-            }
-            if (empty($conditions)) {
-                return [$prefix . 'id = -1', []]; // No access
-            }
-            return ['(' . implode(' OR ', $conditions) . ')', $params];
-
-        case 'parent':
-            if (empty($scope['student_ids'])) {
-                return [$prefix . 'student_id = -1', []]; // No children
-            }
-            $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-            return [$prefix . 'student_id IN (' . $placeholders . ')', $scope['student_ids']];
-
-        case 'viewer':
-        default:
-            return [$prefix . 'id = -1', []]; // No access by default
-    }
-}
-
-/**
  * 判断指定学生是否落在当前用户的数据范围内（fail-closed）
  *
  * 安全修复(P0-2)：系统此前仅对「列表查询」施加数据范围过滤，
@@ -983,6 +933,33 @@ function requireClassInScope(int $classId, ?array $scope = null): void {
 }
 
 /**
+ * 判断指定班级是否在数据范围内（fail-closed，不终止请求）
+ *
+ * requireClassInScope() 的布尔版——供「逐行跳过而非中断整批」的场景
+ * （学生导入：某行班级超范围时跳过该行并继续导其余行）。
+ * ADR-009（2026-10-15）：判定同样走 dataScopeRule() 单一决策核心，
+ * 与学生导入原手写的 if 链等价：all → 放行；class_teacher/teacher →
+ * 班级须在 class_ids；parent/viewer/none → 班级维度不适用，一律 false。
+ */
+function isClassInScope(int $classId, ?array $scope = null): bool {
+    if ($classId <= 0) {
+        return false;
+    }
+    $scope = $scope ?? getDataScope();
+    ['rule' => $rule, 'params' => $p] = dataScopeRule($scope);
+    if ($rule === 'all') {
+        return true;
+    }
+    if ($rule === 'classes') {
+        return in_array($classId, array_map('intval', $p), true);
+    }
+    if ($rule === 'teacher') {
+        return in_array($classId, array_map('intval', $p['classes']), true);
+    }
+    return false;
+}
+
+/**
  * 断言指定 IEP 计划所属学生在数据范围内，否则返回 403
  */
 /**
@@ -1093,63 +1070,223 @@ function requireTeachingInScope(int $recordId, ?array $scope = null): void {
  * 本函数把「学生表」的范围条件收敛为唯一实现，供 list / export / options
  * 等所有读取学生名单的端点复用，杜绝再次漏写。
  *
- * 注意：不能直接用 applyDataScope()，该函数按「含 student_id 列的业务表」
- * 生成条件（teacher/parent 分支用 student_id），而学生表的主键是 id，
- * 直接套用会生成不存在的列导致 SQL 报错。
+ * ADR-009（2026-10-15）：本函数已改为统一核心 dataScopeRule() 的薄包装，
+ * 决策逻辑与 applyStudentKeyedScope() 完全共享（该校验链曾与
+ * assessments/parents 的内联副本漂移过）。保留两项历史口径：
+ *   ① id 列表历来 intval（pa_plan_scope_clause 传原始值，PDO 绑定等价，
+ *      但单测按旧输出逐字节比对，故在此归一）；
+ *   ② 裸条件惯例：无 " AND " 前缀，scope=all 返回 '1=1'。
  *
  * @param string $alias 学生表别名，例如 's'
  * @return array [0]=SQL 条件（不含 WHERE/AND），[1]=绑定参数
  */
 function applyStudentScope(string $alias = 's'): array {
     $scope = getDataScope();
-    $p = $alias !== '' ? $alias . '.' : '';
+    $scope['class_ids']   = array_map('intval', $scope['class_ids'] ?? []);
+    $scope['student_ids'] = array_map('intval', $scope['student_ids'] ?? []);
+    $col = $alias !== '' ? $alias . '.' : '';
+    return applyStudentKeyedScope($scope, $alias, [
+        'student_col' => $col . 'id',
+        'class_col'   => $col . 'class_id',
+        'id_col'      => $col . 'id',
+        'owner_col'   => null,   // students 表无「本人经手」概念
+        'prefix'      => '',     // 裸条件惯例
+        'all_clause'  => '1=1',
+    ]);
+}
+
+/**
+ * ============================================================
+ * ADR-009 统一数据范围过滤（2026-10-15 整改）
+ * ============================================================
+ * 背景：《IEP系统_全面架构与设计评估报告_20261014》第五节指出范围过滤
+ * 存在「3 套并行实现 + 6 处内联复制」——assessments.php 两处、parents.php
+ * 两处各自手写 if-else 链，且已发生真实漂移：export 的 teacher 分支带
+ * a.assessor_id 条件（教师可导出本人经手的评估），list 却不带（同一教师
+ * 列表里看不到、导出里看得到）。并行实现必然漂移，而漂移的方向是安全
+ * 边界——这正是 ADR-009「全库仅一份、禁止抄第二份」的原因。
+ *
+ * 结构（策略只写一次，SQL 形态按表结构分两家渲染）：
+ *   dataScopeRule()          纯决策：scope type → 访问规则 + 参数，零 SQL
+ *   applyStudentKeyedScope() 学生键控业务表渲染（assessments / iep_plans /
+ *                            parent_communications / students 表自身）
+ *   applyParentListScope()   家长实体渲染（经 student_parents 关联）
+ *
+ * 全库唯一口径：
+ *   all           不加条件
+ *   class_teacher 只看本班学生；无班级 → fail-closed 拒绝
+ *   teacher       本人经手 OR 本班学生 OR 负责 IEP 的学生（并集；
+ *                 表无「本人经手」列时退化为后两者；全空 → 拒绝）
+ *   parent        只看本人子女的记录（家长表自身 = 本人的家长档案）；
+ *                 无绑定 → 拒绝
+ *   viewer/none/未知类型   一律拒绝（fail-closed，默认拒绝）
+ */
+function dataScopeRule(array $scope): array
+{
     $type = $scope['type'] ?? 'viewer';
 
     if ($type === 'all') {
-        return ['1=1', []];
+        return ['rule' => 'all', 'params' => []];
     }
 
-    // fail-closed：无关联班级/学生时一律拒绝
-    $classIds = array_map('intval', $scope['class_ids'] ?? []);
-    $studentIds = array_map('intval', $scope['student_ids'] ?? []);
-
     if ($type === 'class_teacher') {
+        $classIds = $scope['class_ids'] ?? [];
         if (empty($classIds)) {
-            return [$p . 'id = -1', []];
+            return ['rule' => 'deny', 'params' => []];
         }
-        $ph = implode(',', array_fill(0, count($classIds), '?'));
-        return [$p . 'class_id IN (' . $ph . ')', $classIds];
+        return ['rule' => 'classes', 'params' => $classIds];
     }
 
     if ($type === 'teacher') {
-        $conds = [];
-        $params = [];
-        if (!empty($classIds)) {
-            $ph = implode(',', array_fill(0, count($classIds), '?'));
-            $conds[] = $p . 'class_id IN (' . $ph . ')';
-            $params = array_merge($params, $classIds);
-        }
-        if (!empty($studentIds)) {
-            $ph = implode(',', array_fill(0, count($studentIds), '?'));
-            $conds[] = $p . 'id IN (' . $ph . ')';
-            $params = array_merge($params, $studentIds);
-        }
-        if (empty($conds)) {
-            return [$p . 'id = -1', []];
-        }
-        return ['(' . implode(' OR ', $conds) . ')', $params];
+        return ['rule' => 'teacher', 'params' => [
+            'owner'    => (int)($scope['teacher_id'] ?? 0),
+            'classes'  => $scope['class_ids'] ?? [],
+            'students' => $scope['student_ids'] ?? [],
+        ]];
     }
 
     if ($type === 'parent') {
-        if (empty($studentIds)) {
-            return [$p . 'id = -1', []];
-        }
-        $ph = implode(',', array_fill(0, count($studentIds), '?'));
-        return [$p . 'id IN (' . $ph . ')', $studentIds];
+        return ['rule' => 'parent', 'params' => [
+            'parent_id' => (int)($scope['parent_id'] ?? 0),
+            'students'  => $scope['student_ids'] ?? [],
+        ]];
     }
 
-    // viewer / none / 未知类型
-    return [$p . 'id = -1', []];
+    // viewer / none / 未知类型：默认拒绝
+    return ['rule' => 'deny', 'params' => []];
+}
+
+/**
+ * 学生键控业务表的范围过滤渲染器（ADR-009 统一核心的 SQL 出口之一）
+ *
+ * 适用于「一行记录归属一个学生」的表：assessments(a)、iep_plans(p)、
+ * parent_communications(pc)、students(s， student_col/id_col 指向自身)。
+ *
+ * @param array  $scope getDataScope() 返回值（原样传入，不做 intval，
+ *                     与 pa_plan_scope_clause 历史参数口径一致）
+ * @param string $alias 业务表别名
+ * @param array  $opt   student_col  学生 id 列，默认 "<alias>.student_id"
+ *                      class_col    班级列（JOIN students 后），默认 "s.class_id"
+ *                      id_col       fail-closed 哨兵列，默认 "<alias>.id"
+ *                      owner_col    教师「本人经手」列（如 p.primary_teacher_id、
+ *                                   a.assessor_id）；null = 该表无此概念
+ *                      prefix       返回条件片段的前缀，默认 " AND "（WHERE 串惯例）；
+ *                                   students 表自身用 ""（裸条件惯例）
+ *                      all_clause   scope=all 时返回的片段，默认 ""；
+ *                                   students 表自身用 "1=1"
+ * @return array [0]=SQL 条件片段，[1]=绑定参数
+ */
+function applyStudentKeyedScope(array $scope, string $alias, array $opt = []): array
+{
+    $dot        = $alias !== '' ? $alias . '.' : '';
+    $studentCol = $opt['student_col'] ?? ($dot . 'student_id');
+    $classCol   = $opt['class_col'] ?? 's.class_id';
+    $idCol      = $opt['id_col'] ?? ($dot . 'id');
+    $ownerCol   = $opt['owner_col'] ?? null;
+    $prefix     = $opt['prefix'] ?? ' AND ';
+    $allClause  = $opt['all_clause'] ?? '';
+
+    ['rule' => $rule, 'params' => $p] = dataScopeRule($scope);
+
+    if ($rule === 'all') {
+        return [$allClause, []];
+    }
+
+    if ($rule === 'deny') {
+        return [$prefix . $idCol . ' = -1', []];
+    }
+
+    if ($rule === 'classes') {
+        $ph = implode(',', array_fill(0, count($p), '?'));
+        return [$prefix . $classCol . ' IN (' . $ph . ')', $p];
+    }
+
+    if ($rule === 'teacher') {
+        $conds  = [];
+        $params = [];
+        if ($ownerCol !== null && !empty($p['owner'])) {
+            $conds[]  = $ownerCol . ' = ?';
+            $params[] = (int)$p['owner'];
+        }
+        if (!empty($p['classes'])) {
+            $ph     = implode(',', array_fill(0, count($p['classes']), '?'));
+            $conds[] = $classCol . ' IN (' . $ph . ')';
+            $params = array_merge($params, $p['classes']);
+        }
+        if (!empty($p['students'])) {
+            $ph     = implode(',', array_fill(0, count($p['students']), '?'));
+            $conds[] = $studentCol . ' IN (' . $ph . ')';
+            $params = array_merge($params, $p['students']);
+        }
+        if (empty($conds)) {
+            return [$prefix . $idCol . ' = -1', []];
+        }
+        return [$prefix . '(' . implode(' OR ', $conds) . ')', $params];
+    }
+
+    // parent：只看本人子女的记录
+    if (empty($p['students'])) {
+        return [$prefix . $idCol . ' = -1', []];
+    }
+    $ph = implode(',', array_fill(0, count($p['students']), '?'));
+    return [$prefix . $studentCol . ' IN (' . $ph . ')', $p['students']];
+}
+
+/**
+ * 家长实体表的范围过滤渲染器（ADR-009 统一核心的 SQL 出口之一）
+ *
+ * 与 applyStudentKeyedScope 的分歧仅在渲染：parents 表的一行是「家长」
+ * 而非「学生记录」，班级/负责学生的关联要经 student_parents  EXISTS；
+ * 家长本人分支则是本人的家长档案（p.id = parent_id）。
+ *
+ * @param array  $scope getDataScope() 返回值
+ * @param string $alias 家长表别名，默认 'p'
+ * @return array [0]=SQL 条件片段（含 " AND " 前缀），[1]=绑定参数
+ */
+function applyParentListScope(array $scope, string $alias = 'p'): array
+{
+    $prefix = ' AND ';
+    ['rule' => $rule, 'params' => $p] = dataScopeRule($scope);
+
+    if ($rule === 'all') {
+        return ['', []];
+    }
+
+    if ($rule === 'deny') {
+        return [$prefix . $alias . '.id = -1', []];
+    }
+
+    if ($rule === 'classes') {
+        $ph = implode(',', array_fill(0, count($p), '?'));
+        return [$prefix . 'EXISTS (SELECT 1 FROM student_parents sp2 INNER JOIN students s2 ON sp2.student_id = s2.id'
+            . " WHERE sp2.parent_id = {$alias}.id AND s2.class_id IN ({$ph}))", $p];
+    }
+
+    if ($rule === 'teacher') {
+        $conds  = [];
+        $params = [];
+        if (!empty($p['classes'])) {
+            $ph     = implode(',', array_fill(0, count($p['classes']), '?'));
+            $conds[] = 'EXISTS (SELECT 1 FROM student_parents sp2 INNER JOIN students s2 ON sp2.student_id = s2.id'
+                . " WHERE sp2.parent_id = {$alias}.id AND s2.class_id IN ({$ph}))";
+            $params = array_merge($params, $p['classes']);
+        }
+        if (!empty($p['students'])) {
+            $ph     = implode(',', array_fill(0, count($p['students']), '?'));
+            $conds[] = "EXISTS (SELECT 1 FROM student_parents sp2 WHERE sp2.parent_id = {$alias}.id AND sp2.student_id IN ({$ph}))";
+            $params = array_merge($params, $p['students']);
+        }
+        if (empty($conds)) {
+            return [$prefix . $alias . '.id = -1', []];
+        }
+        return [$prefix . '(' . implode(' OR ', $conds) . ')', $params];
+    }
+
+    // parent：家长表自身 → 本人的家长档案
+    if (empty($p['parent_id'])) {
+        return [$prefix . $alias . '.id = -1', []];
+    }
+    return [$prefix . $alias . '.id = ?', [(int)$p['parent_id']]];
 }
 
 /**

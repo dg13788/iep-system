@@ -56,59 +56,10 @@ switch ($action) {
 
             $whereStr = implode(' AND ', $where);
 
-            // Apply data scope filtering
+            // 数据范围过滤（ADR-009 统一核心 applyStudentKeyedScope；
+            // teacher 分支的「本人经手」对教学记录即 tr.teacher_id）
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'class_teacher') {
-                // 安全修复(P0-2)：fail-closed，班级集合为空时拒绝而非放行全部
-                if (empty($scope['class_ids'])) {
-                    $scopeClause = ' AND tr.id = -1';
-                } else {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND s.class_id IN ($placeholders)";
-                    $scopeParams = $scope['class_ids'];
-                }
-            } elseif ($scope['type'] === 'teacher') {
-
-                $conditions = [];
-                // Records where they are the teacher
-                if (!empty($scope['teacher_id'])) {
-                    $conditions[] = 'tr.teacher_id = ?';
-                    $scopeParams[] = $scope['teacher_id'];
-                }
-                // Records of students in their classes
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "s.class_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                // Students whose IEP goals they manage
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "tr.student_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) {
-                    $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')';
-                } else {
-                    $scopeClause = ' AND tr.id = -1'; // No access
-                }
-            } elseif ($scope['type'] === 'parent') {
-                // 安全修复(P0-2)：fail-closed
-                if (empty($scope['student_ids'])) {
-                    $scopeClause = ' AND tr.id = -1';
-                } else {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $scopeClause = " AND tr.student_id IN ($placeholders)";
-                    $scopeParams = $scope['student_ids'];
-                }
-            } elseif ($scope['type'] === 'viewer') {
-                $scopeClause = ' AND tr.id = -1';
-            } elseif ($scope['type'] === 'none') {
-                // 安全加固：数据范围为 none 时一律拒绝
-                $scopeClause = ' AND tr.id = -1';
-            }
+            [$scopeClause, $scopeParams] = applyStudentKeyedScope($scope, 'tr', ['owner_col' => 'tr.teacher_id']);
 
             // Merge scope params
             $countParams = array_merge($params, $scopeParams);
@@ -409,42 +360,10 @@ switch ($action) {
             if (!empty($endDate)) { $where[] = 'r.record_date <= ?'; $params[] = $endDate; }
             $whereStr = implode(' AND ', $where);
 
-            // 数据范围过滤（fail-closed），与 list 一致
+            // 数据范围过滤（ADR-009 统一核心 applyStudentKeyedScope，与 list 同口径；
+            // 导出表别名为 r，本人经手列 r.teacher_id）
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'class_teacher') {
-                if (empty($scope['class_ids'])) { $scopeClause = ' AND r.id = -1'; }
-                else {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND s.class_id IN ($placeholders)";
-                    $scopeParams = $scope['class_ids'];
-                }
-            } elseif ($scope['type'] === 'teacher') {
-                $conditions = [];
-                if (!empty($scope['teacher_id'])) { $conditions[] = 'r.teacher_id = ?'; $scopeParams[] = $scope['teacher_id']; }
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "s.class_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "r.student_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) { $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')'; }
-                else { $scopeClause = ' AND r.id = -1'; }
-            } elseif ($scope['type'] === 'parent') {
-                if (empty($scope['student_ids'])) { $scopeClause = ' AND r.id = -1'; }
-                else {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $scopeClause = " AND r.student_id IN ($placeholders)";
-                    $scopeParams = $scope['student_ids'];
-                }
-            } elseif ($scope['type'] === 'viewer' || $scope['type'] === 'none') {
-                $scopeClause = ' AND r.id = -1';
-            }
+            [$scopeClause, $scopeParams] = applyStudentKeyedScope($scope, 'r', ['owner_col' => 'r.teacher_id']);
 
             $queryParams = array_merge($params, $scopeParams);
 

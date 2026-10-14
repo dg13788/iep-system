@@ -58,53 +58,11 @@ switch ($action) {
 
             $whereStr = implode(' AND ', $where);
 
-            // Apply data scope filtering
+            // 数据范围过滤（ADR-009 统一核心 applyParentListScope：
+            // 家长实体的班级/负责学生关联经 student_parents EXISTS，家长本人
+            // 分支为本人档案；2026-10-15 与原手写 if-else 链等价收敛）
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'parent') {
-                // 安全修复(P0-2)：家长身份但未绑定 parent_id 时必须拒绝，不可放行
-                if (empty($scope['parent_id'])) {
-                    $scopeClause = ' AND p.id = -1';
-                } else {
-                    $scopeClause = ' AND p.id = ?';
-                    $scopeParams[] = $scope['parent_id'];
-                }
-            } elseif ($scope['type'] === 'class_teacher') {
-
-                // 安全修复(P0-2)：fail-closed
-                if (empty($scope['class_ids'])) {
-                    $scopeClause = ' AND p.id = -1';
-                } else {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND EXISTS (SELECT 1 FROM student_parents sp2 INNER JOIN students s2 ON sp2.student_id = s2.id WHERE sp2.parent_id = p.id AND s2.class_id IN ($placeholders))";
-                    $scopeParams = $scope['class_ids'];
-                }
-            } elseif ($scope['type'] === 'teacher') {
-                $conditions = [];
-                // Parents of students in their classes
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "EXISTS (SELECT 1 FROM student_parents sp2 INNER JOIN students s2 ON sp2.student_id = s2.id WHERE sp2.parent_id = p.id AND s2.class_id IN ($placeholders))";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                // Parents of students whose IEP goals they manage
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "EXISTS (SELECT 1 FROM student_parents sp2 WHERE sp2.parent_id = p.id AND sp2.student_id IN ($placeholders))";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) {
-                    $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')';
-                } else {
-                    $scopeClause = ' AND p.id = -1'; // No access
-                }
-            } elseif ($scope['type'] === 'viewer') {
-                $scopeClause = ' AND p.id = -1';
-            } elseif ($scope['type'] === 'none') {
-                // 安全加固：数据范围为 none 时一律拒绝
-                $scopeClause = ' AND p.id = -1';
-            }
+            [$scopeClause, $scopeParams] = applyParentListScope($scope, 'p');
 
             // Merge scope params
             $countParams = array_merge($params, $scopeParams);
@@ -517,58 +475,23 @@ switch ($action) {
 
             $whereStr = implode(' AND ', $where);
 
-            // Apply data scope filtering
+            // 数据范围过滤（ADR-009 统一核心 applyStudentKeyedScope：
+            // 2026-10-15 与原手写 if-else 链等价收敛。原 class_teacher/
+            // teacher 分支的 EXISTS(s2.id = pc.student_id AND s2.class_id IN)
+            // 与本查询已有的 LEFT JOIN students s 等价，统一渲染为 s.class_id IN；
+            // 原 parent 空子女哨兵 pc.student_id = -1 统一为 pc.id = -1，同为拒绝）
             $scope = getDataScope();
-            $scopeClause = '';
-            $scopeParams = [];
-            if ($scope['type'] === 'parent' && !empty($scope['student_ids'])) {
-                // Parents see only communications about their children
-                $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                $scopeClause = " AND pc.student_id IN ($placeholders)";
-                $scopeParams = $scope['student_ids'];
-
-            } elseif ($scope['type'] === 'parent' && empty($scope['student_ids'])) {
-                $scopeClause = ' AND pc.student_id = -1'; // No children = no access
-            } elseif ($scope['type'] === 'class_teacher') {
-                // 安全修复(P0-2)：fail-closed，班级集合为空时拒绝而非放行全部
-                if (empty($scope['class_ids'])) {
-                    $scopeClause = ' AND pc.id = -1';
-                } else {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $scopeClause = " AND EXISTS (SELECT 1 FROM students s2 WHERE s2.id = pc.student_id AND s2.class_id IN ($placeholders))";
-                    $scopeParams = $scope['class_ids'];
-                }
-            } elseif ($scope['type'] === 'teacher') {
-                $conditions = [];
-                // Communications about students in their classes
-                if (!empty($scope['class_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['class_ids']), '?'));
-                    $conditions[] = "EXISTS (SELECT 1 FROM students s2 WHERE s2.id = pc.student_id AND s2.class_id IN ($placeholders))";
-                    $scopeParams = array_merge($scopeParams, $scope['class_ids']);
-                }
-                // Communications about students whose IEP goals they manage
-                if (!empty($scope['student_ids'])) {
-                    $placeholders = implode(',', array_fill(0, count($scope['student_ids']), '?'));
-                    $conditions[] = "pc.student_id IN ($placeholders)";
-                    $scopeParams = array_merge($scopeParams, $scope['student_ids']);
-                }
-                if (!empty($conditions)) {
-                    $scopeClause = ' AND (' . implode(' OR ', $conditions) . ')';
-                } else {
-                    $scopeClause = ' AND pc.id = -1'; // No access
-                }
-            } elseif ($scope['type'] === 'viewer') {
-                $scopeClause = ' AND pc.id = -1';
-            } elseif ($scope['type'] === 'none') {
-                // 安全加固：数据范围为 none 时一律拒绝
-                $scopeClause = ' AND pc.id = -1';
-            }
+            [$scopeClause, $scopeParams] = applyStudentKeyedScope($scope, 'pc');
 
             // Merge scope params
             $countParams = array_merge($params, $scopeParams);
             $queryParams = array_merge($params, $scopeParams);
 
-            $countStmt = $pdo->prepare('SELECT COUNT(*) FROM parent_communications pc WHERE ' . $whereStr . $scopeClause);
+            // 2026-10-15 ADR-009：count 查询补 LEFT JOIN students s——统一范围核心
+            // 渲染的 s.class_id IN 需要该 JOIN（此前用自包含 EXISTS 绕开，与
+            // assessments/teaching 的 count 查询结构不一致）。LEFT JOIN 语义下
+            // 学生缺失的行 class_id 为 NULL，同样被 IN 排除，与 EXISTS 等价。
+            $countStmt = $pdo->prepare('SELECT COUNT(*) FROM parent_communications pc LEFT JOIN students s ON pc.student_id = s.id WHERE ' . $whereStr . $scopeClause);
             $countStmt->execute($countParams);
             $total = intval($countStmt->fetchColumn());
 

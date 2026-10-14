@@ -746,12 +746,10 @@ switch ($action) {
                     continue;
                 }
                 // 班级范围校验（fail-closed，逐行跳过而非中断整批）
-                $inScope = ($scope['type'] === 'all');
-                if (!$inScope && in_array($scope['type'], ['class_teacher', 'teacher'], true)) {
-                    $classIds = array_map('intval', $scope['class_ids'] ?? []);
-                    $inScope = in_array($classId, $classIds, true);
-                }
-                if (!$inScope) {
+                // ADR-009（2026-10-15）：原手写 if 链收敛到 isClassInScope()
+                // 单一判定（all → 放行；class_teacher/teacher → 班级须在
+                // class_ids；parent/viewer/none → 班级维度不适用，一律拒绝）
+                if (!isClassInScope($classId, $scope)) {
                     $failed++;
                     $errors[] = "第 " . ($lineNo + 2) . " 行：班级「" . $data['class_name'] . "」超出数据范围，已跳过";
                     continue;
