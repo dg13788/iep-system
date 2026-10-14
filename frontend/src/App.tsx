@@ -139,11 +139,11 @@ function NotFound() {
   const home = hasMenu('today') ? '/' : hasMenu('parents') ? '/parents' : '/dashboard';
   return (
     <div className="mx-auto max-w-[900px] py-24 text-center">
-      <p className="text-sm text-[#64748B]">这个地址没有对应的页面，可能链接已失效。</p>
+      <p className="text-sm text-ink-2">这个地址没有对应的页面，可能链接已失效。</p>
       <button
         type="button"
         onClick={() => navigate(home)}
-        className="mt-4 rounded-md border border-[#E2E8F0] px-4 py-2 text-sm text-[#475569] hover:bg-[#F8FAFC] cursor-pointer"
+        className="mt-4 rounded-md border border-line px-4 py-2 text-sm text-ink-2 hover:bg-surface-3 cursor-pointer"
       >
         返回首页
       </button>
@@ -184,7 +184,7 @@ export default function App() {
   // 会话恢复完成前不渲染受保护路由，防止菜单按空权限闪烁
   if (!restored) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-white">
+      <div className="flex min-h-[100dvh] items-center justify-center bg-surface">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-200 border-t-primary-600" />
           <p className="text-sm text-gray-500">正在恢复会话…</p>

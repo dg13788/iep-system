@@ -119,27 +119,27 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
   }, [groups, item.objective_id, notes, onSaved, total]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-overlay/40 p-0 sm:p-4">
       {/* 移动端是底部抽屉：底部留出 iPhone home indicator 的安全区，
           否则「保存本次试次」会被系统手势条压住 */}
-      <div className="w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-float pb-safe">
+      <div className="w-full sm:max-w-[520px] max-h-[92vh] overflow-y-auto bg-surface rounded-t-2xl sm:rounded-2xl shadow-float pb-safe">
         {/* 头部 */}
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#E2E8F0]">
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-line">
           <div className="min-w-0">
-            <p className="text-[11px] text-[#94A3B8]">
+            <p className="text-[11px] text-ink-3">
               {item.class_name ? `${item.class_name} · ` : ''}{item.student_name}
             </p>
-            <h3 className="mt-0.5 text-base font-semibold text-[#1E293B] truncate">
+            <h3 className="mt-0.5 text-base font-semibold text-ink truncate">
               {item.objective_title}
             </h3>
-            <p className="mt-0.5 text-xs text-[#64748B] truncate">
+            <p className="mt-0.5 text-xs text-ink-2 truncate">
               长期目标：{item.goal_title}
               {item.mastery_pct !== null ? `　掌握标准 ${item.mastery_pct}%` : ''}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="shrink-0 p-1.5 rounded-md text-[#94A3B8] hover:bg-[#F1F5F9] cursor-pointer"
+            className="shrink-0 p-1.5 rounded-md text-ink-3 hover:bg-surface-2 cursor-pointer"
             aria-label="关闭"
           >
             <X className="w-4 h-4" />
@@ -151,7 +151,7 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
         ) : (
           <div className="px-5 py-4">
             {/* 辅助层级选择 */}
-            <p className="text-xs font-medium text-[#475569] mb-2">
+            <p className="text-xs font-medium text-ink-2 mb-2">
               本次试次的辅助层级（记完可随时切换）
             </p>
             {/* 层级按钮加大到 44px：戴老花镜、手上沾着教具时也要能点准 */}
@@ -167,8 +167,8 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
                     // 触控尺寸的断点跟着桌面断点 lg 走：iPad 竖屏(768)仍是手指操作
                     'h-11 lg:h-9 px-4 rounded-full text-xs border press cursor-pointer',
                     level === p.value
-                      ? 'bg-[#1E293B] text-white border-[#1E293B]'
-                      : 'bg-white text-[#475569] border-[#CBD5E1] hover:bg-[#F7F6F4]',
+                      ? 'bg-surface-inverse text-ink-on-dark border-ink'
+                      : 'bg-surface text-ink-2 border-line-2 hover:bg-canvas',
                   )}
                 >
                   {p.label}
@@ -181,32 +181,32 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
               <button
                 type="button"
                 onClick={() => tap(true)}
-                className="h-32 lg:h-28 rounded-xl bg-[#ECFDF5] border-2 border-[#A7F3D0] hover:bg-[#D1FAE5] shadow-card press flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="h-32 lg:h-28 rounded-xl bg-success-soft border-2 border-success-soft hover:bg-success-soft shadow-card press flex flex-col items-center justify-center gap-1 cursor-pointer"
               >
-                <Check className="w-8 h-8 text-[#059669]" />
-                <span className="text-base font-semibold text-[#047857]">成功</span>
-                <span className="text-[10px] text-[#34D399]">快捷键 S</span>
+                <Check className="w-8 h-8 text-success-strong" />
+                <span className="text-base font-semibold text-success-strong">成功</span>
+                <span className="text-[10px] text-success">快捷键 S</span>
               </button>
               <button
                 type="button"
                 onClick={() => tap(false)}
-                className="h-32 lg:h-28 rounded-xl bg-[#FEF2F2] border-2 border-[#FECACA] hover:bg-[#FEE2E2] shadow-card press flex flex-col items-center justify-center gap-1 cursor-pointer"
+                className="h-32 lg:h-28 rounded-xl bg-danger-soft border-2 border-danger-line hover:bg-danger-soft shadow-card press flex flex-col items-center justify-center gap-1 cursor-pointer"
               >
-                <X className="w-8 h-8 text-[#DC2626]" />
-                <span className="text-base font-semibold text-[#B91C1C]">失败</span>
-                <span className="text-[10px] text-[#F87171]">快捷键 F</span>
+                <X className="w-8 h-8 text-danger-strong" />
+                <span className="text-base font-semibold text-danger-strong">失败</span>
+                <span className="text-[10px] text-danger">快捷键 F</span>
               </button>
             </div>
 
             {/* 本次计数 */}
-            <div className="mt-4 border border-[#E2E8F0] rounded-lg p-3">
+            <div className="mt-4 border border-line rounded-lg p-3">
               <div className="flex items-baseline justify-between">
-                <span className="text-xs text-[#64748B]">本次已记</span>
+                <span className="text-xs text-ink-2">本次已记</span>
                 {/* key 变化触发回弹：让"我点到了"这件事被看见。
                     tabular 等宽数字，避免数字跳动时整行宽度跟着抖 */}
                 <span
                   key={`${total}-${success}`}
-                  className="animate-pop text-base sm:text-sm font-semibold text-[#1E293B] tabular"
+                  className="animate-pop text-base sm:text-sm font-semibold text-ink tabular"
                 >
                   {total} 试次 · {success} 成功 · {pct}%
                 </span>
@@ -219,14 +219,14 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
                     const gp = Math.round((g.success_count / g.trial_count) * 100);
                     return (
                       <div key={g.prompt_level} className="flex items-center gap-2 text-[11px]">
-                        <span className="w-14 shrink-0 text-[#475569]">{label}</span>
-                        <div className="flex-1 h-1.5 rounded-full bg-[#F1F5F9] overflow-hidden">
+                        <span className="w-14 shrink-0 text-ink-2">{label}</span>
+                        <div className="flex-1 h-1.5 rounded-full bg-surface-2 overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-[#3B82F6]"
+                            className="h-full rounded-full bg-info"
                             style={{ width: `${gp}%` }}
                           />
                         </div>
-                        <span className="w-16 shrink-0 text-right text-[#64748B]">
+                        <span className="w-16 shrink-0 text-right text-ink-2">
                           {g.success_count}/{g.trial_count}
                         </span>
                       </div>
@@ -239,7 +239,7 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
                 <button
                   type="button"
                   onClick={() => setTaps((p) => p.slice(0, -1))}
-                  className="mt-2 min-tap-h flex items-center gap-1 text-[11px] text-[#94A3B8] hover:text-[#475569] press cursor-pointer"
+                  className="mt-2 min-tap-h flex items-center gap-1 text-[11px] text-ink-3 hover:text-ink-2 press cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                   撤销最后一次（Backspace）
@@ -252,7 +252,7 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="备注（可选）：换了新教具 / 今天情绪不好 / 换了个训室"
-              className="mt-3 w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-xs text-[#1E293B] placeholder:text-[#CBD5E1] focus:outline-none focus:border-[#94A3B8]"
+              className="mt-3 w-full h-9 px-3 rounded-md border border-line text-xs text-ink placeholder:text-ink-4 focus:outline-none focus:border-line-2"
             />
 
             <div className="mt-4 flex items-center justify-end gap-2">
@@ -269,7 +269,7 @@ export default function TrialCounter({ item, onClose, onSaved }: TrialCounterPro
               </Button>
             </div>
 
-            <p className="mt-3 text-[11px] leading-relaxed text-[#94A3B8]">
+            <p className="mt-3 text-[11px] leading-relaxed text-ink-3">
               同一层级的多试次会合并成一条记录，不同层级分开存 ——
               这样日后才能判断「该不该撤掉提示」。系统不会替你判断是否掌握，
               只会在连续 3 次达到掌握标准时把短期目标标记为已掌握，你可以随时改回。
@@ -297,33 +297,33 @@ function SaveResultView({
   const a = result.analysis;
   return (
     <div className="px-5 py-5">
-      <div className="rounded-lg bg-[#F0FDF4] border border-[#BBF7D0] p-4">
+      <div className="rounded-lg bg-success-soft border border-success-soft p-4">
         <div className="flex items-baseline gap-3">
-          <span className="text-2xl font-bold text-[#059669]">{result.achievement_pct}%</span>
-          <span className="text-xs text-[#475569]">
+          <span className="text-2xl font-bold text-success-strong">{result.achievement_pct}%</span>
+          <span className="text-xs text-ink-2">
             {result.trial_count} 试次 / {result.success_count} 成功 · 写入 {result.rows} 条
           </span>
         </div>
         {result.objective_status === 'mastered' && (
-          <p className="mt-2 text-xs text-[#047857]">
+          <p className="mt-2 text-xs text-success-strong">
             近 3 次均达到掌握标准，该短期目标已自动标记为「已掌握」。
           </p>
         )}
       </div>
 
       {a && (
-        <div className="mt-4 rounded-lg border border-[#E2E8F0] p-4">
-          <p className="text-xs font-semibold text-[#1E293B]">
+        <div className="mt-4 rounded-lg border border-line p-4">
+          <p className="text-xs font-semibold text-ink">
             录入后系统对该长期目标的判断：{a.level_text}
           </p>
           <ul className="mt-2 space-y-1">
             {a.reasons.map((r, i) => (
-              <li key={i} className="text-[11px] text-[#64748B] leading-relaxed">
+              <li key={i} className="text-[11px] text-ink-2 leading-relaxed">
                 · {r}
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[10px] text-[#94A3B8]">
+          <p className="mt-2 text-[10px] text-ink-3">
             依据：累计 {a.points} 个数据点。结论由规则生成，最终判断仍以 IEP 团队为准。
           </p>
         </div>

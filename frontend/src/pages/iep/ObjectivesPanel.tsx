@@ -48,11 +48,11 @@ import type { IEPObjective, ObjectiveRecord } from '@/services/iep';
 import ConfirmDialog from '@/components/feedback/ConfirmDialog';
 
 const OBJECTIVE_STATUS_COLORS: Record<string, string> = {
-  not_started: 'bg-[#F1F5F9] text-[#64748B]',
-  in_progress: 'bg-[#EFF6FF] text-[#2563EB]',
-  mastered: 'bg-[#ECFDF5] text-[#059669]',
-  not_mastered: 'bg-[#FEF3C7] text-[#D97706]',
-  discontinued: 'bg-[#F1F5F9] text-[#94A3B8]',
+  not_started: 'bg-surface-2 text-ink-2',
+  in_progress: 'bg-info-soft text-info-strong',
+  mastered: 'bg-success-soft text-success-strong',
+  not_mastered: 'bg-warning-soft text-warning-strong',
+  discontinued: 'bg-surface-2 text-ink-3',
 };
 
 const PROMPT_LEVEL_ORDER = ['independent', 'gesture', 'verbal', 'model', 'physical'];
@@ -141,7 +141,7 @@ export default function ObjectivesPanel({ planId, goals, canEdit, onChanged }: O
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-[#64748B]">
+      <div className="flex items-center justify-center py-16 text-ink-2">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> 短期目标加载中...
       </div>
     );
@@ -151,8 +151,8 @@ export default function ObjectivesPanel({ planId, goals, canEdit, onChanged }: O
     <div className="space-y-6">
       {/* 顶部说明 + 汇总操作 */}
       <div className="flex items-start justify-between gap-4">
-        <div className="bg-[#FFF9F0] border border-[#F5E6C8] rounded-lg px-4 py-3 flex-1">
-          <p className="text-xs text-[#B45309] leading-relaxed">
+        <div className="bg-brand-soft border border-warning-soft rounded-lg px-4 py-3 flex-1">
+          <p className="text-xs text-warning-strong leading-relaxed">
             短期目标是长期目标的<strong>任务分析拆解</strong>：每个目标按「试次（trial）」记录达成率，
             连续 3 次达到掌握阈值（默认 80%）自动判定为「已掌握」。
             点击「由短期目标汇总」可将试次数据反推为长期目标进度与状态，替代主观打分。
@@ -162,7 +162,7 @@ export default function ObjectivesPanel({ planId, goals, canEdit, onChanged }: O
           <button
             onClick={() => void handleRollup()}
             disabled={rolling || objectives.length === 0}
-            className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-md bg-[#EFF6FF] text-[#2563EB] text-sm font-medium hover:bg-[#DBEAFE] transition-colors cursor-pointer disabled:opacity-50"
+            className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-md bg-info-soft text-info-strong text-sm font-medium hover:bg-info-soft transition-colors cursor-pointer disabled:opacity-50"
           >
             {rolling ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             由短期目标汇总
@@ -171,8 +171,8 @@ export default function ObjectivesPanel({ planId, goals, canEdit, onChanged }: O
       </div>
 
       {goals.length === 0 && (
-        <div className="bg-[#F7F6F4] rounded-lg p-8 text-center">
-          <p className="text-sm text-[#64748B]">请先在「长短期目标」页签中建立长期目标</p>
+        <div className="bg-canvas rounded-lg p-8 text-center">
+          <p className="text-sm text-ink-2">请先在「长短期目标」页签中建立长期目标</p>
         </div>
       )}
 
@@ -180,25 +180,25 @@ export default function ObjectivesPanel({ planId, goals, canEdit, onChanged }: O
         const gid = Number(goal.id);
         const objs = grouped.get(gid) ?? [];
         return (
-          <section key={goal.id} className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <section key={goal.id} className="border border-line rounded-xl overflow-hidden">
             {/* 长期目标标题栏 */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[#F7F6F4]">
+            <div className="flex items-center justify-between px-4 py-3 bg-canvas">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span
-                    className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                    style={{ backgroundColor: '#977653' }}
+                    className="px-2 py-0.5 rounded-full text-xs font-medium text-ink-on-dark"
+                    style={{ backgroundColor: 'rgb(var(--brand))' }}
                   >
                     长期目标
                   </span>
-                  <h4 className="text-sm font-semibold text-[#1E293B] truncate">{goal.title}</h4>
+                  <h4 className="text-sm font-semibold text-ink truncate">{goal.title}</h4>
                 </div>
-                {goal.area && <p className="text-xs text-[#94A3B8] mt-1">领域：{goal.area}</p>}
+                {goal.area && <p className="text-xs text-ink-3 mt-1">领域：{goal.area}</p>}
               </div>
               {canEdit && (
                 <button
                   onClick={() => openCreate(gid)}
-                  className="shrink-0 flex items-center gap-1 h-8 px-3 rounded-md border border-[#977653] text-[#977653] text-xs font-medium hover:bg-[#F5F0EB] transition-colors cursor-pointer"
+                  className="shrink-0 flex items-center gap-1 h-8 px-3 rounded-md border border-brand text-brand-ink text-xs font-medium hover:bg-brand-soft transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> 新增短期目标
                 </button>
@@ -206,9 +206,9 @@ export default function ObjectivesPanel({ planId, goals, canEdit, onChanged }: O
             </div>
 
             {/* 短期目标列表 */}
-            <div className="divide-y divide-[#F1F5F9]">
+            <div className="divide-y divide-line">
               {objs.length === 0 && (
-                <p className="px-4 py-6 text-sm text-[#94A3B8] text-center">
+                <p className="px-4 py-6 text-sm text-ink-3 text-center">
                   尚无短期目标，请将长期目标拆解为可教可测的步骤
                 </p>
               )}
@@ -292,36 +292,36 @@ function ObjectiveCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-[#94A3B8]">#{obj.seq_no}</span>
-            <h5 className="text-sm font-semibold text-[#1E293B]">{obj.title}</h5>
+            <span className="text-xs text-ink-3">#{obj.seq_no}</span>
+            <h5 className="text-sm font-semibold text-ink">{obj.title}</h5>
             <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', OBJECTIVE_STATUS_COLORS[obj.status] ?? OBJECTIVE_STATUS_COLORS.not_started)}>
               {OBJECTIVE_STATUS_CN[obj.status] ?? obj.status}
             </span>
           </div>
           {obj.target_behavior && (
-            <p className="text-xs text-[#64748B] mt-1.5">目标行为：{obj.target_behavior}</p>
+            <p className="text-xs text-ink-2 mt-1.5">目标行为：{obj.target_behavior}</p>
           )}
-          {obj.criteria && <p className="text-xs text-[#94A3B8] mt-0.5">达标标准：{obj.criteria}</p>}
+          {obj.criteria && <p className="text-xs text-ink-3 mt-0.5">达标标准：{obj.criteria}</p>}
 
           {/* 任务分析步骤 */}
           {obj.steps.length > 0 && (
-            <div className="mt-2.5 bg-[#F7F6F4] rounded-lg px-3 py-2.5">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-[#64748B] mb-1.5">
+            <div className="mt-2.5 bg-canvas rounded-lg px-3 py-2.5">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-ink-2 mb-1.5">
                 <ListOrdered className="w-3.5 h-3.5" /> 任务分析步骤
               </div>
               <ol className="space-y-1">
                 {obj.steps.map((s) => (
-                  <li key={s.id} className="flex items-start gap-2 text-xs text-[#475569]">
-                    <span className="shrink-0 w-4 h-4 rounded-full bg-white border border-[#E2E8F0] text-[10px] flex items-center justify-center text-[#64748B]">
+                  <li key={s.id} className="flex items-start gap-2 text-xs text-ink-2">
+                    <span className="shrink-0 w-4 h-4 rounded-full bg-surface border border-line text-[10px] flex items-center justify-center text-ink-2">
                       {s.step_no}
                     </span>
                     <span>
                       {s.title}
                       {Number(s.is_critical) === 1 && (
-                        <span className="ml-1 text-[#DC2626]">*</span>
+                        <span className="ml-1 text-danger-strong">*</span>
                       )}
                       {s.teaching_prompt && (
-                        <span className="text-[#94A3B8]">（{s.teaching_prompt}）</span>
+                        <span className="text-ink-3">（{s.teaching_prompt}）</span>
                       )}
                     </span>
                   </li>
@@ -334,43 +334,43 @@ function ObjectiveCard({
         {/* 右侧进度与操作 */}
         <div className="shrink-0 w-44">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-[#64748B]">总体达成率</span>
-            <span className="text-sm font-semibold text-[#977653]">{pct}%</span>
+            <span className="text-xs text-ink-2">总体达成率</span>
+            <span className="text-sm font-semibold text-brand-ink">{pct}%</span>
           </div>
-          <div className="h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
+          <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
               style={{
                 width: `${Math.min(pct, 100)}%`,
-                background: pct >= Number(obj.mastery_pct || 80) ? '#10B981' : 'linear-gradient(90deg,#AC9174,#977653)',
+                background: pct >= Number(obj.mastery_pct || 80) ? 'rgb(var(--success))' : 'linear-gradient(90deg,rgb(var(--brand)),rgb(var(--brand)))',
               }}
             />
           </div>
-          <p className="text-[11px] text-[#94A3B8] mt-1">
+          <p className="text-[11px] text-ink-3 mt-1">
             {obj.record_count} 次记录 / {obj.total_trials} 试次 · 阈值 {Math.round(Number(obj.mastery_pct) || 80)}%
           </p>
           {obj.last_record_date && (
-            <p className="text-[11px] text-[#94A3B8]">最近：{obj.last_record_date}</p>
+            <p className="text-[11px] text-ink-3">最近：{obj.last_record_date}</p>
           )}
           <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
             {canEdit && (
               <button
                 onClick={onRecord}
-                className="flex items-center gap-1 h-7 px-2 rounded bg-[#977653] text-white text-xs hover:bg-[#7A5F42] transition-colors cursor-pointer"
+                className="flex items-center gap-1 h-7 px-2 rounded bg-brand text-ink-on-dark text-xs hover:bg-brand-strong transition-colors cursor-pointer"
               >
                 <ClipboardList className="w-3 h-3" /> 记录试次
               </button>
             )}
             <button
               onClick={onToggleHistory}
-              className="flex items-center gap-1 h-7 px-2 rounded border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+              className="flex items-center gap-1 h-7 px-2 rounded border border-line text-xs text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
             >
               <History className="w-3 h-3" /> {historyOpen ? '收起' : '记录'}
             </button>
             {canEdit && (
               <>
-                <button onClick={onEdit} className="h-7 px-2 rounded border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer">编辑</button>
-                <button onClick={() => setConfirmDel(true)} className="h-9 lg:h-7 px-2 lg:px-1.5 rounded border border-[#FECACA] text-xs text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer" title="删除">
+                <button onClick={onEdit} className="h-7 px-2 rounded border border-line text-xs text-ink-2 hover:bg-canvas cursor-pointer">编辑</button>
+                <button onClick={() => setConfirmDel(true)} className="h-9 lg:h-7 px-2 lg:px-1.5 rounded border border-danger-line text-xs text-danger-strong hover:bg-danger-soft cursor-pointer" title="删除">
                   <Trash2 className="w-3 h-3" />
                 </button>
               </>
@@ -389,7 +389,7 @@ function ObjectiveCard({
         description={
           <>
             将删除「{obj.title}」及其下所有任务步骤与试次记录。
-            <b className="text-[#B91C1C]">删除后不可撤销</b>
+            <b className="text-danger-strong">删除后不可撤销</b>
             ，长期目标的掌握度会随之重新计算。
           </>
         }
@@ -414,16 +414,16 @@ function TrialHistory({ objectiveId }: { objectiveId: number }) {
   }, [objectiveId]);
 
   if (records === null) {
-    return <p className="mt-3 text-xs text-[#94A3B8]">记录加载中...</p>;
+    return <p className="mt-3 text-xs text-ink-3">记录加载中...</p>;
   }
   if (records.length === 0) {
-    return <p className="mt-3 text-xs text-[#94A3B8]">尚无试次记录</p>;
+    return <p className="mt-3 text-xs text-ink-3">尚无试次记录</p>;
   }
   return (
     <div className="mt-3 overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="text-left text-[#94A3B8] border-b border-[#F1F5F9]">
+          <tr className="text-left text-ink-3 border-b border-line">
             <th className="py-1.5 pr-3 font-medium">日期</th>
             <th className="py-1.5 pr-3 font-medium">步骤</th>
             <th className="py-1.5 pr-3 font-medium">试次/成功</th>
@@ -436,14 +436,14 @@ function TrialHistory({ objectiveId }: { objectiveId: number }) {
         </thead>
         <tbody>
           {records.slice(0, 12).map((r) => (
-            <tr key={r.id} className="border-b border-[#F8FAFC] text-[#475569]">
+            <tr key={r.id} className="border-b border-line text-ink-2">
               <td className="py-1.5 pr-3 whitespace-nowrap">{r.record_date}</td>
               <td className="py-1.5 pr-3">{r.step_title || '—'}</td>
               <td className="py-1.5 pr-3">{r.trial_count}/{r.success_count}</td>
               <td className="py-1.5 pr-3">
                 <span className={cn(
                   'font-semibold',
-                  Number(r.achievement_pct) >= 80 ? 'text-[#059669]' : 'text-[#D97706]',
+                  Number(r.achievement_pct) >= 80 ? 'text-success-strong' : 'text-warning-strong',
                 )}>
                   {Math.round(Number(r.achievement_pct))}%
                 </span>
@@ -451,7 +451,7 @@ function TrialHistory({ objectiveId }: { objectiveId: number }) {
               <td className="py-1.5 pr-3">{PROMPT_LEVEL_CN[r.prompt_level] ?? r.prompt_level}</td>
               <td className="py-1.5 pr-3">{Number(r.is_generalized) === 1 ? '是' : '—'}</td>
               <td className="py-1.5 pr-3">{r.recorder_name || '—'}</td>
-              <td className="py-1.5 text-[#94A3B8] max-w-[160px] truncate" title={r.notes ?? ''}>{r.notes || '—'}</td>
+              <td className="py-1.5 text-ink-3 max-w-[160px] truncate" title={r.notes ?? ''}>{r.notes || '—'}</td>
             </tr>
           ))}
         </tbody>
@@ -519,7 +519,7 @@ function TrialRecordSheet({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 z-[70] flex justify-end"
+      className="fixed inset-0 bg-overlay/40 z-[70] flex justify-end"
       onClick={onClose}
     >
       <motion.div
@@ -527,18 +527,18 @@ function TrialRecordSheet({
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[460px] h-full bg-white shadow-xl flex flex-col"
+        className="relative w-full max-w-[460px] h-full bg-surface shadow-xl flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-label="记录试次"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
           <div>
-            <h3 className="text-lg font-semibold text-[#1E293B]">记录教学试次</h3>
-            <p className="text-xs text-[#64748B] mt-0.5">{objective.title}</p>
+            <h3 className="text-lg font-semibold text-ink">记录教学试次</h3>
+            <p className="text-xs text-ink-2 mt-0.5">{objective.title}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer">
+          <button onClick={onClose} className="p-1.5 rounded-md text-ink-2 hover:bg-canvas cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -546,16 +546,16 @@ function TrialRecordSheet({
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">记录日期</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">记录日期</label>
               <input
                 type="date"
                 value={recordDate}
                 onChange={(e) => setRecordDate(e.target.value)}
-                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">课型</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">课型</label>
               <Select value={sessionType} onValueChange={setSessionType}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -569,7 +569,7 @@ function TrialRecordSheet({
 
           {objective.steps.length > 0 && (
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">对应任务步骤（可选）</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">对应任务步骤（可选）</label>
               <Select value={stepId} onValueChange={setStepId}>
                 <SelectTrigger className="h-10"><SelectValue placeholder="整目标（不限步骤）" /></SelectTrigger>
                 <SelectContent>
@@ -584,31 +584,31 @@ function TrialRecordSheet({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">试次数</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">试次数</label>
               <input
                 type="number"
                 min={1}
                 max={500}
                 value={trialCount}
                 onChange={(e) => setTrialCount(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">成功数</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">成功数</label>
               <input
                 type="number"
                 min={0}
                 max={trialCount}
                 value={successCount}
                 onChange={(e) => setSuccessCount(Math.max(0, Math.min(trialCount, Number(e.target.value) || 0)))}
-                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">提示层级</label>
+            <label className="block text-sm font-semibold text-ink mb-1.5">提示层级</label>
             <div className="grid grid-cols-5 gap-1.5">
               {PROMPT_LEVEL_ORDER.map((lv) => (
                 <button
@@ -617,29 +617,29 @@ function TrialRecordSheet({
                   className={cn(
                     'h-9 rounded-md text-xs font-medium border transition-all cursor-pointer',
                     promptLevel === lv
-                      ? 'border-transparent text-white bg-[#977653]'
-                      : 'border-[#E2E8F0] text-[#64748B] hover:border-[#CBD5E1]',
+                      ? 'border-transparent text-ink-on-dark bg-brand'
+                      : 'border-line text-ink-2 hover:border-line-2',
                   )}
                 >
                   {PROMPT_LEVEL_CN[lv]}
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-[#94A3B8] mt-1.5">提示应随学生进步逐级撤除：身体辅助 → 示范 → 语言 → 手势 → 独立</p>
+            <p className="text-[11px] text-ink-3 mt-1.5">提示应随学生进步逐级撤除：身体辅助 → 示范 → 语言 → 手势 → 独立</p>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-[#475569] cursor-pointer">
+          <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
             <input
               type="checkbox"
               checked={generalized}
               onChange={(e) => setGeneralized(e.target.checked)}
-              className="w-4 h-4 rounded border-[#CBD5E1]"
+              className="w-4 h-4 rounded border-line-2"
             />
             已在自然情境中泛化
           </label>
 
           <div>
-            <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">备注</label>
+            <label className="block text-sm font-semibold text-ink mb-1.5">备注</label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -649,26 +649,26 @@ function TrialRecordSheet({
             />
           </div>
 
-          <div className="bg-[#F1F5F9] rounded-lg px-4 py-3 flex items-center justify-between">
-            <span className="text-xs text-[#64748B]">本次达成率</span>
-            <span className={cn('text-lg font-bold', livePct >= 80 ? 'text-[#059669]' : 'text-[#977653]')}>
+          <div className="bg-surface-2 rounded-lg px-4 py-3 flex items-center justify-between">
+            <span className="text-xs text-ink-2">本次达成率</span>
+            <span className={cn('text-lg font-bold', livePct >= 80 ? 'text-success-strong' : 'text-brand-ink')}>
               {livePct}%
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E2E8F0]">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-line">
           <button
             onClick={onClose}
             disabled={saving}
-            className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
+            className="h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60"
           >
             取消
           </button>
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-brand text-ink-on-dark text-sm font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             {saving ? '保存中...' : '保存记录'}
@@ -751,7 +751,7 @@ function ObjectiveEditSheet({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 z-[70] flex justify-end"
+      className="fixed inset-0 bg-overlay/40 z-[70] flex justify-end"
       onClick={onClose}
     >
       <motion.div
@@ -759,31 +759,31 @@ function ObjectiveEditSheet({
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[520px] h-full bg-white shadow-xl flex flex-col"
+        className="relative w-full max-w-[520px] h-full bg-surface shadow-xl flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-label={objective ? '编辑短期目标' : '新增短期目标'}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
-          <h3 className="text-lg font-semibold text-[#1E293B]">{objective ? '编辑短期目标' : '新增短期目标'}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+          <h3 className="text-lg font-semibold text-ink">{objective ? '编辑短期目标' : '新增短期目标'}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-md text-ink-2 hover:bg-canvas cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
           <div>
-            <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">目标标题 *</label>
+            <label className="block text-sm font-semibold text-ink mb-1.5">目标标题 *</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="如：能使用勺子独立吃完一顿饭"
-              className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">目标行为（可观察、可测量）</label>
+            <label className="block text-sm font-semibold text-ink mb-1.5">目标行为（可观察、可测量）</label>
             <Textarea
               value={targetBehavior}
               onChange={(e) => setTargetBehavior(e.target.value)}
@@ -793,28 +793,28 @@ function ObjectiveEditSheet({
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">达标标准</label>
+            <label className="block text-sm font-semibold text-ink mb-1.5">达标标准</label>
             <input
               value={criteria}
               onChange={(e) => setCriteria(e.target.value)}
               placeholder="如：连续3次课达成率≥80%"
-              className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">掌握阈值（%）</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">掌握阈值（%）</label>
               <input
                 type="number"
                 min={50}
                 max={100}
                 value={masteryPct}
                 onChange={(e) => setMasteryPct(Math.max(50, Math.min(100, Number(e.target.value) || 80)))}
-                className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">状态</label>
+              <label className="block text-sm font-semibold text-ink mb-1.5">状态</label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -829,48 +829,48 @@ function ObjectiveEditSheet({
           {/* 任务分析步骤 */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-semibold text-[#1E293B]">任务分析步骤</label>
+              <label className="text-sm font-semibold text-ink">任务分析步骤</label>
               <button
                 onClick={() => setSteps((prev) => [...prev, { title: '', teaching_prompt: '', is_critical: false }])}
-                className="flex items-center gap-1 text-xs text-[#977653] hover:underline cursor-pointer"
+                className="flex items-center gap-1 text-xs text-brand-ink hover:underline cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" /> 添加步骤
               </button>
             </div>
-            <p className="text-[11px] text-[#94A3B8] mb-2">
+            <p className="text-[11px] text-ink-3 mb-2">
               把目标拆成 3~6 个可教的小步骤，如「握勺 → 舀取 → 平移 → 送入口中」；带 * 为关键步。
             </p>
             <div className="space-y-2">
               {steps.map((s, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="shrink-0 w-6 h-6 rounded-full bg-[#F7F6F4] border border-[#E2E8F0] text-xs flex items-center justify-center text-[#64748B]">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-canvas border border-line text-xs flex items-center justify-center text-ink-2">
                     {i + 1}
                   </span>
                   <input
                     value={s.title}
                     onChange={(e) => setStep(i, { title: e.target.value })}
                     placeholder="步骤名称"
-                    className="flex-1 h-9 px-2.5 rounded-md border border-[#E2E8F0] text-sm"
+                    className="flex-1 h-9 px-2.5 rounded-md border border-line text-sm"
                   />
                   <input
                     value={s.teaching_prompt}
                     onChange={(e) => setStep(i, { teaching_prompt: e.target.value })}
                     placeholder="提示方式"
-                    className="w-28 h-9 px-2.5 rounded-md border border-[#E2E8F0] text-sm"
+                    className="w-28 h-9 px-2.5 rounded-md border border-line text-sm"
                   />
                   <button
                     onClick={() => setStep(i, { is_critical: !s.is_critical })}
                     title="关键步"
                     className={cn(
                       'shrink-0 w-8 h-9 rounded-md border text-sm font-bold cursor-pointer',
-                      s.is_critical ? 'border-[#FECACA] text-[#DC2626] bg-[#FEF2F2]' : 'border-[#E2E8F0] text-[#CBD5E1]',
+                      s.is_critical ? 'border-danger-line text-danger-strong bg-danger-soft' : 'border-line text-ink-4',
                     )}
                   >
                     *
                   </button>
                   <button
                     onClick={() => setSteps((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="shrink-0 w-8 h-9 rounded-md border border-[#E2E8F0] text-[#94A3B8] hover:text-[#DC2626] cursor-pointer flex items-center justify-center"
+                    className="shrink-0 w-8 h-9 rounded-md border border-line text-ink-3 hover:text-danger-strong cursor-pointer flex items-center justify-center"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -880,18 +880,18 @@ function ObjectiveEditSheet({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E2E8F0]">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-line">
           <button
             onClick={onClose}
             disabled={saving}
-            className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
+            className="h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60"
           >
             取消
           </button>
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-brand text-ink-on-dark text-sm font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
             {saving ? '保存中...' : '保存'}

@@ -32,10 +32,10 @@ import type { IEPMeta, MeetingParticipant, RelatedService } from '@/services/iep
 import { useConfirm } from '@/components/feedback/ConfirmProvider';
 
 const SERVICE_STATUS_COLORS: Record<string, string> = {
-  planned: 'bg-[#F1F5F9] text-[#64748B]',
-  active: 'bg-[#EFF6FF] text-[#2563EB]',
-  completed: 'bg-[#ECFDF5] text-[#059669]',
-  suspended: 'bg-[#FEF3C7] text-[#D97706]',
+  planned: 'bg-surface-2 text-ink-2',
+  active: 'bg-info-soft text-info-strong',
+  completed: 'bg-success-soft text-success-strong',
+  suspended: 'bg-warning-soft text-warning-strong',
 };
 
 interface ServicesMeetingPanelProps {
@@ -82,7 +82,7 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
       description: (
         <>
           将删除「{svc.service_name || '该服务项'}」。
-          <b className="text-[#B91C1C]">删除后不可撤销</b>
+          <b className="text-danger-strong">删除后不可撤销</b>
           ，IEP 中的服务安排会相应减少。
         </>
       ),
@@ -100,7 +100,7 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-[#64748B]">
+      <div className="flex items-center justify-center py-16 text-ink-2">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> 加载中...
       </div>
     );
@@ -111,13 +111,13 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
       {/* ============ 相关服务台账 ============ */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="flex items-center gap-2 text-base font-semibold text-[#1E293B]">
-            <Handshake className="w-4 h-4 text-[#977653]" /> 相关服务台账
+          <h4 className="flex items-center gap-2 text-base font-semibold text-ink">
+            <Handshake className="w-4 h-4 text-brand-ink" /> 相关服务台账
           </h4>
           {canEdit && (
             <button
               onClick={() => { setEditService(null); setServiceSheetOpen(true); }}
-              className="flex items-center gap-1 h-8 px-3 rounded-md border border-[#977653] text-[#977653] text-xs font-medium hover:bg-[#F5F0EB] cursor-pointer"
+              className="flex items-center gap-1 h-8 px-3 rounded-md border border-brand text-brand-ink text-xs font-medium hover:bg-brand-soft cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> 开具服务
             </button>
@@ -125,14 +125,14 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
         </div>
 
         {services.length === 0 ? (
-          <div className="bg-[#F7F6F4] rounded-lg p-8 text-center">
-            <p className="text-sm text-[#64748B]">尚未开具相关服务（康复训练 / 心理辅导 / 辅助器具 / 交通等）</p>
+          <div className="bg-canvas rounded-lg p-8 text-center">
+            <p className="text-sm text-ink-2">尚未开具相关服务（康复训练 / 心理辅导 / 辅助器具 / 交通等）</p>
           </div>
         ) : (
-          <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div className="border border-line rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#F7F6F4] text-left text-xs text-[#64748B]">
+                <tr className="bg-canvas text-left text-xs text-ink-2">
                   <th className="px-4 py-2.5 font-medium">服务项目</th>
                   <th className="px-4 py-2.5 font-medium">提供者</th>
                   <th className="px-4 py-2.5 font-medium">频次</th>
@@ -142,32 +142,32 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
                   {canEdit && <th className="px-4 py-2.5 font-medium w-24">操作</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F1F5F9]">
+              <tbody className="divide-y divide-line">
                 {services.map((svc) => {
                   const planned = Number(svc.planned_sessions) || 0;
                   const done = Number(svc.completed_sessions) || 0;
                   const pct = planned > 0 ? Math.round((done / planned) * 100) : 0;
                   return (
-                    <tr key={svc.id} className="text-[#475569]">
+                    <tr key={svc.id} className="text-ink-2">
                       <td className="px-4 py-3">
-                        <div className="font-medium text-[#1E293B]">{svc.service_name}</div>
-                        {svc.location && <div className="text-xs text-[#94A3B8]">{svc.location}</div>}
+                        <div className="font-medium text-ink">{svc.service_name}</div>
+                        {svc.location && <div className="text-xs text-ink-3">{svc.location}</div>}
                       </td>
                       <td className="px-4 py-3">
                         {svc.provider || '—'}
-                        {svc.provider_role && <span className="text-xs text-[#94A3B8]">（{svc.provider_role}）</span>}
+                        {svc.provider_role && <span className="text-xs text-ink-3">（{svc.provider_role}）</span>}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">{Number(svc.frequency_per_week) || 1} 次/周</td>
                       <td className="px-4 py-3 whitespace-nowrap">{Number(svc.minutes_per_session) || 40} 分钟</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-20 h-1.5 bg-[#F1F5F9] rounded-full overflow-hidden">
+                          <div className="w-20 h-1.5 bg-surface-2 rounded-full overflow-hidden">
                             <div
                               className="h-full rounded-full"
-                              style={{ width: `${Math.min(pct, 100)}%`, background: '#977653' }}
+                              style={{ width: `${Math.min(pct, 100)}%`, background: 'rgb(var(--brand))' }}
                             />
                           </div>
-                          <span className="text-xs text-[#64748B] whitespace-nowrap">{done}/{planned}</span>
+                          <span className="text-xs text-ink-2 whitespace-nowrap">{done}/{planned}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -180,13 +180,13 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={() => { setEditService(svc); setServiceSheetOpen(true); }}
-                              className="h-7 px-2 rounded border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer"
+                              className="h-7 px-2 rounded border border-line text-xs text-ink-2 hover:bg-canvas cursor-pointer"
                             >
                               编辑
                             </button>
                             <button
                               onClick={() => void handleDeleteService(svc)}
-                              className="h-7 px-1.5 rounded border border-[#FECACA] text-xs text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer"
+                              className="h-7 px-1.5 rounded border border-danger-line text-xs text-danger-strong hover:bg-danger-soft cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -205,13 +205,13 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
       {/* ============ IEP 会议参与人 ============ */}
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="flex items-center gap-2 text-base font-semibold text-[#1E293B]">
-            <Users className="w-4 h-4 text-[#977653]" /> IEP 会议参与人（签到留痕）
+          <h4 className="flex items-center gap-2 text-base font-semibold text-ink">
+            <Users className="w-4 h-4 text-brand-ink" /> IEP 会议参与人（签到留痕）
           </h4>
           {canEdit && (
             <button
               onClick={() => setParticipantSheetOpen(true)}
-              className="flex items-center gap-1 h-8 px-3 rounded-md border border-[#977653] text-[#977653] text-xs font-medium hover:bg-[#F5F0EB] cursor-pointer"
+              className="flex items-center gap-1 h-8 px-3 rounded-md border border-brand text-brand-ink text-xs font-medium hover:bg-brand-soft cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> 添加参与人
             </button>
@@ -219,14 +219,14 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
         </div>
 
         {participants.length === 0 ? (
-          <div className="bg-[#F7F6F4] rounded-lg p-8 text-center">
-            <p className="text-sm text-[#64748B]">尚未记录 IEP 会议参与人</p>
+          <div className="bg-canvas rounded-lg p-8 text-center">
+            <p className="text-sm text-ink-2">尚未记录 IEP 会议参与人</p>
           </div>
         ) : (
-          <div className="border border-[#E2E8F0] rounded-xl overflow-hidden">
+          <div className="border border-line rounded-xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#F7F6F4] text-left text-xs text-[#64748B]">
+                <tr className="bg-canvas text-left text-xs text-ink-2">
                   <th className="px-4 py-2.5 font-medium">姓名</th>
                   <th className="px-4 py-2.5 font-medium">类型</th>
                   <th className="px-4 py-2.5 font-medium">角色</th>
@@ -235,26 +235,26 @@ export default function ServicesMeetingPanel({ planId, canEdit }: ServicesMeetin
                   <th className="px-4 py-2.5 font-medium">备注</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#F1F5F9]">
+              <tbody className="divide-y divide-line">
                 {participants.map((mp) => (
-                  <tr key={mp.id} className="text-[#475569]">
-                    <td className="px-4 py-3 font-medium text-[#1E293B]">{mp.name}</td>
+                  <tr key={mp.id} className="text-ink-2">
+                    <td className="px-4 py-3 font-medium text-ink">{mp.name}</td>
                     <td className="px-4 py-3">{PARTICIPANT_TYPE_CN[mp.participant_type] ?? mp.participant_type}</td>
                     <td className="px-4 py-3">{mp.role || '—'}</td>
                     <td className="px-4 py-3">
                       <span className={cn(
                         'px-2 py-0.5 rounded-full text-xs font-medium',
                         mp.attendance === 'present'
-                          ? 'bg-[#ECFDF5] text-[#059669]'
+                          ? 'bg-success-soft text-success-strong'
                           : mp.attendance === 'proxy'
-                            ? 'bg-[#EFF6FF] text-[#2563EB]'
-                            : 'bg-[#F1F5F9] text-[#94A3B8]',
+                            ? 'bg-info-soft text-info-strong'
+                            : 'bg-surface-2 text-ink-3',
                       )}>
                         {ATTENDANCE_CN[mp.attendance] ?? mp.attendance}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs">{mp.signed_at || '—'}</td>
-                    <td className="px-4 py-3 text-xs text-[#94A3B8] max-w-[180px] truncate" title={mp.remark ?? ''}>
+                    <td className="px-4 py-3 text-xs text-ink-3 max-w-[180px] truncate" title={mp.remark ?? ''}>
                       {mp.remark || '—'}
                     </td>
                   </tr>
@@ -352,7 +352,7 @@ function ServiceSheet({
   return (
     <SheetShell title={service ? '编辑相关服务' : '开具相关服务'} onClose={onClose}>
       <div>
-        <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">服务项目 *</label>
+        <label className="block text-sm font-semibold text-ink mb-1.5">服务项目 *</label>
         {dict.length > 0 ? (
           <Select value={serviceName} onValueChange={setServiceName}>
             <SelectTrigger className="h-10"><SelectValue placeholder="从服务字典选择" /></SelectTrigger>
@@ -366,47 +366,47 @@ function ServiceSheet({
           <input
             value={serviceName}
             onChange={(e) => setServiceName(e.target.value)}
-            className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm"
+            className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm"
           />
         )}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">提供者</label>
-          <input value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">提供者</label>
+          <input value={provider} onChange={(e) => setProvider(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">提供者角色</label>
-          <input value={providerRole} onChange={(e) => setProviderRole(e.target.value)} placeholder="如：言语治疗师" className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">频次（次/周）</label>
-          <input type="number" min={0.5} max={20} step={0.5} value={frequency} onChange={(e) => setFrequency(Number(e.target.value) || 1)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">单次时长（分钟）</label>
-          <input type="number" min={5} max={240} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 40)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">提供者角色</label>
+          <input value={providerRole} onChange={(e) => setProviderRole(e.target.value)} placeholder="如：言语治疗师" className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">计划次数</label>
-          <input type="number" min={0} max={500} value={planned} onChange={(e) => setPlanned(Math.max(0, Number(e.target.value) || 0))} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">频次（次/周）</label>
+          <input type="number" min={0.5} max={20} step={0.5} value={frequency} onChange={(e) => setFrequency(Number(e.target.value) || 1)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">已完成次数</label>
-          <input type="number" min={0} max={planned || 500} value={completed} onChange={(e) => setCompleted(Math.max(0, Number(e.target.value) || 0))} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">单次时长（分钟）</label>
+          <input type="number" min={5} max={240} value={minutes} onChange={(e) => setMinutes(Number(e.target.value) || 40)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">地点</label>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">计划次数</label>
+          <input type="number" min={0} max={500} value={planned} onChange={(e) => setPlanned(Math.max(0, Number(e.target.value) || 0))} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">状态</label>
+          <label className="block text-sm font-semibold text-ink mb-1.5">已完成次数</label>
+          <input type="number" min={0} max={planned || 500} value={completed} onChange={(e) => setCompleted(Math.max(0, Number(e.target.value) || 0))} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-semibold text-ink mb-1.5">地点</label>
+          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-ink mb-1.5">状态</label>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -418,13 +418,13 @@ function ServiceSheet({
         </div>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">备注</label>
-        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+        <label className="block text-sm font-semibold text-ink mb-1.5">备注</label>
+        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <button onClick={onClose} disabled={saving} className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
-        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60">
+        <button onClick={onClose} disabled={saving} className="h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60">取消</button>
+        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-brand text-ink-on-dark text-sm font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
           {saving ? '保存中...' : '保存'}
         </button>
@@ -478,12 +478,12 @@ function ParticipantSheet({
   return (
     <SheetShell title="添加 IEP 会议参与人" onClose={onClose}>
       <div>
-        <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">姓名 *</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+        <label className="block text-sm font-semibold text-ink mb-1.5">姓名 *</label>
+        <input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">类型</label>
+          <label className="block text-sm font-semibold text-ink mb-1.5">类型</label>
           <Select value={pType} onValueChange={setPType}>
             <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -494,13 +494,13 @@ function ParticipantSheet({
           </Select>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">角色</label>
-          <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="如：班主任/治疗师" className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">角色</label>
+          <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="如：班主任/治疗师" className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">出席情况</label>
+          <label className="block text-sm font-semibold text-ink mb-1.5">出席情况</label>
           <Select value={attendance} onValueChange={setAttendance}>
             <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -511,18 +511,18 @@ function ParticipantSheet({
           </Select>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">签到时间</label>
-          <input type="datetime-local" value={signedAt} onChange={(e) => setSignedAt(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-sm font-semibold text-ink mb-1.5">签到时间</label>
+          <input type="datetime-local" value={signedAt} onChange={(e) => setSignedAt(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
         </div>
       </div>
       <div>
-        <label className="block text-sm font-semibold text-[#1E293B] mb-1.5">备注</label>
-        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+        <label className="block text-sm font-semibold text-ink mb-1.5">备注</label>
+        <input value={remark} onChange={(e) => setRemark(e.target.value)} className="w-full h-11 lg:h-10 px-3 rounded-md border border-line text-sm" />
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-2">
-        <button onClick={onClose} disabled={saving} className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
-        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60">
+        <button onClick={onClose} disabled={saving} className="h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60">取消</button>
+        <button onClick={() => void handleSave()} disabled={saving} className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-brand text-ink-on-dark text-sm font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
           {saving ? '保存中...' : '保存'}
         </button>
@@ -546,7 +546,7 @@ function SheetShell({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 z-[70] flex justify-end"
+      className="fixed inset-0 bg-overlay/40 z-[70] flex justify-end"
       onClick={onClose}
     >
       <motion.div
@@ -554,15 +554,15 @@ function SheetShell({
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[480px] h-full bg-white shadow-xl flex flex-col"
+        className="relative w-full max-w-[480px] h-full bg-surface shadow-xl flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
-          <h3 className="text-lg font-semibold text-[#1E293B]">{title}</h3>
-          <button onClick={onClose} className="p-1.5 rounded-md text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line">
+          <h3 className="text-lg font-semibold text-ink">{title}</h3>
+          <button onClick={onClose} className="p-1.5 rounded-md text-ink-2 hover:bg-canvas cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>

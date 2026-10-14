@@ -165,24 +165,24 @@ interface Student {
  * 全部落回 brain 图标）。分类取值见 assessment_templates.category。
  */
 const CATEGORY_ICON_STYLE: Record<string, { icon: React.ReactNode; color: string }> = {
-  '认知发展': { icon: <Brain className="w-8 h-8" style={{ color: '#977653' }} />, color: '#977653' },
-  '沟通交往': { icon: <MessageSquare className="w-8 h-8" style={{ color: '#3B82F6' }} />, color: '#3B82F6' },
-  '运动能力': { icon: <Activity className="w-8 h-8" style={{ color: '#10B981' }} />, color: '#10B981' },
-  '社会适应': { icon: <Users className="w-8 h-8" style={{ color: '#F59E0B' }} />, color: '#F59E0B' },
-  '生活自理': { icon: <HomeIcon className="w-8 h-8" style={{ color: '#405680' }} />, color: '#405680' },
-  '情绪行为': { icon: <Heart className="w-8 h-8" style={{ color: '#EC4899' }} />, color: '#EC4899' },
-  '学业准备': { icon: <BookOpen className="w-8 h-8" style={{ color: '#8B5CF6' }} />, color: '#8B5CF6' },
-  '课程本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: '#0EA5E9' }} />, color: '#0EA5E9' },
-  '能力本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: '#14B8A6' }} />, color: '#14B8A6' },
-  '专项评估': { icon: <FileText className="w-8 h-8" style={{ color: '#64748B' }} />, color: '#64748B' },
+  '认知发展': { icon: <Brain className="w-8 h-8" style={{ color: 'rgb(var(--brand))' }} />, color: 'rgb(var(--brand))' },
+  '沟通交往': { icon: <MessageSquare className="w-8 h-8" style={{ color: 'rgb(var(--info))' }} />, color: 'rgb(var(--info))' },
+  '运动能力': { icon: <Activity className="w-8 h-8" style={{ color: 'rgb(var(--success))' }} />, color: 'rgb(var(--success))' },
+  '社会适应': { icon: <Users className="w-8 h-8" style={{ color: 'rgb(var(--warning))' }} />, color: 'rgb(var(--warning))' },
+  '生活自理': { icon: <HomeIcon className="w-8 h-8" style={{ color: 'rgb(var(--surface-inverse-2))' }} />, color: 'rgb(var(--surface-inverse-2))' },
+  '情绪行为': { icon: <Heart className="w-8 h-8" style={{ color: 'rgb(var(--danger))' }} />, color: 'rgb(var(--danger))' },
+  '学业准备': { icon: <BookOpen className="w-8 h-8" style={{ color: 'rgb(var(--violet))' }} />, color: 'rgb(var(--violet))' },
+  '课程本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: 'rgb(var(--info))' }} />, color: 'rgb(var(--info))' },
+  '能力本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: 'rgb(var(--info))' }} />, color: 'rgb(var(--info))' },
+  '专项评估': { icon: <FileText className="w-8 h-8" style={{ color: 'rgb(var(--ink-2))' }} />, color: 'rgb(var(--ink-2))' },
 };
 
 function templateIcon(t: AssessmentTemplate): React.ReactNode {
-  return CATEGORY_ICON_STYLE[t.category]?.icon ?? <FileText className="w-8 h-8" style={{ color: '#977653' }} />;
+  return CATEGORY_ICON_STYLE[t.category]?.icon ?? <FileText className="w-8 h-8" style={{ color: 'rgb(var(--brand))' }} />;
 }
 
 function templateColor(t: AssessmentTemplate): string {
-  return CATEGORY_ICON_STYLE[t.category]?.color ?? '#977653';
+  return CATEGORY_ICON_STYLE[t.category]?.color ?? 'rgb(var(--brand))';
 }
 
 /** 模板满分：各维度条目满分之和（随选中模板实时计算，不再查 mock 映射表） */
@@ -202,17 +202,17 @@ function calcTemplateMaxScore(t: AssessmentTemplate | null): number {
 /* ─── Helpers ─── */
 
 const statusBadge = {
-  completed: { label: '已完成', className: 'bg-[#ECFDF5] text-[#059669] hover:bg-[#ECFDF5]' },
-  in_progress: { label: '进行中', className: 'bg-[#FFFBEB] text-[#D97706] hover:bg-[#FFFBEB]' },
-  draft: { label: '草稿', className: 'bg-[#EFF6FF] text-[#2563EB] hover:bg-[#EFF6FF]' },
+  completed: { label: '已完成', className: 'bg-success-soft text-success-strong hover:bg-success-soft' },
+  in_progress: { label: '进行中', className: 'bg-warning-soft text-warning-strong hover:bg-warning-soft' },
+  draft: { label: '草稿', className: 'bg-info-soft text-info-strong hover:bg-info-soft' },
 };
 
 const typeBadgeColor: Record<string, string> = {
-  '认知发展': 'bg-[#F5F0EB] text-[#5C4832]',
-  '语言能力': 'bg-[#EFF6FF] text-[#2563EB]',
-  '运动能力': 'bg-[#ECFDF5] text-[#059669]',
-  '社交适应': 'bg-[#FFFBEB] text-[#D97706]',
-  '生活自理': 'bg-[#F0F2F5] text-[#405680]',
+  '认知发展': 'bg-brand-soft text-brand-ink',
+  '语言能力': 'bg-info-soft text-info-strong',
+  '运动能力': 'bg-success-soft text-success-strong',
+  '社交适应': 'bg-warning-soft text-warning-strong',
+  '生活自理': 'bg-surface-2 text-ink-on-dark-2',
 };
 
 /**
@@ -232,18 +232,18 @@ const FALLBACK_ASSESSMENT_TYPES: AssessmentTypeOption[] = [
 
 const scoreColors = [
   '',
-  'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]',
-  'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]',
-  'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]',
-  'bg-[#F5F0EB] text-[#5C4832] border-[#D6C8B8]',
-  'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]',
+  'bg-danger-soft text-danger-strong border-danger-line',
+  'bg-warning-soft text-warning-strong border-warning-soft',
+  'bg-info-soft text-info-strong border-info-soft',
+  'bg-brand-soft text-brand-ink border-brand-line',
+  'bg-success-soft text-success-strong border-success-soft',
 ];
 
 function getGradeLabel(pct: number): { label: string; color: string } {
-  if (pct >= 90) return { label: '优秀', color: 'text-[#059669]' };
-  if (pct >= 75) return { label: '良好', color: 'text-[#977653]' };
-  if (pct >= 60) return { label: '一般', color: 'text-[#3B82F6]' };
-  return { label: '需加强', color: 'text-[#EF4444]' };
+  if (pct >= 90) return { label: '优秀', color: 'text-success-strong' };
+  if (pct >= 75) return { label: '良好', color: 'text-brand-ink' };
+  if (pct >= 60) return { label: '一般', color: 'text-info' };
+  return { label: '需加强', color: 'text-danger' };
 }
 
 /* ─── Main Component ─── */
@@ -751,10 +751,10 @@ export default function Evaluation() {
       >
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight tracking-[-0.02em]">评估管理</h1>
+            <h1 className="text-[28px] font-bold text-ink leading-tight tracking-[-0.02em]">评估管理</h1>
             <DataScopeBadge />
           </div>
-          <p className="text-sm text-[#64748B] mt-1">评估记录录入、打分与报告生成</p>
+          <p className="text-sm text-ink-2 mt-1">评估记录录入、打分与报告生成</p>
         </div>
         <div className="flex gap-2">
           <ImportExportActions
@@ -771,7 +771,7 @@ export default function Evaluation() {
             }}
           />
           {!readOnly && (
-            <Button onClick={() => openNewAssessment()} className="h-11 lg:h-10 bg-[#977653] hover:bg-[#7A5F42]">
+            <Button onClick={() => openNewAssessment()} className="h-11 lg:h-10 bg-brand hover:bg-brand-strong">
               <ClipboardPlus className="w-4 h-4 mr-2" />
               录入评估
             </Button>
@@ -784,11 +784,11 @@ export default function Evaluation() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.1 }}
-        className="bg-white rounded-lg p-4 mb-6 shadow-sm"
+        className="bg-surface rounded-lg p-4 mb-6 shadow-sm"
       >
         <div className="flex flex-wrap gap-3 items-center">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3" />
             <Input
               placeholder="搜索学生姓名..."
               value={search}
@@ -841,13 +841,13 @@ export default function Evaluation() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.2 }}
-        className="bg-white rounded-lg p-5 mb-6 shadow-sm"
+        className="bg-surface rounded-lg p-5 mb-6 shadow-sm"
       >
-        <h4 className="text-base font-semibold text-[#1E293B] mb-4">选择评估模板</h4>
+        <h4 className="text-base font-semibold text-ink mb-4">选择评估模板</h4>
         {templatesLoading ? (
-          <div className="text-sm text-[#94A3B8] py-6">模板加载中…</div>
+          <div className="text-sm text-ink-3 py-6">模板加载中…</div>
         ) : templates.length === 0 ? (
-          <div className="text-sm text-[#94A3B8] py-6">暂无可用评估模板，请先在「模板管理」中创建</div>
+          <div className="text-sm text-ink-3 py-6">暂无可用评估模板，请先在「模板管理」中创建</div>
         ) : (
           <div className="flex flex-wrap gap-3">
             {templates.map((t, i) => (
@@ -857,12 +857,12 @@ export default function Evaluation() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: 0.2 + i * 0.06 }}
                 onClick={() => openNewAssessment(t)}
-                className="flex flex-col items-start w-[200px] p-4 bg-white border border-[#E2E8F0] rounded-lg text-left transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
+                className="flex flex-col items-start w-[200px] p-4 bg-surface border border-line rounded-lg text-left transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
                 style={{ borderColor: selectedTemplate?.id === t.id ? templateColor(t) : undefined, borderWidth: selectedTemplate?.id === t.id ? '2px' : '1px' }}
               >
                 <div className="mb-2">{templateIcon(t)}</div>
-                <span className="text-sm font-semibold text-[#1E293B] group-hover:text-[#977653]">{t.name}</span>
-                <span className="text-xs text-[#94A3B8] mt-1 line-clamp-2">{t.description || t.category}</span>
+                <span className="text-sm font-semibold text-ink group-hover:text-brand-ink">{t.name}</span>
+                <span className="text-xs text-ink-3 mt-1 line-clamp-2">{t.description || t.category}</span>
               </motion.button>
             ))}
           </div>
@@ -874,18 +874,18 @@ export default function Evaluation() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.3 }}
-        className="bg-white rounded-lg shadow-sm overflow-hidden"
+        className="bg-surface rounded-lg shadow-sm overflow-hidden"
       >
         {/* Table toolbar */}
-        <div className="flex items-center justify-between p-4 border-b border-[#E2E8F0]">
+        <div className="flex items-center justify-between p-4 border-b border-line">
           <div className="flex items-center gap-2">
             <Checkbox checked={allSelected} onCheckedChange={toggleSelectAll} />
-            <span className="text-sm text-[#64748B]">全选</span>
+            <span className="text-sm text-ink-2">全选</span>
             {selectedIds.size > 0 && (
-              <span className="text-xs text-[#64748B] ml-2">已选 {selectedIds.size} 条</span>
+              <span className="text-xs text-ink-2 ml-2">已选 {selectedIds.size} 条</span>
             )}
           </div>
-          <div className="text-sm text-[#64748B]">
+          <div className="text-sm text-ink-2">
             共 {filteredRecords.length} 条记录
           </div>
         </div>
@@ -894,16 +894,16 @@ export default function Evaluation() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-[#F7F6F4]">
+              <tr className="bg-canvas">
                 <th className="w-10 px-4 py-3"></th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8] tracking-wide">学生</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">评估类型</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">评估模板</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">评估日期</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">评估者</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">总分</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">状态</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#94A3B8]">操作</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3 tracking-wide">学生</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">评估类型</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">评估模板</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">评估日期</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">评估者</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">总分</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">状态</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-ink-3">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -913,32 +913,32 @@ export default function Evaluation() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: idx * 0.05 }}
-                  className="border-b border-[#E2E8F0] hover:bg-[#F7F6F4] transition-colors"
+                  className="border-b border-line hover:bg-canvas transition-colors"
                 >
                   <td className="px-4 py-4">
                     <Checkbox checked={selectedIds.has(record.id)} onCheckedChange={() => toggleSelect(record.id)} />
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-full bg-[#F5F0EB] flex items-center justify-center text-xs font-bold text-[#977653]">
+                      <div className="w-7 h-7 rounded-full bg-brand-soft flex items-center justify-center text-xs font-bold text-brand-ink">
                         {record.studentName[0]}
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-[#1E293B]">{record.studentName}</div>
-                        <div className="text-xs text-[#94A3B8]">{record.studentNo}</div>
+                        <div className="text-sm font-semibold text-ink">{record.studentName}</div>
+                        <div className="text-xs text-ink-3">{record.studentNo}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-4">
                     {/* v14：徽章显示字典展示名（初期评估），不再把原始编码 initial 暴露给用户 */}
-                    <Badge className={`${typeBadgeColor[record.assessmentTypeLabel] || 'bg-[#F0F2F5] text-[#64748B]'} text-xs font-medium border-0`}>
+                    <Badge className={`${typeBadgeColor[record.assessmentTypeLabel] || 'bg-surface-2 text-ink-2'} text-xs font-medium border-0`}>
                       {record.assessmentTypeLabel}
                     </Badge>
                   </td>
-                  <td className="px-4 py-4 text-sm text-[#1E293B]">{record.templateName}</td>
-                  <td className="px-4 py-4 text-sm text-[#64748B]">{record.assessmentDate}</td>
-                  <td className="px-4 py-4 text-sm text-[#64748B]">{record.assessor}</td>
-                  <td className="px-4 py-4 text-sm font-medium text-[#1E293B]">{record.totalScore}/{record.maxScore}</td>
+                  <td className="px-4 py-4 text-sm text-ink">{record.templateName}</td>
+                  <td className="px-4 py-4 text-sm text-ink-2">{record.assessmentDate}</td>
+                  <td className="px-4 py-4 text-sm text-ink-2">{record.assessor}</td>
+                  <td className="px-4 py-4 text-sm font-medium text-ink">{record.totalScore}/{record.maxScore}</td>
                   <td className="px-4 py-4">
                     <Badge className={`${statusBadge[record.status].className} text-xs font-medium border-0`}>
                       {statusBadge[record.status].label}
@@ -946,20 +946,20 @@ export default function Evaluation() {
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => openDetail(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F5F0EB] hover:text-[#977653] transition-colors cursor-pointer" title="查看报告">
+                      <button onClick={() => openDetail(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-ink-2 hover:bg-brand-soft hover:text-brand-ink transition-colors cursor-pointer" title="查看报告">
                         <Eye className="w-4 h-4" />
                       </button>
                       {!readOnly && (record.status === 'draft' || record.status === 'in_progress') && (
-                        <button onClick={() => { openEditAssessment(record); }} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#EFF6FF] hover:text-[#3B82F6] transition-colors cursor-pointer" title="继续编辑">
+                        <button onClick={() => { openEditAssessment(record); }} className="w-8 h-8 rounded-full flex items-center justify-center text-ink-2 hover:bg-info-soft hover:text-info transition-colors cursor-pointer" title="继续编辑">
                           <Pencil className="w-4 h-4" />
                         </button>
                       )}
                       {!readOnly && (
                         <>
-                          <button onClick={() => handleDuplicate(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F5F0EB] hover:text-[#977653] transition-colors cursor-pointer" title="复制">
+                          <button onClick={() => handleDuplicate(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-ink-2 hover:bg-brand-soft hover:text-brand-ink transition-colors cursor-pointer" title="复制">
                             <Copy className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setDeleteTarget(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#EF4444] transition-colors cursor-pointer" title="删除">
+                          <button onClick={() => setDeleteTarget(record)} className="w-11 h-11 lg:w-8 lg:h-8 rounded-full flex items-center justify-center text-ink-2 hover:bg-danger-soft hover:text-danger transition-colors cursor-pointer" title="删除">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
@@ -974,13 +974,13 @@ export default function Evaluation() {
 
         {paginatedRecords.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16">
-            <ClipboardPlus className="w-12 h-12 text-[#94A3B8] mb-4" />
-            <h4 className="text-base font-semibold text-[#1E293B] mb-1">暂无评估记录</h4>
-            <p className="text-sm text-[#64748B] mb-4">
+            <ClipboardPlus className="w-12 h-12 text-ink-3 mb-4" />
+            <h4 className="text-base font-semibold text-ink mb-1">暂无评估记录</h4>
+            <p className="text-sm text-ink-2 mb-4">
               {readOnly ? '当前权限范围内无评估记录' : '点击上方按钮录入第一个评估'}
             </p>
             {!readOnly && (
-              <Button onClick={() => openNewAssessment()} className="bg-[#977653] hover:bg-[#7A5F42]">
+              <Button onClick={() => openNewAssessment()} className="bg-brand hover:bg-brand-strong">
                 <ClipboardPlus className="w-4 h-4 mr-2" />
                 录入评估
               </Button>
@@ -995,7 +995,7 @@ export default function Evaluation() {
           description={
             <>
               将删除「{deleteTarget?.studentName ?? '该学生'}」的这条评估记录及其全部条目打分。
-              <b className="text-[#B91C1C]">删除后不可撤销</b>
+              <b className="text-danger-strong">删除后不可撤销</b>
               ，后续做进度对比时会少一个数据点。
             </>
           }
@@ -1009,7 +1009,7 @@ export default function Evaluation() {
         {/* Pagination */}
         {filteredRecords.length > 0 && (
           <Pagination
-            className="p-4 border-t border-[#E2E8F0]"
+            className="p-4 border-t border-line"
             page={page}
             totalPages={totalPages}
             onChange={setPage}
@@ -1026,7 +1026,7 @@ export default function Evaluation() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-overlay/50 backdrop-blur-sm z-40"
               onClick={() => setDrawerOpen(false)}
             />
             <motion.div
@@ -1034,7 +1034,7 @@ export default function Evaluation() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-              className="fixed right-0 top-0 h-full w-[800px] max-w-[95vw] bg-white z-50 shadow-xl overflow-y-auto"
+              className="fixed right-0 top-0 h-full w-[800px] max-w-[95vw] bg-surface z-50 shadow-xl overflow-y-auto"
               role="dialog"
               aria-modal="true"
               aria-label={drawerMode === 'detail' ? '评估详情' : (drawerMode === 'edit' ? '编辑评估' : '录入评估')}
@@ -1229,12 +1229,12 @@ function NewAssessmentDrawer({
   return (
     <div className="flex flex-col h-full">
       {/* Drawer Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-line">
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer">
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-ink-2 hover:bg-canvas transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
-          <h3 className="text-lg font-semibold text-[#1E293B]">
+          <h3 className="text-lg font-semibold text-ink">
             {currentStep < 4 ? (mode === 'edit' ? '编辑评估' : '录入评估') : (mode === 'edit' ? '编辑完成' : '评估完成')}
             {selectedTemplate ? ` - ${selectedTemplate.name}` : ''}
           </h3>
@@ -1250,7 +1250,7 @@ function NewAssessmentDrawer({
       {currentStep < 4 && (
         <div className="px-6 py-5">
           <div className="flex items-center justify-between relative">
-            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-[#E2E8F0] -translate-y-1/2" />
+            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-surface-2 -translate-y-1/2" />
             {stepLabels.map((label, i) => {
               const stepNum = i + 1;
               const isCompleted = currentStep > stepNum;
@@ -1260,17 +1260,17 @@ function NewAssessmentDrawer({
                   <motion.div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 ${
                       isCompleted
-                        ? 'bg-[#10B981] border-[#10B981] text-white'
+                        ? 'bg-success border-success text-ink-on-dark'
                         : isActive
-                        ? 'bg-[#977653] border-[#977653] text-white'
-                        : 'bg-white border-[#CBD5E1] text-[#94A3B8]'
+                        ? 'bg-brand border-brand text-ink-on-dark'
+                        : 'bg-surface border-line-2 text-ink-3'
                     }`}
                     animate={isActive ? { scale: [1, 1.1, 1] } : {}}
                     transition={{ repeat: Infinity, duration: 1.5 }}
                   >
                     {isCompleted ? <Check className="w-4 h-4" /> : stepNum}
                   </motion.div>
-                  <span className={`text-xs mt-1.5 ${isActive ? 'text-[#977653] font-medium' : 'text-[#94A3B8]'}`}>
+                  <span className={`text-xs mt-1.5 ${isActive ? 'text-brand-ink font-medium' : 'text-ink-3'}`}>
                     {label}
                   </span>
                 </div>
@@ -1287,35 +1287,35 @@ function NewAssessmentDrawer({
           <div className="space-y-6">
             {/* Template Selection */}
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-2">评估模板 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-2">评估模板 <span className="text-danger">*</span></label>
               {!selectedTemplate ? (
                 templatesLoading ? (
-                  <div className="text-sm text-[#94A3B8] py-4">模板加载中…</div>
+                  <div className="text-sm text-ink-3 py-4">模板加载中…</div>
                 ) : templates.length === 0 ? (
-                  <div className="text-sm text-[#94A3B8] py-4">暂无可用评估模板，请先在「模板管理」中创建</div>
+                  <div className="text-sm text-ink-3 py-4">暂无可用评估模板，请先在「模板管理」中创建</div>
                 ) : (
                   <div className="flex flex-wrap gap-3">
                     {templates.map((t) => (
                       <button
                         key={t.id}
                         onClick={() => onSelectTemplate(t)}
-                        className="flex items-center gap-3 p-3 border border-[#E2E8F0] rounded-lg hover:border-[#C1AC96] hover:shadow-sm transition-all cursor-pointer text-left"
+                        className="flex items-center gap-3 p-3 border border-line rounded-lg hover:border-brand hover:shadow-sm transition-all cursor-pointer text-left"
                       >
                         {templateIcon(t)}
                         <div>
-                          <div className="text-sm font-medium text-[#1E293B]">{t.name}</div>
-                          <div className="text-xs text-[#94A3B8]">{t.category}</div>
+                          <div className="text-sm font-medium text-ink">{t.name}</div>
+                          <div className="text-xs text-ink-3">{t.category}</div>
                         </div>
                       </button>
                     ))}
                   </div>
                 )
               ) : (
-                <div className="flex items-center gap-3 p-3 bg-[#F5F0EB] border border-[#D6C8B8] rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-brand-soft border border-brand-line rounded-lg">
                   {templateIcon(selectedTemplate)}
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-[#1E293B]">{selectedTemplate.name}</div>
-                    <div className="text-xs text-[#64748B]">
+                    <div className="text-sm font-medium text-ink">{selectedTemplate.name}</div>
+                    <div className="text-xs text-ink-2">
                       {templateItemsLoading ? '条目加载中…' : (selectedTemplate.description || `${selectedTemplate.dimensions.length} 个维度`)}
                     </div>
                   </div>
@@ -1326,11 +1326,11 @@ function NewAssessmentDrawer({
 
             {/* Student Search */}
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-2">选择学生 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-2">选择学生 <span className="text-danger">*</span></label>
               {!selectedStudent ? (
                 <>
                   <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3" />
                     <Input
                       placeholder="搜索学生姓名或学号..."
                       value={studentSearch}
@@ -1338,33 +1338,33 @@ function NewAssessmentDrawer({
                       className="pl-9"
                     />
                   </div>
-                  <div className="border border-[#E2E8F0] rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
+                  <div className="border border-line rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
                     {filteredStudents.map((s) => (
                       <button
                         key={s.id}
                         onClick={() => onSelectStudent(s)}
-                        className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-[#F5F0EB] transition-colors cursor-pointer border-b border-[#E2E8F0] last:border-0"
+                        className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-brand-soft transition-colors cursor-pointer border-b border-line last:border-0"
                       >
-                        <div className="w-8 h-8 rounded-full bg-[#F5F0EB] flex items-center justify-center text-xs font-bold text-[#977653]">
+                        <div className="w-8 h-8 rounded-full bg-brand-soft flex items-center justify-center text-xs font-bold text-brand-ink">
                           {s.name[0]}
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-[#1E293B]">{s.name}</div>
-                          <div className="text-xs text-[#94A3B8]">{s.studentNo} · {s.className}</div>
+                          <div className="text-sm font-medium text-ink">{s.name}</div>
+                          <div className="text-xs text-ink-3">{s.studentNo} · {s.className}</div>
                         </div>
-                        <div className="text-xs text-[#64748B]">{s.disabilityType}</div>
+                        <div className="text-xs text-ink-2">{s.disabilityType}</div>
                       </button>
                     ))}
                   </div>
                 </>
               ) : (
-                <div className="flex items-center gap-3 p-4 bg-[#F5F0EB] border border-[#D6C8B8] rounded-lg">
-                  <div className="w-10 h-10 rounded-full bg-[#977653] flex items-center justify-center text-sm font-bold text-white">
+                <div className="flex items-center gap-3 p-4 bg-brand-soft border border-brand-line rounded-lg">
+                  <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-sm font-bold text-ink-on-dark">
                     {selectedStudent.name[0]}
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-semibold text-[#1E293B]">{selectedStudent.name}</div>
-                    <div className="text-xs text-[#64748B]">{selectedStudent.studentNo} · {selectedStudent.className} · {selectedStudent.disabilityType}</div>
+                    <div className="text-sm font-semibold text-ink">{selectedStudent.name}</div>
+                    <div className="text-xs text-ink-2">{selectedStudent.studentNo} · {selectedStudent.className} · {selectedStudent.disabilityType}</div>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => onSelectStudent(null)}>更改</Button>
                 </div>
@@ -1378,22 +1378,22 @@ function NewAssessmentDrawer({
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估模板</label>
-                <Input value={selectedTemplate?.name || ''} readOnly className="bg-[#F7F6F4]" />
+                <label className="block text-sm font-medium text-ink mb-1.5">评估模板</label>
+                <Input value={selectedTemplate?.name || ''} readOnly className="bg-canvas" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估日期 <span className="text-[#EF4444]">*</span></label>
+                <label className="block text-sm font-medium text-ink mb-1.5">评估日期 <span className="text-danger">*</span></label>
                 <Input type="date" value={assessmentDate} onChange={(e) => onSetAssessmentDate(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估者</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">评估者</label>
                 {/* v14：只读。后端 assessor_id 恒取当前登录用户，可编辑的输入框
                     会造成"填了别人名字就归别人"的假象；默认值也改为当前用户。 */}
-                <Input value={assessor} readOnly className="bg-[#F7F6F4]" />
-                <p className="text-xs text-[#94A3B8] mt-1">评估者自动取当前登录账号，不可修改</p>
+                <Input value={assessor} readOnly className="bg-canvas" />
+                <p className="text-xs text-ink-3 mt-1">评估者自动取当前登录账号，不可修改</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估类型 <span className="text-[#EF4444]">*</span></label>
+                <label className="block text-sm font-medium text-ink mb-1.5">评估类型 <span className="text-danger">*</span></label>
                 {/* v14：类型由教师按字典选择。原实现把模板分类（课程本位/专项评估…）
                     写进 assessment_type，与字典和存量数据三套口径互相矛盾。 */}
                 <Select value={assessmentType} onValueChange={onSetAssessmentType}>
@@ -1406,7 +1406,7 @@ function NewAssessmentDrawer({
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">评估环境</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">评估环境</label>
                 <Select value={assessmentEnv} onValueChange={onSetAssessmentEnv}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -1419,15 +1419,15 @@ function NewAssessmentDrawer({
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">被评估者状态</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">被评估者状态</label>
               <Textarea placeholder="评估时学生的配合度、情绪状态等..." value={studentState} onChange={(e) => onSetStudentState(e.target.value)} rows={3} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">使用工具/材料</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">使用工具/材料</label>
               <Textarea placeholder="评估中使用的教具、工具等..." value={toolsUsed} onChange={(e) => onSetToolsUsed(e.target.value)} rows={3} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">备注</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">备注</label>
               <Textarea placeholder="其他备注信息..." value={note} onChange={(e) => onSetNote(e.target.value)} rows={2} />
             </div>
           </motion.div>
@@ -1437,22 +1437,22 @@ function NewAssessmentDrawer({
         {currentStep === 3 && selectedTemplate && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4 h-[calc(100vh-280px)]">
             {/* Left: Dimension Nav */}
-            <div className="w-[200px] flex-shrink-0 border-r border-[#E2E8F0] pr-3">
-              <div className="text-xs font-medium text-[#94A3B8] mb-2 uppercase tracking-wider">评估维度</div>
+            <div className="w-[200px] flex-shrink-0 border-r border-line pr-3">
+              <div className="text-xs font-medium text-ink-3 mb-2 uppercase tracking-wider">评估维度</div>
               <div className="space-y-1">
                 {dimensionProgress.map((d) => (
                   <button
                     key={d.id}
                     onClick={() => onSetActiveDimension(d.id)}
                     className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-left text-sm transition-colors cursor-pointer ${
-                      activeDimension === d.id ? 'bg-[#F5F0EB] text-[#977653] font-medium' : 'text-[#64748B] hover:bg-[#F7F6F4]'
+                      activeDimension === d.id ? 'bg-brand-soft text-brand-ink font-medium' : 'text-ink-2 hover:bg-canvas'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      {d.scored === d.total && <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />}
+                      {d.scored === d.total && <CheckCircle2 className="w-3.5 h-3.5 text-success" />}
                       {d.name}
                     </span>
-                    <span className="text-xs text-[#94A3B8]">{d.dimTotal}/{d.dimMax}</span>
+                    <span className="text-xs text-ink-3">{d.dimTotal}/{d.dimMax}</span>
                   </button>
                 ))}
               </div>
@@ -1464,19 +1464,19 @@ function NewAssessmentDrawer({
                 if (dim.id !== activeDimension) return null;
                 return (
                   <div key={dim.id}>
-                    <h3 className="text-lg font-semibold text-[#1E293B] mb-1">{dim.name}</h3>
-                    <p className="text-xs text-[#94A3B8] mb-4">请根据学生的表现对每个项目进行评分</p>
+                    <h3 className="text-lg font-semibold text-ink mb-1">{dim.name}</h3>
+                    <p className="text-xs text-ink-3 mb-4">请根据学生的表现对每个项目进行评分</p>
                     <div className="space-y-4">
                       {dim.items.map((item) => (
                         <motion.div
                           key={item.id}
                           layout
-                          className="p-4 bg-[#F7F6F4] rounded-lg"
+                          className="p-4 bg-canvas rounded-lg"
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div>
-                              <div className="text-sm font-semibold text-[#1E293B]">{item.name}</div>
-                              <div className="text-xs text-[#94A3B8] mt-0.5">{item.description}</div>
+                              <div className="text-sm font-semibold text-ink">{item.name}</div>
+                              <div className="text-xs text-ink-3 mt-0.5">{item.description}</div>
                             </div>
                             <Badge variant="outline" className="text-xs">1-{item.maxScore}分</Badge>
                           </div>
@@ -1489,7 +1489,7 @@ function NewAssessmentDrawer({
                                 className={`w-10 h-10 rounded-lg border text-sm font-semibold transition-all cursor-pointer ${
                                   itemScores[item.id] === score
                                     ? scoreColors[score] + ' scale-105 shadow-sm'
-                                    : 'bg-white border-[#E2E8F0] text-[#64748B] hover:bg-[#F5F0EB]'
+                                    : 'bg-surface border-line text-ink-2 hover:bg-brand-soft'
                                 }`}
                               >
                                 {score}
@@ -1520,31 +1520,31 @@ function NewAssessmentDrawer({
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, damping: 15, duration: 0.5 }}
             >
-              <CheckCircle2 className="w-16 h-16 text-[#10B981] mb-4" />
+              <CheckCircle2 className="w-16 h-16 text-success mb-4" />
             </motion.div>
-            <h2 className="text-[22px] font-semibold text-[#1E293B] mb-2">评估录入完成！</h2>
+            <h2 className="text-[22px] font-semibold text-ink mb-2">评估录入完成！</h2>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="w-full max-w-md bg-[#F7F6F4] rounded-lg p-5 mt-4"
+              className="w-full max-w-md bg-canvas rounded-lg p-5 mt-4"
             >
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="text-[#64748B]">学生</div>
-                <div className="text-[#1E293B] font-medium">{selectedStudent?.name}</div>
-                <div className="text-[#64748B]">评估模板</div>
-                <div className="text-[#1E293B] font-medium">{selectedTemplate?.name}</div>
-                <div className="text-[#64748B]">评估类型</div>
+                <div className="text-ink-2">学生</div>
+                <div className="text-ink font-medium">{selectedStudent?.name}</div>
+                <div className="text-ink-2">评估模板</div>
+                <div className="text-ink font-medium">{selectedTemplate?.name}</div>
+                <div className="text-ink-2">评估类型</div>
                 {/* v14：显示字典标签；原实现把模板名放在「评估类型」标签下，张冠李戴 */}
-                <div className="text-[#1E293B] font-medium">
+                <div className="text-ink font-medium">
                   {assessmentTypes.find((t) => t.code === assessmentType)?.name ?? assessmentType}
                 </div>
-                <div className="text-[#64748B]">评估日期</div>
-                <div className="text-[#1E293B] font-medium">{assessmentDate}</div>
-                <div className="text-[#64748B]">总分</div>
-                <div className="text-[#1E293B] font-medium">{currentScores.total}/{currentScores.max} ({currentScores.pct}%)</div>
-                <div className="text-[#64748B]">评估者</div>
-                <div className="text-[#1E293B] font-medium">{assessor}</div>
+                <div className="text-ink-2">评估日期</div>
+                <div className="text-ink font-medium">{assessmentDate}</div>
+                <div className="text-ink-2">总分</div>
+                <div className="text-ink font-medium">{currentScores.total}/{currentScores.max} ({currentScores.pct}%)</div>
+                <div className="text-ink-2">评估者</div>
+                <div className="text-ink font-medium">{assessor}</div>
               </div>
             </motion.div>
             <div className="flex gap-3 mt-6">
@@ -1561,7 +1561,7 @@ function NewAssessmentDrawer({
 
       {/* Bottom Action Bar */}
       {currentStep < 4 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t border-[#E2E8F0] bg-white">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-line bg-surface">
           <Button variant="secondary" onClick={onPrev} disabled={currentStep === 1}>
             <ChevronLeft className="w-4 h-4 mr-1" />
             上一步
@@ -1569,7 +1569,7 @@ function NewAssessmentDrawer({
           <Button variant="ghost" onClick={onSaveDraft}>
             保存草稿
           </Button>
-          <Button onClick={currentStep === 3 ? onSubmit : onNext} className="bg-[#977653] hover:bg-[#7A5F42]">
+          <Button onClick={currentStep === 3 ? onSubmit : onNext} className="bg-brand hover:bg-brand-strong">
             {currentStep === 3 ? '提交完成' : '下一步'}
             {currentStep !== 3 && <ChevronRight className="w-4 h-4 ml-1" />}
           </Button>
@@ -1578,18 +1578,18 @@ function NewAssessmentDrawer({
 
       {/* Progress Bar for Step 3 */}
       {currentStep === 3 && (
-        <div className="px-6 py-3 border-t border-[#E2E8F0] bg-[#F7F6F4]">
+        <div className="px-6 py-3 border-t border-line bg-canvas">
           <div className="flex items-center justify-between text-sm mb-1">
-            <span className="text-[#64748B]">
+            <span className="text-ink-2">
               已完成维度: {dimensionProgress.filter((d) => d.scored === d.total).length}/{dimensionProgress.length}
             </span>
-            <span className="font-semibold text-[#1E293B]">
+            <span className="font-semibold text-ink">
               总分: {currentScores.total}/{currentScores.max}
             </span>
           </div>
-          <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-surface-2 rounded-full overflow-hidden">
             <motion.div
-              className="h-full bg-[#977653] rounded-full"
+              className="h-full bg-brand rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${currentScores.max > 0 ? (currentScores.total / currentScores.max) * 100 : 0}%` }}
               transition={{ duration: 0.3 }}
@@ -1755,12 +1755,12 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-line">
         <div className="flex items-center gap-3">
-          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer">
+          <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-ink-2 hover:bg-canvas transition-colors cursor-pointer">
             <X className="w-5 h-5" />
           </button>
-          <h3 className="text-lg font-semibold text-[#1E293B]">
+          <h3 className="text-lg font-semibold text-ink">
             评估报告 - {record.studentName} - {record.templateName}
           </h3>
         </div>
@@ -1785,29 +1785,29 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
       {/* Report Content */}
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {/* Basic Info */}
-        <div className="bg-[#F7F6F4] rounded-lg p-5">
-          <h4 className="text-base font-semibold text-[#1E293B] mb-4">基本信息</h4>
+        <div className="bg-canvas rounded-lg p-5">
+          <h4 className="text-base font-semibold text-ink mb-4">基本信息</h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
-            <div><span className="text-[#64748B]">学生姓名：</span><span className="text-[#1E293B] font-medium">{record.studentName}</span></div>
-            <div><span className="text-[#64748B]">学号：</span><span className="text-[#1E293B]">{record.studentNo || '—'}</span></div>
-            <div><span className="text-[#64748B]">班级：</span><span className="text-[#1E293B]">{record.className || '—'}</span></div>
-            <div><span className="text-[#64748B]">评估日期：</span><span className="text-[#1E293B]">{record.assessmentDate}</span></div>
-            <div><span className="text-[#64748B]">评估者：</span><span className="text-[#1E293B]">{record.assessor || '—'}</span></div>
-            <div><span className="text-[#64748B]">评估类型：</span><span className="text-[#1E293B]">{record.assessmentTypeLabel}</span></div>
-            <div><span className="text-[#64748B]">评估模板：</span><span className="text-[#1E293B]">{template?.name ?? record.templateName}</span></div>
+            <div><span className="text-ink-2">学生姓名：</span><span className="text-ink font-medium">{record.studentName}</span></div>
+            <div><span className="text-ink-2">学号：</span><span className="text-ink">{record.studentNo || '—'}</span></div>
+            <div><span className="text-ink-2">班级：</span><span className="text-ink">{record.className || '—'}</span></div>
+            <div><span className="text-ink-2">评估日期：</span><span className="text-ink">{record.assessmentDate}</span></div>
+            <div><span className="text-ink-2">评估者：</span><span className="text-ink">{record.assessor || '—'}</span></div>
+            <div><span className="text-ink-2">评估类型：</span><span className="text-ink">{record.assessmentTypeLabel}</span></div>
+            <div><span className="text-ink-2">评估模板：</span><span className="text-ink">{template?.name ?? record.templateName}</span></div>
           </div>
         </div>
 
         {/* Total Score */}
-        <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-          <h4 className="text-base font-semibold text-[#1E293B] mb-4">评估总分</h4>
+        <div className="bg-surface border border-line rounded-lg p-5">
+          <h4 className="text-base font-semibold text-ink mb-4">评估总分</h4>
           <div className="flex items-center gap-6">
             <div className="relative w-28 h-28">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="#E2E8F0" strokeWidth="8" />
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--line))" strokeWidth="8" />
                 <motion.circle
                   cx="50" cy="50" r="42" fill="none"
-                  stroke="#977653" strokeWidth="8" strokeLinecap="round"
+                  stroke="rgb(var(--brand))" strokeWidth="8" strokeLinecap="round"
                   strokeDasharray={`${pct * 2.64} ${264 - pct * 2.64}`}
                   initial={{ strokeDasharray: '0 264' }}
                   animate={{ strokeDasharray: `${pct * 2.64} ${264 - pct * 2.64}` }}
@@ -1815,11 +1815,11 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-[#1E293B]">{pct}%</span>
+                <span className="text-2xl font-bold text-ink">{pct}%</span>
               </div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#1E293B]">{record.totalScore}<span className="text-lg text-[#94A3B8]">/{record.maxScore}</span></div>
+              <div className="text-3xl font-bold text-ink">{record.totalScore}<span className="text-lg text-ink-3">/{record.maxScore}</span></div>
               <div className={`text-sm font-medium mt-1 ${grade.color}`}>评级：{grade.label}</div>
             </div>
           </div>
@@ -1827,30 +1827,30 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
 
         {/* Dimension Breakdown */}
         {dimensionRows.length > 0 ? (
-          <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-            <h4 className="text-base font-semibold text-[#1E293B] mb-4">各维度得分</h4>
+          <div className="bg-surface border border-line rounded-lg p-5">
+            <h4 className="text-base font-semibold text-ink mb-4">各维度得分</h4>
             <table className="w-full">
               <thead>
-                <tr className="border-b border-[#E2E8F0]">
-                  <th className="text-left py-2 text-xs font-semibold text-[#94A3B8]">维度</th>
-                  <th className="text-left py-2 text-xs font-semibold text-[#94A3B8]">得分</th>
-                  <th className="text-left py-2 text-xs font-semibold text-[#94A3B8]">满分</th>
-                  <th className="text-left py-2 text-xs font-semibold text-[#94A3B8]">百分比</th>
-                  <th className="text-left py-2 text-xs font-semibold text-[#94A3B8]">等级</th>
+                <tr className="border-b border-line">
+                  <th className="text-left py-2 text-xs font-semibold text-ink-3">维度</th>
+                  <th className="text-left py-2 text-xs font-semibold text-ink-3">得分</th>
+                  <th className="text-left py-2 text-xs font-semibold text-ink-3">满分</th>
+                  <th className="text-left py-2 text-xs font-semibold text-ink-3">百分比</th>
+                  <th className="text-left py-2 text-xs font-semibold text-ink-3">等级</th>
                 </tr>
               </thead>
               <tbody>
                 {dimensionRows.map((dim) => (
-                  <tr key={dim.name} className="border-b border-[#E2E8F0] last:border-0">
-                    <td className="py-3 text-sm text-[#1E293B] font-medium">{dim.name}</td>
-                    <td className="py-3 text-sm text-[#1E293B]">{dim.score}</td>
-                    <td className="py-3 text-sm text-[#64748B]">{dim.max}</td>
+                  <tr key={dim.name} className="border-b border-line last:border-0">
+                    <td className="py-3 text-sm text-ink font-medium">{dim.name}</td>
+                    <td className="py-3 text-sm text-ink">{dim.score}</td>
+                    <td className="py-3 text-sm text-ink-2">{dim.max}</td>
                     <td className="py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#977653] rounded-full" style={{ width: `${dim.percent}%` }} />
+                        <div className="w-16 h-2 bg-surface-2 rounded-full overflow-hidden">
+                          <div className="h-full bg-brand rounded-full" style={{ width: `${dim.percent}%` }} />
                         </div>
-                        <span className="text-xs text-[#64748B]">{dim.percent}%</span>
+                        <span className="text-xs text-ink-2">{dim.percent}%</span>
                       </div>
                     </td>
                     <td className={`py-3 text-xs font-medium ${dim.grade.color}`}>{dim.grade.label}</td>
@@ -1860,9 +1860,9 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
             </table>
           </div>
         ) : (
-          <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-            <h4 className="text-base font-semibold text-[#1E293B] mb-2">各维度得分</h4>
-            <p className="text-sm text-[#94A3B8]">该记录没有条目明细，暂不展示维度分布（不做估算）。</p>
+          <div className="bg-surface border border-line rounded-lg p-5">
+            <h4 className="text-base font-semibold text-ink mb-2">各维度得分</h4>
+            <p className="text-sm text-ink-3">该记录没有条目明细，暂不展示维度分布（不做估算）。</p>
           </div>
         )}
 
@@ -1871,19 +1871,19 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white border border-[#E2E8F0] rounded-lg p-5"
+          className="bg-surface border border-line rounded-lg p-5"
         >
-          <h4 className="text-base font-semibold text-[#1E293B] mb-4">与上期评估对比</h4>
+          <h4 className="text-base font-semibold text-ink mb-4">与上期评估对比</h4>
 
           {/* Comparison Table */}
-          <div className="overflow-hidden rounded-lg border border-[#E2E8F0] mb-5">
+          <div className="overflow-hidden rounded-lg border border-line mb-5">
             <table className="w-full">
-              <thead className="bg-[#F7F6F4]">
+              <thead className="bg-canvas">
                 <tr>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#94A3B8]">维度</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#94A3B8]">当前得分</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#94A3B8]">上期得分</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-[#94A3B8]">变化</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-ink-3">维度</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-ink-3">当前得分</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-ink-3">上期得分</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-ink-3">变化</th>
                 </tr>
               </thead>
               <tbody>
@@ -1893,31 +1893,31 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
                     initial={{ opacity: 0, x: -5 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 + index * 0.05 }}
-                    className="border-t border-[#F1F5F9]"
+                    className="border-t border-line"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-[#1E293B]">{item.dimension}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-[#977653]">{item.current}</td>
-                    <td className="px-4 py-3 text-sm text-[#64748B]">
+                    <td className="px-4 py-3 text-sm font-medium text-ink">{item.dimension}</td>
+                    <td className="px-4 py-3 text-sm font-semibold text-brand-ink">{item.current}</td>
+                    <td className="px-4 py-3 text-sm text-ink-2">
                       {item.previous === null ? '—' : item.previous}
                     </td>
                     <td className="px-4 py-3">
                       {item.previous === null ? (
                         // 无上期可比记录时明确显示「—」，不编造变化量
-                        <span className="text-sm text-[#94A3B8]">—</span>
+                        <span className="text-sm text-ink-3">—</span>
                       ) : (
                         <span className="flex items-center gap-1">
                           {item.change > 0 ? (
-                            <TrendingUp className="w-4 h-4 text-[#10B981]" />
+                            <TrendingUp className="w-4 h-4 text-success" />
                           ) : item.change < 0 ? (
-                            <TrendingDown className="w-4 h-4 text-[#EF4444]" />
+                            <TrendingDown className="w-4 h-4 text-danger" />
                           ) : (
-                            <Minus className="w-4 h-4 text-[#94A3B8]" />
+                            <Minus className="w-4 h-4 text-ink-3" />
                           )}
                           <span className={cn(
                             'text-sm font-medium',
-                            item.change > 0 ? 'text-[#10B981]' :
-                            item.change < 0 ? 'text-[#EF4444]' :
-                            'text-[#94A3B8]'
+                            item.change > 0 ? 'text-success' :
+                            item.change < 0 ? 'text-danger' :
+                            'text-ink-3'
                           )}>
                             {item.change > 0 ? `+${item.change}` : item.change}
                           </span>
@@ -1934,25 +1934,25 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
           <div className="h-[240px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--surface-2))" vertical={false} />
                 <XAxis
                   dataKey="dimension"
-                  tick={{ fontSize: 12, fill: '#94A3B8' }}
+                  tick={{ fontSize: 12, fill: 'rgb(var(--ink-3))' }}
                   tickLine={false}
-                  axisLine={{ stroke: '#E2E8F0' }}
+                  axisLine={{ stroke: 'rgb(var(--line))' }}
                 />
                 <YAxis
                   domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: '#94A3B8' }}
+                  tick={{ fontSize: 12, fill: 'rgb(var(--ink-3))' }}
                   tickLine={false}
-                  axisLine={{ stroke: '#E2E8F0' }}
+                  axisLine={{ stroke: 'rgb(var(--line))' }}
                 />
                 <Tooltip
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 shadow-sm">
-                          <p className="text-xs text-[#94A3B8]">{label}</p>
+                        <div className="bg-surface border border-line rounded-lg px-3 py-2 shadow-sm">
+                          <p className="text-xs text-ink-3">{label}</p>
                           {payload.map((entry, index) => (
                             <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
                               {entry.name === 'current' ? '当前' : '上期'}: {entry.value}
@@ -1966,7 +1966,7 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
                 />
                 <Legend
                   formatter={(value: string) => (
-                    <span className="text-xs text-[#64748B]">
+                    <span className="text-xs text-ink-2">
                       {value === 'current' ? '当前得分' : '上期得分'}
                     </span>
                   )}
@@ -1976,7 +1976,7 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
                   <Bar
                     dataKey="previous"
                     name="previous"
-                    fill="#CBD5E1"
+                    fill="rgb(var(--ink-4))"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />
@@ -1984,7 +1984,7 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
                 <Bar
                   dataKey="current"
                   name="current"
-                  fill="#977653"
+                  fill="rgb(var(--brand))"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={40}
                 />
@@ -1995,29 +1995,29 @@ function DetailDrawer({ record, template, onClose, history, onDraftGoals }: Deta
 
         {/* Recommendations */}
         {record.recommendations && (
-          <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-            <h4 className="text-base font-semibold text-[#1E293B] mb-3">评估建议</h4>
-            <p className="text-sm text-[#64748B] leading-relaxed">{record.recommendations}</p>
+          <div className="bg-surface border border-line rounded-lg p-5">
+            <h4 className="text-base font-semibold text-ink mb-3">评估建议</h4>
+            <p className="text-sm text-ink-2 leading-relaxed">{record.recommendations}</p>
           </div>
         )}
 
         {/* Signatures */}
-        <div className="bg-white border border-[#E2E8F0] rounded-lg p-5">
-          <h4 className="text-base font-semibold text-[#1E293B] mb-4">签名确认</h4>
+        <div className="bg-surface border border-line rounded-lg p-5">
+          <h4 className="text-base font-semibold text-ink mb-4">签名确认</h4>
           <div className="grid grid-cols-2 gap-8">
             <div>
-              <div className="text-sm text-[#64748B] mb-2">评估者签名</div>
-              <div className="h-20 border border-dashed border-[#CBD5E1] rounded-lg flex items-center justify-center text-sm text-[#94A3B8]">
+              <div className="text-sm text-ink-2 mb-2">评估者签名</div>
+              <div className="h-20 border border-dashed border-line-2 rounded-lg flex items-center justify-center text-sm text-ink-3">
                 {record.assessor}
               </div>
-              <div className="text-xs text-[#94A3B8] mt-1">日期：{record.assessmentDate}</div>
+              <div className="text-xs text-ink-3 mt-1">日期：{record.assessmentDate}</div>
             </div>
             <div>
-              <div className="text-sm text-[#64748B] mb-2">家长签名</div>
-              <div className="h-20 border border-dashed border-[#CBD5E1] rounded-lg flex items-center justify-center text-sm text-[#94A3B8]">
+              <div className="text-sm text-ink-2 mb-2">家长签名</div>
+              <div className="h-20 border border-dashed border-line-2 rounded-lg flex items-center justify-center text-sm text-ink-3">
                 待签名
               </div>
-              <div className="text-xs text-[#94A3B8] mt-1">日期：</div>
+              <div className="text-xs text-ink-3 mt-1">日期：</div>
             </div>
           </div>
         </div>

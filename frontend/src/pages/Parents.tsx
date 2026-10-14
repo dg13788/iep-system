@@ -346,9 +346,9 @@ function ParentAccountsTab() {
   return (
     <div className="space-y-4">
       {/* Filter */}
-      <div className="bg-white rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="bg-surface rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <Input placeholder="搜索家长姓名、电话..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-[220px] pl-9" />
         </div>
         <Select value={studentFilter} onValueChange={setStudentFilter}>
@@ -381,7 +381,7 @@ function ParentAccountsTab() {
         />
         {!readOnly && (
           <div className="ml-auto">
-            <Button onClick={() => { setEditingParent(null); setDrawerOpen(true); }} className="bg-[#977653] hover:bg-[#7A5F42] text-white gap-2">
+            <Button onClick={() => { setEditingParent(null); setDrawerOpen(true); }} className="bg-brand hover:bg-brand-strong text-ink-on-dark gap-2">
               <Plus size={16} /> 添加家长
             </Button>
           </div>
@@ -389,30 +389,30 @@ function ParentAccountsTab() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#F7F6F4] hover:bg-[#F7F6F4]">
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">家长姓名</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">电话</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">关联学生</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">关系</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">登录次数</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">最近登录</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">状态</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold text-right">操作</TableHead>
+            <TableRow className="bg-canvas hover:bg-canvas">
+              <TableHead className="text-xs text-ink-3 font-semibold">家长姓名</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">电话</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">关联学生</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">关系</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">登录次数</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">最近登录</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">状态</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((p) => (
-              <TableRow key={p.id} className="hover:bg-[#F7F6F4] transition-colors">
+              <TableRow key={p.id} className="hover:bg-canvas transition-colors">
                 <TableCell>
                   <div>
-                    <div className="text-sm font-semibold text-[#1E293B]">{p.name}</div>
-                    <div className="text-xs text-[#94A3B8]">{p.id}</div>
+                    <div className="text-sm font-semibold text-ink">{p.name}</div>
+                    <div className="text-xs text-ink-3">{p.id}</div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-[#1E293B]">{p.phone}</TableCell>
+                <TableCell className="text-sm text-ink">{p.phone}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {p.student_names.map((s) => (
@@ -423,19 +423,19 @@ function ParentAccountsTab() {
                     ))}
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-[#64748B]">{p.relation}</TableCell>
-                <TableCell className="text-sm text-[#1E293B]">{p.login_count}</TableCell>
-                <TableCell className="text-sm text-[#94A3B8]">{p.last_login || '—'}</TableCell>
+                <TableCell className="text-sm text-ink-2">{p.relation}</TableCell>
+                <TableCell className="text-sm text-ink">{p.login_count}</TableCell>
+                <TableCell className="text-sm text-ink-3">{p.last_login || '—'}</TableCell>
                 <TableCell>
                   <Badge className={cn('text-xs font-normal', PARENT_STATUS[p.status])}>{p.status}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setDetailParent(p); setDetailOpen(true); }}>
-                      <Eye size={14} className="text-[#64748B]" />
+                      <Eye size={14} className="text-ink-2" />
                     </Button>
                     <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setEditingParent(p); setDrawerOpen(true); }}>
-                      <Pencil size={14} className="text-[#64748B]" />
+                      <Pencil size={14} className="text-ink-2" />
                     </Button>
                   </div>
                 </TableCell>
@@ -475,38 +475,38 @@ function ParentFormDrawer({ open, onClose, parent, onSave }: { open: boolean; on
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[560px] sm:max-w-[560px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <SheetTitle>{parent ? '编辑家长' : '添加家长'}</SheetTitle>
           <SheetDescription>{parent ? '修改家长账号信息' : '创建新的家长账号'}</SheetDescription>
         </SheetHeader>
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">家长姓名 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">家长姓名 <span className="text-danger">*</span></label>
               <Input value={form.name} onChange={(e) => update('name', e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">手机号码 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">手机号码 <span className="text-danger">*</span></label>
               <Input value={form.phone} onChange={(e) => update('phone', e.target.value)} />
             </div>
           </div>
           {!parent && (
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">初始密码 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">初始密码 <span className="text-danger">*</span></label>
               <Input value={form.password} onChange={(e) => update('password', e.target.value)} />
-              <p className="text-xs text-[#94A3B8] mt-1">首次登录需修改密码</p>
+              <p className="text-xs text-ink-3 mt-1">首次登录需修改密码</p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">与学生关系 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">与学生关系 <span className="text-danger">*</span></label>
               <Select value={form.relation} onValueChange={(v) => update('relation', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{RELATIONS.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">账号状态</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">账号状态</label>
               <Select value={form.status} onValueChange={(v) => update('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -518,8 +518,8 @@ function ParentFormDrawer({ open, onClose, parent, onSave }: { open: boolean; on
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">关联学生 <span className="text-[#EF4444]">*</span></label>
-            <div className="flex flex-wrap gap-2 p-3 border border-[#E2E8F0] rounded-md">
+            <label className="block text-sm font-medium text-ink mb-1.5">关联学生 <span className="text-danger">*</span></label>
+            <div className="flex flex-wrap gap-2 p-3 border border-line rounded-md">
               {STUDENTS.map((s) => (
                 <label key={s} className="flex items-center gap-1.5 text-sm cursor-pointer">
                   <Checkbox checked={form.student_names.includes(s)} onCheckedChange={(checked) => {
@@ -532,21 +532,21 @@ function ParentFormDrawer({ open, onClose, parent, onSave }: { open: boolean; on
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">电子邮箱</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">电子邮箱</label>
             <Input value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="选填" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">家庭地址</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">家庭地址</label>
             <Input value={form.address} onChange={(e) => update('address', e.target.value)} placeholder="选填" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">备注</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">备注</label>
             <Textarea value={form.remark} onChange={(e) => update('remark', e.target.value)} placeholder="选填" />
           </div>
         </div>
-        <SheetFooter className="border-t border-[#E2E8F0] p-6">
+        <SheetFooter className="border-t border-line p-6">
           <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button onClick={() => onSave(form)} className="bg-[#977653] hover:bg-[#7A5F42] text-white">保存</Button>
+          <Button onClick={() => onSave(form)} className="bg-brand hover:bg-brand-strong text-ink-on-dark">保存</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -559,9 +559,9 @@ function ParentDetailDrawer({ open, onClose, parent }: { open: boolean; onClose:
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[560px] sm:max-w-[560px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center text-lg font-bold text-[#977653]">{parent.name[0]}</div>
+            <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center text-lg font-bold text-brand-ink">{parent.name[0]}</div>
             <div>
               <SheetTitle className="text-lg">{parent.name}</SheetTitle>
               <SheetDescription>{parent.phone} · {parent.relation}</SheetDescription>
@@ -570,39 +570,39 @@ function ParentDetailDrawer({ open, onClose, parent }: { open: boolean; onClose:
         </SheetHeader>
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg bg-[#F7F6F4]">
-              <div className="text-xs text-[#94A3B8] mb-1">账号状态</div>
+            <div className="p-3 rounded-lg bg-canvas">
+              <div className="text-xs text-ink-3 mb-1">账号状态</div>
               <Badge className={cn('text-xs', PARENT_STATUS[parent.status])}>{parent.status}</Badge>
             </div>
-            <div className="p-3 rounded-lg bg-[#F7F6F4]">
-              <div className="text-xs text-[#94A3B8] mb-1">创建时间</div>
-              <div className="text-sm text-[#1E293B]">{parent.created_at}</div>
+            <div className="p-3 rounded-lg bg-canvas">
+              <div className="text-xs text-ink-3 mb-1">创建时间</div>
+              <div className="text-sm text-ink">{parent.created_at}</div>
             </div>
           </div>
-          <div className="p-4 rounded-lg bg-[#F7F6F4] space-y-3">
-            <h4 className="text-sm font-semibold text-[#1E293B]">基本信息</h4>
+          <div className="p-4 rounded-lg bg-canvas space-y-3">
+            <h4 className="text-sm font-semibold text-ink">基本信息</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-[#94A3B8]">邮箱</div><div className="text-[#1E293B]">{parent.email || '—'}</div>
-              <div className="text-[#94A3B8]">地址</div><div className="text-[#1E293B]">{parent.address || '—'}</div>
-              <div className="text-[#94A3B8]">登录次数</div><div className="text-[#1E293B]">{parent.login_count}</div>
-              <div className="text-[#94A3B8]">最近登录</div><div className="text-[#1E293B]">{parent.last_login || '—'}</div>
+              <div className="text-ink-3">邮箱</div><div className="text-ink">{parent.email || '—'}</div>
+              <div className="text-ink-3">地址</div><div className="text-ink">{parent.address || '—'}</div>
+              <div className="text-ink-3">登录次数</div><div className="text-ink">{parent.login_count}</div>
+              <div className="text-ink-3">最近登录</div><div className="text-ink">{parent.last_login || '—'}</div>
             </div>
           </div>
-          <div className="p-4 rounded-lg bg-[#F7F6F4]">
-            <h4 className="text-sm font-semibold text-[#1E293B] mb-3">关联学生</h4>
+          <div className="p-4 rounded-lg bg-canvas">
+            <h4 className="text-sm font-semibold text-ink mb-3">关联学生</h4>
             <div className="space-y-2">
               {parent.student_names.map((s) => (
                 <div key={s} className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-xs font-bold text-[#977653]">{s[0]}</div>
-                  <span className="text-sm text-[#1E293B]">{s}</span>
+                  <div className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-xs font-bold text-brand-ink">{s[0]}</div>
+                  <span className="text-sm text-ink">{s}</span>
                 </div>
               ))}
             </div>
           </div>
           {parent.remark && (
-            <div className="p-4 rounded-lg bg-[#F7F6F4]">
-              <h4 className="text-sm font-semibold text-[#1E293B] mb-1">备注</h4>
-              <p className="text-sm text-[#64748B]">{parent.remark}</p>
+            <div className="p-4 rounded-lg bg-canvas">
+              <h4 className="text-sm font-semibold text-ink mb-1">备注</h4>
+              <p className="text-sm text-ink-2">{parent.remark}</p>
             </div>
           )}
         </div>
@@ -666,19 +666,19 @@ function SignatureManagementTab() {
           { label: '待签名', value: stats.pending, color: 'text-warning-600', bg: 'bg-warning-50' },
           { label: '已签名', value: stats.signed, color: 'text-success-600', bg: 'bg-success-50' },
           { label: '已过期', value: stats.expired, color: 'text-danger-600', bg: 'bg-danger-50' },
-          { label: '本月待签', value: stats.monthPending, color: 'text-[#405680]', bg: 'bg-secondary-50' },
+          { label: '本月待签', value: stats.monthPending, color: 'text-ink-on-dark-2', bg: 'bg-secondary-50' },
         ].map((s) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={cn('rounded-xl p-4', s.bg)}>
-            <div className="text-sm text-[#64748B]">{s.label}</div>
+            <div className="text-sm text-ink-2">{s.label}</div>
             <div className={cn('text-2xl font-bold mt-1', s.color)}>{s.value}</div>
           </motion.div>
         ))}
       </div>
 
       {/* Filter */}
-      <div className="bg-white rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="bg-surface rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <Input placeholder="搜索学生、家长..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-[220px] pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -693,16 +693,16 @@ function SignatureManagementTab() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#F7F6F4] hover:bg-[#F7F6F4]">
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">学生</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">IEP期间</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">签名状态</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">签名日期</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">发送次数</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold text-right">操作</TableHead>
+            <TableRow className="bg-canvas hover:bg-canvas">
+              <TableHead className="text-xs text-ink-3 font-semibold">学生</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">IEP期间</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">签名状态</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">签名日期</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">发送次数</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -710,24 +710,24 @@ function SignatureManagementTab() {
               const sigCfg = SIGNATURE_STATUS[s.signature_status];
               const SigIcon = sigCfg.icon;
               return (
-                <TableRow key={s.id} className="hover:bg-[#F7F6F4] transition-colors">
+                <TableRow key={s.id} className="hover:bg-canvas transition-colors">
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-xs font-bold text-[#977653]">{s.student_name[0]}</div>
+                      <div className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-xs font-bold text-brand-ink">{s.student_name[0]}</div>
                       <div>
-                        <div className="text-sm font-medium text-[#1E293B]">{s.student_name}</div>
-                        <div className="text-xs text-[#94A3B8]">{s.parent_name}</div>
+                        <div className="text-sm font-medium text-ink">{s.student_name}</div>
+                        <div className="text-xs text-ink-3">{s.parent_name}</div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-[#64748B]">{s.iep_period}</TableCell>
+                  <TableCell className="text-sm text-ink-2">{s.iep_period}</TableCell>
                   <TableCell>
                     <Badge className={cn('text-xs font-normal', sigCfg.className)}>
                       <SigIcon size={12} className="mr-1" />{s.signature_status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-[#94A3B8]">{s.signed_date || '—'}</TableCell>
-                  <TableCell className="text-sm text-[#1E293B]">{s.send_count}次</TableCell>
+                  <TableCell className="text-sm text-ink-3">{s.signed_date || '—'}</TableCell>
+                  <TableCell className="text-sm text-ink">{s.send_count}次</TableCell>
                   <TableCell className="text-right">
                     {s.signature_status === '待签名' && !readOnly && (
                       <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => sendReminder(s.id)}>
@@ -815,9 +815,9 @@ function CommunicationTab() {
   return (
     <div className="space-y-4">
       {/* Filter */}
-      <div className="bg-white rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="bg-surface rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <Input placeholder="搜索学生、主题..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-[220px] pl-9" />
         </div>
         <Select value={studentFilter} onValueChange={setStudentFilter}>
@@ -843,7 +843,7 @@ function CommunicationTab() {
         </Button>
         {!readOnly && (
           <div className="ml-auto">
-            <Button onClick={() => setDrawerOpen(true)} className="bg-[#977653] hover:bg-[#7A5F42] text-white gap-2">
+            <Button onClick={() => setDrawerOpen(true)} className="bg-brand hover:bg-brand-strong text-ink-on-dark gap-2">
               <Plus size={16} /> 新增沟通记录
             </Button>
           </div>
@@ -851,38 +851,38 @@ function CommunicationTab() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#F7F6F4] hover:bg-[#F7F6F4]">
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">日期</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">学生</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">沟通类型</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">沟通对象</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">沟通主题</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">教师</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold text-right">操作</TableHead>
+            <TableRow className="bg-canvas hover:bg-canvas">
+              <TableHead className="text-xs text-ink-3 font-semibold">日期</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">学生</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">沟通类型</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">沟通对象</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">沟通主题</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">教师</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((c) => (
-              <TableRow key={c.id} className="hover:bg-[#F7F6F4] transition-colors">
-                <TableCell className="text-sm text-[#1E293B]">{c.date}</TableCell>
+              <TableRow key={c.id} className="hover:bg-canvas transition-colors">
+                <TableCell className="text-sm text-ink">{c.date}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary-50 flex items-center justify-center text-[10px] font-bold text-[#977653]">{c.student_name[0]}</div>
-                    <span className="text-sm text-[#1E293B]">{c.student_name}</span>
+                    <div className="w-6 h-6 rounded-full bg-primary-50 flex items-center justify-center text-[10px] font-bold text-brand-ink">{c.student_name[0]}</div>
+                    <span className="text-sm text-ink">{c.student_name}</span>
                   </div>
                 </TableCell>
                 <TableCell>
                   <Badge className={cn('text-xs font-normal', COMM_TYPE[c.comm_type])}>{c.comm_type}</Badge>
                 </TableCell>
-                <TableCell className="text-sm text-[#64748B]">{c.parent_name}</TableCell>
-                <TableCell className="text-sm text-[#1E293B] max-w-[200px] truncate" title={c.subject}>{c.subject}</TableCell>
-                <TableCell className="text-sm text-[#64748B]">{c.teacher_name}</TableCell>
+                <TableCell className="text-sm text-ink-2">{c.parent_name}</TableCell>
+                <TableCell className="text-sm text-ink max-w-[200px] truncate" title={c.subject}>{c.subject}</TableCell>
+                <TableCell className="text-sm text-ink-2">{c.teacher_name}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setDetailComm(c); setDetailOpen(true); }}>
-                    <Eye size={14} className="text-[#64748B]" />
+                    <Eye size={14} className="text-ink-2" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -908,21 +908,21 @@ function CommFormDrawer({ open, onClose, onSave }: { open: boolean; onClose: () 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[640px] sm:max-w-[640px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <SheetTitle>新增沟通记录</SheetTitle>
           <SheetDescription>记录家校沟通详情</SheetDescription>
         </SheetHeader>
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">学生 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">学生 <span className="text-danger">*</span></label>
               <Select value={form.student_name} onValueChange={(v) => update('student_name', v)}>
                 <SelectTrigger><SelectValue placeholder="选择学生" /></SelectTrigger>
                 <SelectContent>{STUDENTS.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent>
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">沟通类型 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">沟通类型 <span className="text-danger">*</span></label>
               <Select value={form.comm_type} onValueChange={(v) => update('comm_type', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -933,34 +933,34 @@ function CommFormDrawer({ open, onClose, onSave }: { open: boolean; onClose: () 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">沟通对象 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">沟通对象 <span className="text-danger">*</span></label>
               <Input value={form.parent_name} onChange={(e) => update('parent_name', e.target.value)} placeholder="家长姓名" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">教师 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">教师 <span className="text-danger">*</span></label>
               <Input value={form.teacher_name} onChange={(e) => update('teacher_name', e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">沟通主题 <span className="text-[#EF4444]">*</span></label>
+            <label className="block text-sm font-medium text-ink mb-1.5">沟通主题 <span className="text-danger">*</span></label>
             <Input value={form.subject} onChange={(e) => update('subject', e.target.value)} placeholder="沟通主题..." />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">沟通内容 <span className="text-[#EF4444]">*</span></label>
+            <label className="block text-sm font-medium text-ink mb-1.5">沟通内容 <span className="text-danger">*</span></label>
             <Textarea value={form.content} onChange={(e) => update('content', e.target.value)} placeholder="详细描述沟通内容..." className="min-h-[120px]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">后续计划</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">后续计划</label>
             <Textarea value={form.follow_up} onChange={(e) => update('follow_up', e.target.value)} placeholder="后续跟进事项..." />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">教师反馈</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">教师反馈</label>
             <Textarea value={form.teacher_feedback} onChange={(e) => update('teacher_feedback', e.target.value)} placeholder="教师反馈..." />
           </div>
         </div>
-        <SheetFooter className="border-t border-[#E2E8F0] p-6">
+        <SheetFooter className="border-t border-line p-6">
           <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button onClick={() => onSave(form)} className="bg-[#977653] hover:bg-[#7A5F42] text-white">保存</Button>
+          <Button onClick={() => onSave(form)} className="bg-brand hover:bg-brand-strong text-ink-on-dark">保存</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -973,7 +973,7 @@ function CommDetailDrawer({ open, onClose, record }: { open: boolean; onClose: (
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[560px] sm:max-w-[560px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <div className="flex items-center gap-2 mb-2">
             <Badge className={cn('text-xs', COMM_TYPE[record.comm_type])}>{record.comm_type}</Badge>
           </div>
@@ -981,27 +981,27 @@ function CommDetailDrawer({ open, onClose, record }: { open: boolean; onClose: (
           <SheetDescription>{record.date} · {record.teacher_name} → {record.parent_name}</SheetDescription>
         </SheetHeader>
         <div className="p-6 space-y-5">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-[#F7F6F4]">
-            <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-sm font-bold text-[#977653]">{record.student_name[0]}</div>
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-canvas">
+            <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center text-sm font-bold text-brand-ink">{record.student_name[0]}</div>
             <div>
-              <div className="text-sm font-medium text-[#1E293B]">{record.student_name}</div>
-              <div className="text-xs text-[#94A3B8]">沟通对象: {record.parent_name}</div>
+              <div className="text-sm font-medium text-ink">{record.student_name}</div>
+              <div className="text-xs text-ink-3">沟通对象: {record.parent_name}</div>
             </div>
           </div>
-          <div className="p-4 rounded-lg bg-[#F7F6F4]">
-            <h4 className="text-sm font-semibold text-[#1E293B] mb-2">沟通内容</h4>
-            <p className="text-sm text-[#64748B] leading-relaxed whitespace-pre-line">{record.content}</p>
+          <div className="p-4 rounded-lg bg-canvas">
+            <h4 className="text-sm font-semibold text-ink mb-2">沟通内容</h4>
+            <p className="text-sm text-ink-2 leading-relaxed whitespace-pre-line">{record.content}</p>
           </div>
           {record.teacher_feedback && (
-            <div className="p-4 rounded-lg bg-[#F7F6F4]">
-              <h4 className="text-sm font-semibold text-[#1E293B] mb-2">教师反馈</h4>
-              <p className="text-sm text-[#64748B]">{record.teacher_feedback}</p>
+            <div className="p-4 rounded-lg bg-canvas">
+              <h4 className="text-sm font-semibold text-ink mb-2">教师反馈</h4>
+              <p className="text-sm text-ink-2">{record.teacher_feedback}</p>
             </div>
           )}
           {record.follow_up && (
-            <div className="p-4 rounded-lg bg-[#F7F6F4]">
-              <h4 className="text-sm font-semibold text-[#1E293B] mb-2">后续计划</h4>
-              <p className="text-sm text-[#64748B]">{record.follow_up}</p>
+            <div className="p-4 rounded-lg bg-canvas">
+              <h4 className="text-sm font-semibold text-ink mb-2">后续计划</h4>
+              <p className="text-sm text-ink-2">{record.follow_up}</p>
             </div>
           )}
         </div>
@@ -1043,33 +1043,33 @@ function NotificationTab() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <Input placeholder="搜索通知标题..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-[300px] pl-9" />
         </div>
         {!readOnly && (
-          <Button onClick={() => setDrawerOpen(true)} className="bg-[#977653] hover:bg-[#7A5F42] text-white gap-2">
+          <Button onClick={() => setDrawerOpen(true)} className="bg-brand hover:bg-brand-strong text-ink-on-dark gap-2">
             <Send size={16} /> 发送新通知
           </Button>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#F7F6F4] hover:bg-[#F7F6F4]">
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">通知标题</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">类型</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">优先级</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">接收/已读</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">状态</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">发送时间</TableHead>
+            <TableRow className="bg-canvas hover:bg-canvas">
+              <TableHead className="text-xs text-ink-3 font-semibold">通知标题</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">类型</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">优先级</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">接收/已读</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">状态</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">发送时间</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.map((n) => (
-              <TableRow key={n.id} className="hover:bg-[#F7F6F4] transition-colors">
+              <TableRow key={n.id} className="hover:bg-canvas transition-colors">
                 <TableCell>
-                  <div className="text-sm font-semibold text-[#1E293B]">{n.title}</div>
+                  <div className="text-sm font-semibold text-ink">{n.title}</div>
                 </TableCell>
                 <TableCell>
                   <Badge className="bg-secondary-50 text-secondary-400 text-xs font-normal">{n.notif_type}</Badge>
@@ -1077,11 +1077,11 @@ function NotificationTab() {
                 <TableCell>
                   <Badge className={cn('text-xs font-normal', PRIORITY_CONFIG[n.priority])}>{n.priority}</Badge>
                 </TableCell>
-                <TableCell className="text-sm text-[#1E293B]">{n.read_count}/{n.recipients}</TableCell>
+                <TableCell className="text-sm text-ink">{n.read_count}/{n.recipients}</TableCell>
                 <TableCell>
                   <Badge className={cn('text-xs font-normal', NOTIF_STATUS[n.status])}>{n.status}</Badge>
                 </TableCell>
-                <TableCell className="text-sm text-[#94A3B8]">{n.sent_at}</TableCell>
+                <TableCell className="text-sm text-ink-3">{n.sent_at}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -1104,18 +1104,18 @@ function NotificationFormDrawer({ open, onClose, onSave }: { open: boolean; onCl
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[640px] sm:max-w-[640px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <SheetTitle>发送新通知</SheetTitle>
           <SheetDescription>填写通知内容并选择接收对象</SheetDescription>
         </SheetHeader>
         <div className="p-6 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">通知标题 <span className="text-[#EF4444]">*</span></label>
+            <label className="block text-sm font-medium text-ink mb-1.5">通知标题 <span className="text-danger">*</span></label>
             <Input value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="通知标题..." />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">通知类型</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">通知类型</label>
               <Select value={form.notif_type} onValueChange={(v) => update('notif_type', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -1127,7 +1127,7 @@ function NotificationFormDrawer({ open, onClose, onSave }: { open: boolean; onCl
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">优先级</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">优先级</label>
               <Select value={form.priority} onValueChange={(v) => update('priority', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -1139,17 +1139,17 @@ function NotificationFormDrawer({ open, onClose, onSave }: { open: boolean; onCl
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">接收人数</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">接收人数</label>
             <Input type="number" value={form.recipients || ''} onChange={(e) => update('recipients', Number(e.target.value))} placeholder="预计接收人数" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">通知内容 <span className="text-[#EF4444]">*</span></label>
+            <label className="block text-sm font-medium text-ink mb-1.5">通知内容 <span className="text-danger">*</span></label>
             <Textarea value={form.content} onChange={(e) => update('content', e.target.value)} placeholder="通知正文内容..." className="min-h-[150px]" />
           </div>
         </div>
-        <SheetFooter className="border-t border-[#E2E8F0] p-6">
+        <SheetFooter className="border-t border-line p-6">
           <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button onClick={() => onSave(form)} className="bg-[#977653] hover:bg-[#7A5F42] text-white">发送通知</Button>
+          <Button onClick={() => onSave(form)} className="bg-brand hover:bg-brand-strong text-ink-on-dark">发送通知</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -1171,10 +1171,10 @@ export default function Parents() {
         className="mb-6"
       >
         <div className="flex items-center gap-3">
-          <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight">家校协作</h1>
+          <h1 className="text-[28px] font-bold text-ink leading-tight">家校协作</h1>
           <DataScopeBadge />
         </div>
-        <p className="text-sm text-[#64748B] mt-1">家长管理、签名确认与家校沟通</p>
+        <p className="text-sm text-ink-2 mt-1">家长管理、签名确认与家校沟通</p>
       </motion.div>
 
       {/* Tabs */}
@@ -1184,17 +1184,17 @@ export default function Parents() {
         transition={{ delay: 0.1 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 bg-white border border-[#E2E8F0] p-1 h-auto">
-            <TabsTrigger value="accounts" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+          <TabsList className="mb-6 bg-surface border border-line p-1 h-auto">
+            <TabsTrigger value="accounts" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <Users size={16} /> 家长账号
             </TabsTrigger>
-            <TabsTrigger value="signatures" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+            <TabsTrigger value="signatures" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <PenTool size={16} /> 签名管理
             </TabsTrigger>
-            <TabsTrigger value="communication" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+            <TabsTrigger value="communication" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <MessageSquare size={16} /> 沟通记录
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+            <TabsTrigger value="notifications" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <Bell size={16} /> 通知中心
             </TabsTrigger>
           </TabsList>

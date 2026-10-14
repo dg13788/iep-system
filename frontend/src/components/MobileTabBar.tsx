@@ -28,8 +28,8 @@ export default function MobileTabBar({ onOpenMore }: { onOpenMore: () => void })
   return (
     <nav
       aria-label="底部导航"
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-md border-t border-[#E2E8F0] flex"
-      style={{ paddingBottom: 'var(--safe-bottom)' }}
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-surface/90 backdrop-blur-md border-t border-line flex"
+      style={{ paddingBottom: 'rgb(var(--safe-bottom))' }}
     >
       {tabs.map((item) => {
         const active = location.pathname === item.path;
@@ -41,7 +41,7 @@ export default function MobileTabBar({ onOpenMore }: { onOpenMore: () => void })
             onClick={() => navigate(item.path)}
             aria-current={active ? 'page' : undefined}
             className={`flex-1 min-tap-h flex flex-col items-center justify-center gap-0.5 press cursor-pointer ${
-              active ? 'text-[#2563EB]' : 'text-[#64748B]'
+              active ? 'text-info-strong' : 'text-ink-2'
             }`}
           >
             <Icon className="w-5 h-5" strokeWidth={active ? 2.2 : 1.8} />
@@ -57,7 +57,7 @@ export default function MobileTabBar({ onOpenMore }: { onOpenMore: () => void })
           type="button"
           onClick={onOpenMore}
           aria-label="更多页面"
-          className="flex-1 min-tap-h flex flex-col items-center justify-center gap-0.5 text-[#64748B] press cursor-pointer"
+          className="flex-1 min-tap-h flex flex-col items-center justify-center gap-0.5 text-ink-2 press cursor-pointer"
         >
           <MoreHorizontal className="w-5 h-5" strokeWidth={1.8} />
           <span className="text-[10px]">更多</span>

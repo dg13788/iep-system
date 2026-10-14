@@ -178,12 +178,12 @@ export default function StudentFormDrawer({
     handleSubmit();
   };
 
-  const sectionClass = 'bg-white rounded-lg border border-[#E2E8F0] p-5';
-  const labelClass = 'text-sm font-medium text-[#1E293B] mb-1.5 block';
+  const sectionClass = 'bg-surface rounded-lg border border-line p-5';
+  const labelClass = 'text-sm font-medium text-ink mb-1.5 block';
   const requiredClass = 'text-danger-500 ml-0.5';
   const errorClass = 'text-danger-500 text-xs mt-1';
-  const inputClass = 'h-10 bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]';
-  const selectClass = 'h-10 bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]';
+  const inputClass = 'h-10 bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]';
+  const selectClass = 'h-10 bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]';
 
   return (
     <AnimatePresence>
@@ -195,7 +195,7 @@ export default function StudentFormDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 bg-black/50"
+            className="fixed inset-0 z-50 bg-overlay/50"
             onClick={onClose}
           />
           {/* Drawer */}
@@ -204,19 +204,19 @@ export default function StudentFormDrawer({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-            className="fixed right-0 top-0 h-full w-full sm:w-[640px] bg-[#F7F6F4] z-50 flex flex-col overflow-hidden"
+            className="fixed right-0 top-0 h-full w-full sm:w-[640px] bg-canvas z-50 flex flex-col overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-label={isEdit ? '编辑学生档案' : '新增学生档案'}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E2E8F0] flex-shrink-0">
-              <h2 className="text-lg font-semibold text-[#1E293B]">
+            <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-line flex-shrink-0">
+              <h2 className="text-lg font-semibold text-ink">
                 {isEdit ? '编辑学生档案' : '新增学生档案'}
               </h2>
               <button
                 onClick={onClose}
-                className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
+                className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-ink-3 hover:bg-canvas hover:text-ink transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -231,7 +231,7 @@ export default function StudentFormDrawer({
                 transition={{ delay: 0.05 }}
                 className={sectionClass}
               >
-                <h3 className="text-base font-semibold text-[#1E293B] mb-4">基本信息</h3>
+                <h3 className="text-base font-semibold text-ink mb-4">基本信息</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>
@@ -265,11 +265,11 @@ export default function StudentFormDrawer({
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="男" id="male" />
-                        <Label htmlFor="male" className="text-sm text-[#1E293B] cursor-pointer">男</Label>
+                        <Label htmlFor="male" className="text-sm text-ink cursor-pointer">男</Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="女" id="female" />
-                        <Label htmlFor="female" className="text-sm text-[#1E293B] cursor-pointer">女</Label>
+                        <Label htmlFor="female" className="text-sm text-ink cursor-pointer">女</Label>
                       </div>
                     </RadioGroup>
                     {errors.gender && <p className={errorClass}>{errors.gender}</p>}
@@ -348,7 +348,7 @@ export default function StudentFormDrawer({
                 transition={{ delay: 0.1 }}
                 className={sectionClass}
               >
-                <h3 className="text-base font-semibold text-[#1E293B] mb-4">障碍信息</h3>
+                <h3 className="text-base font-semibold text-ink mb-4">障碍信息</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>
@@ -422,7 +422,7 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('diagnosis_note', e.target.value)}
                       placeholder="请输入医学诊断说明"
                       rows={4}
-                      className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                      className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                     />
                   </div>
                 </div>
@@ -435,7 +435,7 @@ export default function StudentFormDrawer({
                 transition={{ delay: 0.15 }}
                 className={sectionClass}
               >
-                <h3 className="text-base font-semibold text-[#1E293B] mb-4">监护人信息</h3>
+                <h3 className="text-base font-semibold text-ink mb-4">监护人信息</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <Label className={labelClass}>家庭住址</Label>
@@ -508,7 +508,7 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('special_needs', e.target.value)}
                       placeholder="请输入特殊需求说明"
                       rows={3}
-                      className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                      className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                     />
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function StudentFormDrawer({
                 transition={{ delay: 0.2 }}
                 className={sectionClass}
               >
-                <h3 className="text-base font-semibold text-[#1E293B] mb-4">其他信息</h3>
+                <h3 className="text-base font-semibold text-ink mb-4">其他信息</h3>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <Label className={labelClass}>过敏史</Label>
@@ -530,7 +530,7 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('allergy_info', e.target.value)}
                       placeholder="请输入过敏史（食物、药物等）"
                       rows={2}
-                      className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                      className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                     />
                   </div>
                   <div>
@@ -540,7 +540,7 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('health_info', e.target.value)}
                       placeholder="请输入既往病史"
                       rows={2}
-                      className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                      className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                     />
                   </div>
                   <div>
@@ -550,7 +550,7 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('medication_info', e.target.value)}
                       placeholder="请输入长期用药信息"
                       rows={2}
-                      className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                      className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                     />
                   </div>
                   <div>
@@ -560,7 +560,7 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('remarks', e.target.value)}
                       placeholder="其他需要记录的信息"
                       rows={2}
-                      className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                      className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                     />
                   </div>
                 </div>
@@ -568,8 +568,8 @@ export default function StudentFormDrawer({
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-[#E2E8F0] flex-shrink-0">
-              <Button variant="ghost" onClick={onClose} disabled={submitting} className="text-[#64748B]">
+            <div className="flex items-center justify-between px-6 py-4 bg-surface border-t border-line flex-shrink-0">
+              <Button variant="ghost" onClick={onClose} disabled={submitting} className="text-ink-2">
                 取消
               </Button>
               <div className="flex gap-2">
@@ -577,7 +577,7 @@ export default function StudentFormDrawer({
                   variant="outline"
                   onClick={handleSaveDraft}
                   disabled={submitting}
-                  className="border-[#E2E8F0] text-[#64748B] hover:bg-[#F7F6F4]"
+                  className="border-line text-ink-2 hover:bg-canvas"
                 >
                   {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
                   保存草稿
@@ -585,7 +585,7 @@ export default function StudentFormDrawer({
                 <Button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="bg-primary-500 hover:bg-primary-600 text-white"
+                  className="bg-primary-500 hover:bg-primary-600 text-ink-on-dark"
                 >
                   {submitting && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
                   提交

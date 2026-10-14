@@ -209,14 +209,14 @@ export default function StudentList({
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3"
       >
         <div>
-          <h1 className="text-[28px] font-bold text-[#1E293B] tracking-tight">学生管理</h1>
-          <p className="text-sm text-[#64748B] mt-1">管理学生档案、班级信息与家长关联</p>
+          <h1 className="text-[28px] font-bold text-ink tracking-tight">学生管理</h1>
+          <p className="text-sm text-ink-2 mt-1">管理学生档案、班级信息与家长关联</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="h-11 lg:h-10 px-4 text-[#64748B] border-[#E2E8F0] hover:bg-[#F7F6F4]"
+            className="h-11 lg:h-10 px-4 text-ink-2 border-line hover:bg-canvas"
             onClick={onSwitchToClasses}
           >
             <FolderOpen className="w-4 h-4 mr-1.5" />
@@ -225,7 +225,7 @@ export default function StudentList({
           {!readOnly && (
             <Button
               size="sm"
-              className="h-11 lg:h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white"
+              className="h-11 lg:h-10 px-4 bg-primary-500 hover:bg-primary-600 text-ink-on-dark"
               onClick={onAdd}
             >
               <Plus className="w-4 h-4 mr-1.5" />
@@ -240,20 +240,20 @@ export default function StudentList({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.1 }}
-        className="bg-white rounded-lg p-4 mb-6 shadow-sm"
+        className="bg-surface rounded-lg p-4 mb-6 shadow-sm"
       >
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-[280px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-3" />
             <Input
               placeholder="搜索姓名、学号、手机号..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="pl-9 h-10 bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+              className="pl-9 h-10 bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
             />
           </div>
           <Select value={classFilter} onValueChange={(v) => { setClassFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px] h-10 bg-[#F7F6F4] border-[#E2E8F0]">
+            <SelectTrigger className="w-[160px] h-10 bg-canvas border-line">
               <SelectValue placeholder="全部班级" />
             </SelectTrigger>
             <SelectContent>
@@ -264,7 +264,7 @@ export default function StudentList({
             </SelectContent>
           </Select>
           <Select value={disabilityFilter} onValueChange={(v) => { setDisabilityFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[160px] h-10 bg-[#F7F6F4] border-[#E2E8F0]">
+            <SelectTrigger className="w-[160px] h-10 bg-canvas border-line">
               <SelectValue placeholder="全部障碍类型" />
             </SelectTrigger>
             <SelectContent>
@@ -275,7 +275,7 @@ export default function StudentList({
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-[140px] h-10 bg-[#F7F6F4] border-[#E2E8F0]">
+            <SelectTrigger className="w-[140px] h-10 bg-canvas border-line">
               <SelectValue placeholder="全部状态" />
             </SelectTrigger>
             <SelectContent>
@@ -331,7 +331,7 @@ export default function StudentList({
                 </span>
                 <div className="flex items-center gap-2">
                   <Select onValueChange={(v) => handleBatchStatus(v as StudentStatus)}>
-                    <SelectTrigger className="h-8 text-xs bg-white border-primary-200">
+                    <SelectTrigger className="h-8 text-xs bg-surface border-primary-200">
                       <SelectValue placeholder="批量变更状态" />
                     </SelectTrigger>
                     <SelectContent>
@@ -370,10 +370,10 @@ export default function StudentList({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25, delay: 0.15 }}
-        className="bg-white rounded-lg shadow-sm overflow-hidden"
+        className="bg-surface rounded-lg shadow-sm overflow-hidden"
       >
         {/* Table toolbar */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[#F7F6F4] rounded-t-lg border-b border-[#E2E8F0]">
+        <div className="flex items-center justify-between px-4 py-3 bg-canvas rounded-t-lg border-b border-line">
           <div className="flex items-center gap-3">
             <Checkbox
               checked={allPageSelected}
@@ -385,9 +385,9 @@ export default function StudentList({
               onCheckedChange={toggleSelectAll}
               aria-label="全选"
             />
-            <span className="text-xs text-[#94A3B8]">全选</span>
+            <span className="text-xs text-ink-3">全选</span>
           </div>
-          <div className="flex items-center gap-3 text-sm text-[#64748B]">
+          <div className="flex items-center gap-3 text-sm text-ink-2">
             <span className="inline-flex items-center gap-1.5">
               共 {total} 条
               {refreshing && <Loader2 className="w-3.5 h-3.5 animate-spin text-primary-500" />}
@@ -412,19 +412,19 @@ export default function StudentList({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#E2E8F0] bg-[#F7F6F4]">
+              <tr className="border-b border-line bg-canvas">
                 <th className="w-10 px-3 py-3"></th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">姓名</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">学号</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">性别</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">年龄</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">班级</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">障碍类型</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">障碍程度</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">监护人</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">监护人电话</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs">学籍状态</th>
-                <th className="px-3 py-3 text-left font-semibold text-[#94A3B8] text-xs w-20">操作</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">姓名</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">学号</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">性别</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">年龄</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">班级</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">障碍类型</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">障碍程度</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">监护人</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">监护人电话</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs">学籍状态</th>
+                <th className="px-3 py-3 text-left font-semibold text-ink-3 text-xs w-20">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -433,7 +433,7 @@ export default function StudentList({
                   <td colSpan={12} className="text-center py-16">
                     <div className="flex flex-col items-center">
                       <Loader2 className="w-8 h-8 text-primary-500 animate-spin mb-3" />
-                      <p className="text-[#64748B] text-sm">正在加载学生数据…</p>
+                      <p className="text-ink-2 text-sm">正在加载学生数据…</p>
                     </div>
                   </td>
                 </tr>
@@ -442,12 +442,12 @@ export default function StudentList({
                   <td colSpan={12} className="text-center py-16">
                     <div className="flex flex-col items-center">
                       <AlertCircle className="w-10 h-10 text-danger-400 mb-3" />
-                      <p className="text-[#1E293B] font-medium mb-1">学生数据加载失败</p>
-                      <p className="text-[#94A3B8] text-xs mb-3">{error}</p>
+                      <p className="text-ink font-medium mb-1">学生数据加载失败</p>
+                      <p className="text-ink-3 text-xs mb-3">{error}</p>
                       {onRetry && (
                         <Button
                           size="sm"
-                          className="bg-primary-500 hover:bg-primary-600 text-white"
+                          className="bg-primary-500 hover:bg-primary-600 text-ink-on-dark"
                           onClick={onRetry}
                         >
                           重新加载
@@ -460,17 +460,17 @@ export default function StudentList({
                 <tr>
                   <td colSpan={12} className="text-center py-16">
                     <div className="flex flex-col items-center">
-                      <Search className="w-12 h-12 text-[#CBD5E1] mb-3" />
-                      <p className="text-[#64748B] font-medium mb-1">
+                      <Search className="w-12 h-12 text-ink-4 mb-3" />
+                      <p className="text-ink-2 font-medium mb-1">
                         {hasFilters ? '未找到匹配的学生' : '暂无学生档案'}
                       </p>
-                      <p className="text-[#94A3B8] text-xs mb-3">
+                      <p className="text-ink-3 text-xs mb-3">
                         {hasFilters ? '尝试调整筛选条件' : '点击右上角「新增学生」创建第一份档案'}
                       </p>
                       {hasFilters && (
                         <Button
                           size="sm"
-                          className="bg-primary-500 hover:bg-primary-600 text-white"
+                          className="bg-primary-500 hover:bg-primary-600 text-ink-on-dark"
                           onClick={resetFilters}
                         >
                           清除筛选
@@ -486,8 +486,8 @@ export default function StudentList({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay: idx * 0.04 }}
-                    className={`border-b border-[#E2E8F0] transition-colors duration-150 cursor-pointer ${
-                      selectedIds.has(student.id) ? 'bg-primary-50' : 'hover:bg-[#F7F6F4]'
+                    className={`border-b border-line transition-colors duration-150 cursor-pointer ${
+                      selectedIds.has(student.id) ? 'bg-primary-50' : 'hover:bg-canvas'
                     }`}
                     onClick={() => onViewDetail(student)}
                   >
@@ -503,27 +503,27 @@ export default function StudentList({
                         <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-xs font-bold text-primary-600">
                           {student.name[0]}
                         </div>
-                        <span className="font-medium text-[#1E293B]">{student.name}</span>
+                        <span className="font-medium text-ink">{student.name}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-3 text-[#64748B]">{student.student_no}</td>
-                    <td className="px-3 py-3 text-[#64748B]">{student.gender}</td>
-                    <td className="px-3 py-3 text-[#64748B]">{student.age === null ? '—' : `${student.age}岁`}</td>
+                    <td className="px-3 py-3 text-ink-2">{student.student_no}</td>
+                    <td className="px-3 py-3 text-ink-2">{student.gender}</td>
+                    <td className="px-3 py-3 text-ink-2">{student.age === null ? '—' : `${student.age}岁`}</td>
                     <td className="px-3 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#F0F2F5] text-[#405680]">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-surface-2 text-ink-on-dark-2">
                         {student.class_name}
                       </span>
                     </td>
                     <td className="px-3 py-3">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                        disabilityBadgeColors[student.disability_type] || 'bg-[#F0F2F5] text-[#64748B]'
+                        disabilityBadgeColors[student.disability_type] || 'bg-surface-2 text-ink-2'
                       }`}>
                         {student.disability_type}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-[#64748B]">{student.disability_level}</td>
-                    <td className="px-3 py-3 text-[#1E293B]">{student.guardian_name}</td>
-                    <td className="px-3 py-3 text-[#64748B]">{student.guardian_phone}</td>
+                    <td className="px-3 py-3 text-ink-2">{student.disability_level}</td>
+                    <td className="px-3 py-3 text-ink">{student.guardian_name}</td>
+                    <td className="px-3 py-3 text-ink-2">{student.guardian_phone}</td>
                     <td className="px-3 py-3">
                       <Badge className={`${statusBadgeClass[student.status]} text-xs font-medium`}>
                         {student.status}
@@ -533,7 +533,7 @@ export default function StudentList({
                       <div className="flex items-center gap-1">
                         {!readOnly && (
                           <button
-                            className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors"
+                            className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-ink-2 hover:bg-canvas hover:text-primary-500 transition-colors"
                             title="编辑"
                             onClick={() => onEdit(student)}
                           >
@@ -542,7 +542,7 @@ export default function StudentList({
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors">
+                            <button className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-ink-2 hover:bg-canvas hover:text-primary-500 transition-colors">
                               <MoreVertical className="w-3.5 h-3.5" />
                             </button>
                           </DropdownMenuTrigger>
@@ -579,16 +579,16 @@ export default function StudentList({
 
         {/* Pagination */}
         {total > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-[#E2E8F0]">
-            <span className="text-sm text-[#64748B]">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-line">
+            <span className="text-sm text-ink-2">
               显示第 {start + 1}-{Math.min(end, total)} 条，共 {total} 条
             </span>
             <div className="flex items-center gap-1">
               <button
                 className={`w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center transition-colors ${
                   currentPage === 1
-                    ? 'text-[#CBD5E1] cursor-not-allowed'
-                    : 'text-[#64748B] hover:bg-[#F7F6F4]'
+                    ? 'text-ink-4 cursor-not-allowed'
+                    : 'text-ink-2 hover:bg-canvas'
                 }`}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
@@ -600,8 +600,8 @@ export default function StudentList({
                   key={p}
                   className={`w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-sm font-medium transition-colors ${
                     p === currentPage
-                      ? 'bg-primary-500 text-white'
-                      : 'text-[#64748B] hover:bg-[#F7F6F4]'
+                      ? 'bg-primary-500 text-ink-on-dark'
+                      : 'text-ink-2 hover:bg-canvas'
                   }`}
                   onClick={() => setPage(p)}
                 >
@@ -611,8 +611,8 @@ export default function StudentList({
               <button
                 className={`w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center transition-colors ${
                   currentPage === totalPages
-                    ? 'text-[#CBD5E1] cursor-not-allowed'
-                    : 'text-[#64748B] hover:bg-[#F7F6F4]'
+                    ? 'text-ink-4 cursor-not-allowed'
+                    : 'text-ink-2 hover:bg-canvas'
                 }`}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
@@ -632,16 +632,16 @@ export default function StudentList({
               <div className="mx-auto w-12 h-12 rounded-full bg-danger-50 flex items-center justify-center mb-3">
                 <Trash2 className="w-6 h-6 text-danger-500" />
               </div>
-              <DialogTitle className="text-lg font-semibold text-[#1E293B]">确认删除</DialogTitle>
-              <DialogDescription className="text-[#64748B]">
-                确定要删除学生 <strong className="text-[#1E293B]">{deleteTarget?.name}</strong> 的档案吗？此操作不可撤销。
+              <DialogTitle className="text-lg font-semibold text-ink">确认删除</DialogTitle>
+              <DialogDescription className="text-ink-2">
+                确定要删除学生 <strong className="text-ink">{deleteTarget?.name}</strong> 的档案吗？此操作不可撤销。
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
                 取消
               </Button>
-              <Button className="bg-danger-500 hover:bg-danger-600 text-white" onClick={confirmDelete}>
+              <Button className="bg-danger-500 hover:bg-danger-600 text-ink-on-dark" onClick={confirmDelete}>
                 确认删除
               </Button>
             </div>

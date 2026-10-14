@@ -159,42 +159,42 @@ export interface WizardFormData {
 
 export const GOAL_AREA_COLORS: Record<GoalArea, string> = {
   // 通用领域
-  '认知': '#3B82F6',
-  '沟通': '#10B981',
-  '社交': '#8B5CF6',
-  '生活自理': '#F59E0B',
-  '运动': '#EF4444',
-  '情绪行为': '#EC4899',
-  '学业': '#405680',
+  '认知': 'rgb(var(--info))',
+  '沟通': 'rgb(var(--success))',
+  '社交': 'rgb(var(--violet))',
+  '生活自理': 'rgb(var(--warning))',
+  '运动': 'rgb(var(--danger))',
+  '情绪行为': 'rgb(var(--danger))',
+  '学业': 'rgb(var(--surface-inverse-2))',
   // 培智课标课程（与既有色板同系但可区分，避免全部 fallback 成灰）
-  '生活语文': '#7C3AED',
-  '生活数学': '#2563EB',
-  '生活适应': '#059669',
-  '劳动技能': '#D97706',
-  '唱游与律动': '#DB2777',
-  '绘画与手工': '#0891B2',
-  '运动与保健': '#DC2626',
-  '信息技术': '#0D9488',
-  '康复训练': '#4F46E5',
-  '艺术休闲': '#B45309',
-  '职业转衔': '#7A5F42',
+  '生活语文': 'rgb(var(--violet))',
+  '生活数学': 'rgb(var(--info-strong))',
+  '生活适应': 'rgb(var(--success-strong))',
+  '劳动技能': 'rgb(var(--warning-strong))',
+  '唱游与律动': 'rgb(var(--danger))',
+  '绘画与手工': 'rgb(var(--info-strong))',
+  '运动与保健': 'rgb(var(--danger-strong))',
+  '信息技术': 'rgb(var(--info-strong))',
+  '康复训练': 'rgb(var(--info-strong))',
+  '艺术休闲': 'rgb(var(--warning-strong))',
+  '职业转衔': 'rgb(var(--brand-strong))',
 };
 
 export const STATUS_COLORS: Record<IEPStatus, { bg: string; text: string; lightBg: string }> = {
-  '草稿': { bg: 'bg-[#3B82F6]', text: 'text-[#2563EB]', lightBg: 'bg-[#EFF6FF]' },
-  '审核中': { bg: 'bg-[#F59E0B]', text: 'text-[#D97706]', lightBg: 'bg-[#FFFBEB]' },
-  '已通过': { bg: 'bg-[#10B981]', text: 'text-[#059669]', lightBg: 'bg-[#ECFDF5]' },
-  '已签名': { bg: 'bg-[#405680]', text: 'text-[#405680]', lightBg: 'bg-[#F0F2F5]' },
-  '执行中': { bg: 'bg-[#8B5CF6]', text: 'text-[#8B5CF6]', lightBg: 'bg-[#F5F3FF]' },
-  '已完成': { bg: 'bg-[#7A5F42]', text: 'text-[#7A5F42]', lightBg: 'bg-[#F5F0EB]' },
-  '已驳回': { bg: 'bg-[#EF4444]', text: 'text-[#DC2626]', lightBg: 'bg-[#FEF2F2]' },
+  '草稿': { bg: 'bg-info', text: 'text-info-strong', lightBg: 'bg-info-soft' },
+  '审核中': { bg: 'bg-warning', text: 'text-warning-strong', lightBg: 'bg-warning-soft' },
+  '已通过': { bg: 'bg-success', text: 'text-success-strong', lightBg: 'bg-success-soft' },
+  '已签名': { bg: 'bg-surface-inverse-2', text: 'text-ink-on-dark-2', lightBg: 'bg-surface-2' },
+  '执行中': { bg: 'bg-violet', text: 'text-violet', lightBg: 'bg-violet-soft' },
+  '已完成': { bg: 'bg-brand-strong', text: 'text-brand-ink', lightBg: 'bg-brand-soft' },
+  '已驳回': { bg: 'bg-danger', text: 'text-danger-strong', lightBg: 'bg-danger-soft' },
 };
 
 export const GOAL_STATUS_COLORS: Record<GoalStatus, { bg: string; text: string }> = {
-  '未开始': { bg: 'bg-[#F0F2F5]', text: 'text-[#64748B]' },
-  '进行中': { bg: 'bg-[#F5F3FF]', text: 'text-[#8B5CF6]' },
-  '已完成': { bg: 'bg-[#ECFDF5]', text: 'text-[#059669]' },
-  '暂停': { bg: 'bg-[#FFFBEB]', text: 'text-[#D97706]' },
+  '未开始': { bg: 'bg-surface-2', text: 'text-ink-2' },
+  '进行中': { bg: 'bg-violet-soft', text: 'text-violet' },
+  '已完成': { bg: 'bg-success-soft', text: 'text-success-strong' },
+  '暂停': { bg: 'bg-warning-soft', text: 'text-warning-strong' },
 };
 
 export const GOAL_AREAS: GoalArea[] = [

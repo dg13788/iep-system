@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Trash2, Pen } from 'lucide-react';
 import type { SignatureType } from '@/services/iep';
+import { cssColor } from '@/store/themeStore';
 
 interface SignaturePadProps {
   onSave?: (dataUrl: string, signatureType: SignatureType) => void;
@@ -38,7 +39,12 @@ export default function SignaturePad({
     canvas.height = rect.height * window.devicePixelRatio;
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    ctx.strokeStyle = '#1E293B';
+    // <canvas> 的 strokeStyle 是画布 API，**不认 CSS 变量**——
+    // 写 'rgb(var(--ink))' 会被静默忽略（既不报错也不生效），签名笔迹退回默认黑。
+    // 这类地方必须把 token 解析成真实色值。
+    // 注意：签名是要存下来长期留档的证据，所以跟界面主题一致即可，
+    // 不额外区分深浅（存的是 PNG，深色主题下就是浅色笔迹）。
+    ctx.strokeStyle = cssColor('--ink', '#1E293B');
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -114,18 +120,18 @@ export default function SignaturePad({
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full border-2 border-[#10B981] rounded-lg overflow-hidden bg-[#ECFDF5]"
+          className="w-full border-2 border-success rounded-lg overflow-hidden bg-success-soft"
         >
           <img src={signature} alt="签名" className="w-full h-40 object-contain" />
         </motion.div>
-        <div className="flex items-center gap-2 text-[#10B981]">
+        <div className="flex items-center gap-2 text-success">
           <CheckCircle className="w-5 h-5" />
           <span className="text-sm font-medium">签名已完成</span>
         </div>
         {!readOnly && (
           <button
             onClick={clearSignature}
-            className="text-sm text-[#64748B] hover:text-[#1E293B] transition-colors cursor-pointer"
+            className="text-sm text-ink-2 hover:text-ink transition-colors cursor-pointer"
           >
             重新签名
           </button>
@@ -139,7 +145,7 @@ export default function SignaturePad({
       <div
         className={`
           relative w-full h-40 border-2 border-dashed rounded-lg overflow-hidden
-          ${readOnly ? 'border-[#E2E8F0] bg-[#F7F6F4]' : 'border-[#CBD5E1] bg-[#F7F6F4] hover:border-[#977653]'}
+          ${readOnly ? 'border-line bg-canvas' : 'border-line-2 bg-canvas hover:border-brand'}
           transition-colors duration-150
         `}
       >
@@ -157,7 +163,7 @@ export default function SignaturePad({
         />
         {!hasDrawn && !readOnly && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="flex flex-col items-center gap-2 text-[#94A3B8]">
+            <div className="flex flex-col items-center gap-2 text-ink-3">
               <Pen className="w-6 h-6" />
               <span className="text-sm">请在此处手写签名</span>
             </div>
@@ -165,7 +171,7 @@ export default function SignaturePad({
         )}
         {readOnly && !signature && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-sm text-[#94A3B8]">待家长签名</span>
+            <span className="text-sm text-ink-3">待家长签名</span>
           </div>
         )}
       </div>
@@ -177,8 +183,8 @@ export default function SignaturePad({
             className={`
               flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors cursor-pointer
               ${hasDrawn
-                ? 'text-[#64748B] hover:bg-[#F7F6F4]'
-                : 'text-[#94A3B8] cursor-not-allowed'
+                ? 'text-ink-2 hover:bg-canvas'
+                : 'text-ink-3 cursor-not-allowed'
               }
             `}
           >
@@ -191,8 +197,8 @@ export default function SignaturePad({
             className={`
               px-4 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer
               ${hasDrawn
-                ? 'bg-[#977653] text-white hover:bg-[#7A5F42]'
-                : 'bg-[#E2E8F0] text-[#94A3B8] cursor-not-allowed'
+                ? 'bg-brand text-ink-on-dark hover:bg-brand-strong'
+                : 'bg-surface-2 text-ink-3 cursor-not-allowed'
               }
             `}
           >

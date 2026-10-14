@@ -271,7 +271,7 @@ export function adaptRole(raw: RawRole | null | undefined): RoleDef {
     name: str(r.name),
     code: str(r.code),
     description: str(r.description),
-    color: '#977653',
+    color: 'rgb(var(--brand))',
     user_count: 0,
     builtin: num(r.is_system, 0) === 1,
   };

@@ -212,7 +212,7 @@ export function adaptTemplate(raw: RawTemplate | null | undefined): AssessmentTe
     name: str(r.name, '未命名模板'),
     category: str(r.category),
     icon: 'brain',
-    color: '#977653',
+    color: 'rgb(var(--brand))',
     description: nullableStr(r.description),
     dimensions: [],
   };

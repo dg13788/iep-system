@@ -156,7 +156,7 @@ export function adaptTemplate(
     status: num(r.is_active, 1) === 1 ? 'active' : 'inactive',
     // 前端展示字段，后端无对应列，派生补齐
     icon: isSystem ? 'brain' : 'custom',
-    color: '#977653',
+    color: 'rgb(var(--brand))',
     applicableDisabilities: [],
     ageRange: {
       min: num(r.applicable_age_min, 4),

@@ -1,9 +1,41 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>特教 IEP - 个别化教育计划管理系统</title>
+    <!--
+      换肤防闪烁（必须在任何样式表之前同步执行）
+      ---------------------------------------------------------------------------
+      主题存在 localStorage，但 React 挂载前 HTML 已经渲染了一帧。
+      若等 React 再设 data-theme，用深色主题的用户会看到「白闪一下变深色」——
+      在一闪而过的错误底色上读文字是明显的生理性不适。
+      所以这里用同步内联脚本抢跑：读 localStorage → 解析（system 则看
+      prefers-color-scheme）→ 写 data-theme。
+      变量名与 src/store/themeStore.ts 保持一致，两处任一改都要同步。
+
+      color-scheme 同步设置，让浏览器原生 UI（滚动条、表单控件、下拉菜单）
+      也跟着换，否则深色主题下原生控件仍是浅色，是最扎眼的"半吊子换肤"。
+    -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('iep:theme');
+          if (pref !== 'system' && pref !== 'light' && pref !== 'dark' &&
+              pref !== 'warm' && pref !== 'contrast') {
+            pref = 'light';
+          }
+          var t = pref;
+          if (t === 'system') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+          document.documentElement.style.colorScheme = (t === 'dark') ? 'dark' : 'light';
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
     <!--
       修复(P2-3)：原写法 <link rel="stylesheet" href="https://fonts.googleapis.com/..."> 是
       首屏渲染阻塞资源。学校内网 / 离线环境下 DNS 解析失败会导致长时间白屏。

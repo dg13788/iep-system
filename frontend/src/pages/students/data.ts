@@ -102,12 +102,12 @@ export const statusBadgeClass: Record<StudentStatus, string> = {
 };
 
 export const disabilityBadgeColors: Record<string, string> = {
-  '智力障碍': 'bg-[#FEF2F2] text-[#DC2626]',
-  '自闭症谱系障碍': 'bg-[#EFF6FF] text-[#2563EB]',
-  '脑瘫': 'bg-[#F5F3FF] text-[#7C3AED]',
-  '唐氏综合征': 'bg-[#FFF7ED] text-[#EA580C]',
-  '多重障碍': 'bg-[#FDF2F8] text-[#DB2777]',
-  '听力障碍': 'bg-[#ECFDF5] text-[#059669]',
-  '视力障碍': 'bg-[#FFFBEB] text-[#D97706]',
-  '言语障碍': 'bg-[#F0FDFA] text-[#0D9488]',
+  '智力障碍': 'bg-danger-soft text-danger-strong',
+  '自闭症谱系障碍': 'bg-info-soft text-info-strong',
+  '脑瘫': 'bg-violet-soft text-violet',
+  '唐氏综合征': 'bg-warning-soft text-warning-strong',
+  '多重障碍': 'bg-danger-soft text-danger',
+  '听力障碍': 'bg-success-soft text-success-strong',
+  '视力障碍': 'bg-warning-soft text-warning-strong',
+  '言语障碍': 'bg-info-soft text-info-strong',
 };

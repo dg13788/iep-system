@@ -144,7 +144,7 @@ export default function ImportExportActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel className="text-xs text-[#94A3B8] font-normal">导出格式</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-xs text-ink-3 font-normal">导出格式</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {EXPORT_FORMAT_OPTIONS.map((opt) => (
             <DropdownMenuItem
@@ -157,9 +157,9 @@ export default function ImportExportActions({
               className="cursor-pointer"
             >
               {exporting === opt.value ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin text-[#977653]" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin text-brand-ink" />
               ) : (
-                <FileDown className="w-4 h-4 mr-2 text-[#977653]" />
+                <FileDown className="w-4 h-4 mr-2 text-brand-ink" />
               )}
               {opt.label}
             </DropdownMenuItem>

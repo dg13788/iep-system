@@ -280,12 +280,12 @@ interface RoleDef {
 }
 
 const ROLES: RoleDef[] = [
-  { id: 'r1', name: '超级管理员', code: 'super_admin', description: '系统最高权限，可管理所有功能和配置', color: '#EF4444', user_count: 1, builtin: true },
-  { id: 'r2', name: '教学主任', code: 'director', description: '教学管理、审批权限，不能管理用户和角色', color: '#977653', user_count: 1, builtin: true },
-  { id: 'r3', name: '班主任', code: 'class_teacher', description: '班级管理、IEP制定、教学记录', color: '#10B981', user_count: 1, builtin: true },
-  { id: 'r4', name: '科任教师', code: 'teacher', description: '教学记录、评估录入、IEP查看', color: '#3B82F6', user_count: 1, builtin: true },
-  { id: 'r5', name: '家长', code: 'parent', description: '查看自己孩子的档案、IEP签名', color: '#F59E0B', user_count: 4, builtin: true },
-  { id: 'r6', name: '只读用户', code: 'viewer', description: '仅查看权限，不能修改任何数据', color: '#64748B', user_count: 1, builtin: true },
+  { id: 'r1', name: '超级管理员', code: 'super_admin', description: '系统最高权限，可管理所有功能和配置', color: 'rgb(var(--danger))', user_count: 1, builtin: true },
+  { id: 'r2', name: '教学主任', code: 'director', description: '教学管理、审批权限，不能管理用户和角色', color: 'rgb(var(--brand))', user_count: 1, builtin: true },
+  { id: 'r3', name: '班主任', code: 'class_teacher', description: '班级管理、IEP制定、教学记录', color: 'rgb(var(--success))', user_count: 1, builtin: true },
+  { id: 'r4', name: '科任教师', code: 'teacher', description: '教学记录、评估录入、IEP查看', color: 'rgb(var(--info))', user_count: 1, builtin: true },
+  { id: 'r5', name: '家长', code: 'parent', description: '查看自己孩子的档案、IEP签名', color: 'rgb(var(--warning))', user_count: 4, builtin: true },
+  { id: 'r6', name: '只读用户', code: 'viewer', description: '仅查看权限，不能修改任何数据', color: 'rgb(var(--ink-2))', user_count: 1, builtin: true },
 ];
 
 const ROLE_BADGE: Record<string, string> = {
@@ -482,9 +482,9 @@ function UserManagementTab() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="bg-surface rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <Input placeholder="搜索用户名、姓名..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-[220px] pl-9" />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -506,51 +506,51 @@ function UserManagementTab() {
           <RotateCcw size={14} className="mr-1" /> 重置
         </Button>
         <div className="ml-auto">
-          <Button onClick={() => { setEditingUser(null); setDrawerOpen(true); }} className="bg-[#977653] hover:bg-[#7A5F42] text-white gap-2">
+          <Button onClick={() => { setEditingUser(null); setDrawerOpen(true); }} className="bg-brand hover:bg-brand-strong text-ink-on-dark gap-2">
             <Plus size={16} /> 添加用户
           </Button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-[#F7F6F4] hover:bg-[#F7F6F4]">
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">用户名</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">姓名</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">角色</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">部门</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">电话</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">最近登录</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold">状态</TableHead>
-              <TableHead className="text-xs text-[#94A3B8] font-semibold text-right">操作</TableHead>
+            <TableRow className="bg-canvas hover:bg-canvas">
+              <TableHead className="text-xs text-ink-3 font-semibold">用户名</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">姓名</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">角色</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">部门</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">电话</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">最近登录</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold">状态</TableHead>
+              <TableHead className="text-xs text-ink-3 font-semibold text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-sm text-[#94A3B8]">加载中...</TableCell>
+                <TableCell colSpan={8} className="text-center py-8 text-sm text-ink-3">加载中...</TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-sm text-[#94A3B8]">暂无用户数据</TableCell>
+                <TableCell colSpan={8} className="text-center py-8 text-sm text-ink-3">暂无用户数据</TableCell>
               </TableRow>
             ) : (
             filtered.map((u) => (
-              <TableRow key={u.id} className="hover:bg-[#F7F6F4] transition-colors">
+              <TableRow key={u.id} className="hover:bg-canvas transition-colors">
                 <TableCell>
                   <div>
-                    <div className="text-sm font-semibold text-[#1E293B]">{u.username}</div>
-                    <div className="text-xs text-[#94A3B8]">{u.email || '—'}</div>
+                    <div className="text-sm font-semibold text-ink">{u.username}</div>
+                    <div className="text-xs text-ink-3">{u.email || '—'}</div>
                   </div>
                 </TableCell>
-                <TableCell className="text-sm text-[#1E293B]">{u.real_name}</TableCell>
+                <TableCell className="text-sm text-ink">{u.real_name}</TableCell>
                 <TableCell>
                   <Badge className={cn('text-xs font-normal', ROLE_BADGE[u.role_code])}>{u.role}</Badge>
                 </TableCell>
-                <TableCell className="text-sm text-[#64748B]">{u.department || '—'}</TableCell>
-                <TableCell className="text-sm text-[#1E293B]">{u.phone}</TableCell>
-                <TableCell className="text-sm text-[#94A3B8]">{u.last_login || '—'}</TableCell>
+                <TableCell className="text-sm text-ink-2">{u.department || '—'}</TableCell>
+                <TableCell className="text-sm text-ink">{u.phone}</TableCell>
+                <TableCell className="text-sm text-ink-3">{u.last_login || '—'}</TableCell>
                 <TableCell>
                   <Badge className={cn('text-xs font-normal', u.status === '正常' ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600')}>
                     {u.status}
@@ -559,10 +559,10 @@ function UserManagementTab() {
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1">
                     <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setEditingUser(u); setDrawerOpen(true); }}>
-                      <Pencil size={14} className="text-[#64748B]" />
+                      <Pencil size={14} className="text-ink-2" />
                     </Button>
                     <Button variant="ghost" size="sm" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setResetUser(u); setResetDialogOpen(true); }}>
-                      <KeyRound size={14} className="text-[#F59E0B]" />
+                      <KeyRound size={14} className="text-warning" />
                     </Button>
                   </div>
                 </TableCell>
@@ -582,13 +582,13 @@ function UserManagementTab() {
             <DialogDescription>确定要重置 {resetUser?.real_name} 的密码吗？</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">新密码</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">新密码</label>
             <Input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            <p className="text-xs text-[#94A3B8] mt-1">重置后将恢复为默认密码，建议用户首次登录后修改。</p>
+            <p className="text-xs text-ink-3 mt-1">重置后将恢复为默认密码，建议用户首次登录后修改。</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>取消</Button>
-            <Button onClick={handleResetPassword} className="bg-[#977653] hover:bg-[#7A5F42] text-white">确认重置</Button>
+            <Button onClick={handleResetPassword} className="bg-brand hover:bg-brand-strong text-ink-on-dark">确认重置</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -621,30 +621,30 @@ function UserFormDrawer({ open, onClose, user, onSave }: { open: boolean; onClos
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[560px] sm:max-w-[560px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <SheetTitle>{user ? '编辑用户' : '添加用户'}</SheetTitle>
           <SheetDescription>{user ? '修改用户信息' : '创建新的系统用户'}</SheetDescription>
         </SheetHeader>
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">用户名 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">用户名 <span className="text-danger">*</span></label>
               <Input value={form.username} onChange={(e) => update('username', e.target.value)} placeholder="登录账号" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">姓名 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">姓名 <span className="text-danger">*</span></label>
               <Input value={form.real_name} onChange={(e) => update('real_name', e.target.value)} placeholder="真实姓名" />
             </div>
           </div>
           {!user && (
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">初始密码 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">初始密码 <span className="text-danger">*</span></label>
               <Input type="password" value={form.password} onChange={(e) => update('password', e.target.value)} placeholder="初始密码" />
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">角色 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">角色 <span className="text-danger">*</span></label>
               <Select value={form.role_code} onValueChange={(v) => update('role_code', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -653,7 +653,7 @@ function UserFormDrawer({ open, onClose, user, onSave }: { open: boolean; onClos
               </Select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">状态</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">状态</label>
               <Select value={form.status} onValueChange={(v) => update('status', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -664,23 +664,23 @@ function UserFormDrawer({ open, onClose, user, onSave }: { open: boolean; onClos
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">部门</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">部门</label>
             <Input value={form.department} onChange={(e) => update('department', e.target.value)} placeholder="所属部门" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">手机号码 <span className="text-[#EF4444]">*</span></label>
+              <label className="block text-sm font-medium text-ink mb-1.5">手机号码 <span className="text-danger">*</span></label>
               <Input value={form.phone} onChange={(e) => update('phone', e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1E293B] mb-1.5">电子邮箱</label>
+              <label className="block text-sm font-medium text-ink mb-1.5">电子邮箱</label>
               <Input value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="选填" />
             </div>
           </div>
         </div>
-        <SheetFooter className="border-t border-[#E2E8F0] p-6">
+        <SheetFooter className="border-t border-line p-6">
           <Button variant="outline" onClick={onClose}>取消</Button>
-          <Button onClick={() => onSave(form)} className="bg-[#977653] hover:bg-[#7A5F42] text-white">保存</Button>
+          <Button onClick={() => onSave(form)} className="bg-brand hover:bg-brand-strong text-ink-on-dark">保存</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
@@ -875,20 +875,20 @@ function PermissionGroupManagementTab() {
       <motion.div
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        className="w-[260px] flex-shrink-0 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col"
+        className="w-[260px] flex-shrink-0 bg-surface rounded-xl shadow-sm overflow-hidden flex flex-col"
       >
-        <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[#1E293B]">权限组列表</h3>
+        <div className="p-4 border-b border-line flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-ink">权限组列表</h3>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 text-[#977653] hover:text-[#7A5F42] hover:bg-[#F7F6F4]"
+            className="h-7 w-7 p-0 text-brand-ink hover:text-brand-ink hover:bg-canvas"
             onClick={handleAddNew}
           >
             <Plus size={16} />
           </Button>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-[#F7F6F4]">
+        <div className="flex-1 overflow-y-auto divide-y divide-canvas">
           <AnimatePresence>
             {groups.sort((a, b) => a.sort_order - b.sort_order).map((group, idx) => (
               <motion.button
@@ -900,28 +900,28 @@ function PermissionGroupManagementTab() {
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 transition-colors text-left cursor-pointer relative',
                   selectedId === group.id
-                    ? 'bg-[#F7F6F4]'
-                    : 'hover:bg-[#FAFAF8]',
-                  selectedId === group.id ? 'border-l-[3px] border-[#977653]' : 'border-l-[3px] border-transparent',
+                    ? 'bg-canvas'
+                    : 'hover:bg-surface',
+                  selectedId === group.id ? 'border-l-[3px] border-brand' : 'border-l-[3px] border-transparent',
                 )}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-[#1E293B] truncate">{group.name}</span>
+                    <span className="text-sm font-medium text-ink truncate">{group.name}</span>
                     {group.is_system === 1 && (
-                      <Badge className="bg-[#F7F6F4] text-[#977653] text-[10px] font-normal border border-[#977653]/20">
+                      <Badge className="bg-canvas text-brand-ink text-[10px] font-normal border border-brand/20">
                         <Lock size={8} className="mr-0.5" />系统
                       </Badge>
                     )}
                   </div>
-                  <div className="text-xs text-[#94A3B8] truncate mt-0.5">{group.description}</div>
+                  <div className="text-xs text-ink-3 truncate mt-0.5">{group.description}</div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Badge className="bg-secondary-50 text-secondary-400 text-[10px] font-normal">{group.user_count}人</Badge>
                   {group.is_system !== 1 && group.user_count === 0 && (
                     <button
                       onClick={(e) => handleDeleteClick(group, e)}
-                      className="p-1 rounded hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] transition-colors"
+                      className="p-1 rounded hover:bg-danger-soft text-ink-3 hover:text-danger transition-colors"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -937,34 +937,34 @@ function PermissionGroupManagementTab() {
       <motion.div
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex-1 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col"
+        className="flex-1 bg-surface rounded-xl shadow-sm overflow-hidden flex flex-col"
       >
         {editForm.id ? (
           <>
             {/* Header */}
-            <div className="p-6 border-b border-[#E2E8F0]">
+            <div className="p-6 border-b border-line">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-[#977653]/10 flex items-center justify-center">
-                    <Shield size={20} className="text-[#977653]" />
+                  <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
+                    <Shield size={20} className="text-brand-ink" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1E293B]">
+                    <h3 className="text-lg font-semibold text-ink">
                       {isAdding ? '新增权限组' : editForm.name}
                     </h3>
-                    <p className="text-sm text-[#64748B]">
+                    <p className="text-sm text-ink-2">
                       {isAdding ? '配置新权限组的基本信息和权限' : editForm.description}
                     </p>
                   </div>
                 </div>
                 {!isAdding && editForm.is_system === 1 && (
-                  <Badge className="bg-[#F7F6F4] text-[#977653] border border-[#977653]/20">
+                  <Badge className="bg-canvas text-brand-ink border border-brand/20">
                     <Lock size={10} className="mr-1" />系统预设
                   </Badge>
                 )}
                 {!isAdding && (
-                  <div className="text-sm text-[#94A3B8]">
-                    关联用户: <span className="font-medium text-[#1E293B]">{editForm.user_count ?? 0}</span>人
+                  <div className="text-sm text-ink-3">
+                    关联用户: <span className="font-medium text-ink">{editForm.user_count ?? 0}</span>人
                   </div>
                 )}
               </div>
@@ -983,14 +983,14 @@ function PermissionGroupManagementTab() {
                 >
                   {/* Basic Info */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-[#1E293B] flex items-center gap-2">
-                      <UserCheck size={16} className="text-[#977653]" />
+                    <h4 className="text-sm font-semibold text-ink flex items-center gap-2">
+                      <UserCheck size={16} className="text-brand-ink" />
                       基本信息
                     </h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm text-[#1E293B] mb-1.5 block">
-                          权限组名称 <span className="text-[#EF4444]">*</span>
+                        <Label className="text-sm text-ink mb-1.5 block">
+                          权限组名称 <span className="text-danger">*</span>
                         </Label>
                         <Input
                           value={(editForm.name as string) ?? ''}
@@ -999,7 +999,7 @@ function PermissionGroupManagementTab() {
                         />
                       </div>
                       <div>
-                        <Label className="text-sm text-[#1E293B] mb-1.5 block">描述</Label>
+                        <Label className="text-sm text-ink mb-1.5 block">描述</Label>
                         <Input
                           value={(editForm.description as string) ?? ''}
                           onChange={(e) => updateForm('description', e.target.value)}
@@ -1011,8 +1011,8 @@ function PermissionGroupManagementTab() {
 
                   {/* Data Scope */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-[#1E293B]">数据范围</h4>
-                    <p className="text-xs text-[#94A3B8]">该权限组成员可访问的数据范围</p>
+                    <h4 className="text-sm font-semibold text-ink">数据范围</h4>
+                    <p className="text-xs text-ink-3">该权限组成员可访问的数据范围</p>
                     <RadioGroup
                       value={editForm.data_scope_type}
                       onValueChange={(v) => updateForm('data_scope_type', v)}
@@ -1021,7 +1021,7 @@ function PermissionGroupManagementTab() {
                       {DATA_SCOPE_OPTIONS.map((opt) => (
                         <div key={opt.value} className="flex items-center space-x-2">
                           <RadioGroupItem value={opt.value} id={`scope-${opt.value}`} />
-                          <Label htmlFor={`scope-${opt.value}`} className="text-sm text-[#64748B] cursor-pointer font-normal">
+                          <Label htmlFor={`scope-${opt.value}`} className="text-sm text-ink-2 cursor-pointer font-normal">
                             {opt.label}
                           </Label>
                         </div>
@@ -1031,8 +1031,8 @@ function PermissionGroupManagementTab() {
 
                   {/* IEP Level */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-[#1E293B]">IEP参与级别</h4>
-                    <p className="text-xs text-[#94A3B8]">该权限组成员在IEP流程中的参与程度</p>
+                    <h4 className="text-sm font-semibold text-ink">IEP参与级别</h4>
+                    <p className="text-xs text-ink-3">该权限组成员在IEP流程中的参与程度</p>
                     <RadioGroup
                       value={editForm.iep_level}
                       onValueChange={(v) => updateForm('iep_level', v)}
@@ -1041,7 +1041,7 @@ function PermissionGroupManagementTab() {
                       {IEP_LEVEL_OPTIONS.map((opt) => (
                         <div key={opt.value} className="flex items-center space-x-2">
                           <RadioGroupItem value={opt.value} id={`iep-${opt.value}`} />
-                          <Label htmlFor={`iep-${opt.value}`} className="text-sm text-[#64748B] cursor-pointer font-normal">
+                          <Label htmlFor={`iep-${opt.value}`} className="text-sm text-ink-2 cursor-pointer font-normal">
                             {opt.label}
                           </Label>
                         </div>
@@ -1051,8 +1051,8 @@ function PermissionGroupManagementTab() {
 
                   {/* Menu Access */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-semibold text-[#1E293B]">菜单访问</h4>
-                    <p className="text-xs text-[#94A3B8]">该权限组成员可在导航栏看到的模块</p>
+                    <h4 className="text-sm font-semibold text-ink">菜单访问</h4>
+                    <p className="text-xs text-ink-3">该权限组成员可在导航栏看到的模块</p>
                     <div className="flex flex-wrap gap-3">
                       {MODULES.map((mod) => {
                         const ModIcon = mod.icon;
@@ -1065,8 +1065,8 @@ function PermissionGroupManagementTab() {
                             className={cn(
                               'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors cursor-pointer',
                               checked
-                                ? 'border-[#977653] bg-[#977653]/5 text-[#1E293B]'
-                                : 'border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F7F6F4]',
+                                ? 'border-brand bg-brand/5 text-ink'
+                                : 'border-line bg-surface text-ink-2 hover:bg-canvas',
                             )}
                           >
                             <Checkbox
@@ -1084,8 +1084,8 @@ function PermissionGroupManagementTab() {
 
                   {/* Feature Permission Matrix */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-semibold text-[#1E293B]">功能权限矩阵</h4>
-                    <p className="text-xs text-[#94A3B8]">该权限组成员可操作的具体功能</p>
+                    <h4 className="text-sm font-semibold text-ink">功能权限矩阵</h4>
+                    <p className="text-xs text-ink-3">该权限组成员可操作的具体功能</p>
                     <div className="space-y-4">
                       {MODULES.map((mod) => {
                         const ModIcon = mod.icon;
@@ -1101,7 +1101,7 @@ function PermissionGroupManagementTab() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.03 }}
-                            className="border border-[#E2E8F0] rounded-lg p-4"
+                            className="border border-line rounded-lg p-4"
                           >
                             <div className="flex items-center gap-2 mb-3">
                               <Checkbox
@@ -1109,9 +1109,9 @@ function PermissionGroupManagementTab() {
                                 data-state={someChecked ? 'indeterminate' : allChecked ? 'checked' : 'unchecked'}
                                 onCheckedChange={() => toggleModuleAllFeatures(mod.key)}
                               />
-                              <ModIcon size={16} className="text-[#64748B]" />
-                              <span className="text-sm font-semibold text-[#1E293B]">{mod.label}</span>
-                              <span className="text-xs text-[#94A3B8] ml-1">({checkedCount}/{modPerms.length})</span>
+                              <ModIcon size={16} className="text-ink-2" />
+                              <span className="text-sm font-semibold text-ink">{mod.label}</span>
+                              <span className="text-xs text-ink-3 ml-1">({checkedCount}/{modPerms.length})</span>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 pl-6">
                               {modPerms.map((perm) => {
@@ -1121,7 +1121,7 @@ function PermissionGroupManagementTab() {
                                     key={perm.code}
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="flex items-center gap-2 text-sm text-[#64748B] cursor-pointer hover:text-[#1E293B] transition-colors"
+                                    className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer hover:text-ink transition-colors"
                                   >
                                     <Checkbox
                                       checked={checked}
@@ -1143,9 +1143,9 @@ function PermissionGroupManagementTab() {
 
             {/* Footer Actions */}
             {changed && (
-              <div className="p-4 border-t border-[#E2E8F0] flex justify-end gap-3">
+              <div className="p-4 border-t border-line flex justify-end gap-3">
                 <Button variant="outline" onClick={handleCancel}>取消</Button>
-                <Button onClick={handleSave} className="bg-[#977653] hover:bg-[#7A5F42] text-white gap-2">
+                <Button onClick={handleSave} className="bg-brand hover:bg-brand-strong text-ink-on-dark gap-2">
                   <Save size={16} /> {isAdding ? '创建权限组' : '保存配置'}
                 </Button>
               </div>
@@ -1154,9 +1154,9 @@ function PermissionGroupManagementTab() {
         ) : (
           <div className="flex-1 flex items-center justify-center p-12">
             <div className="text-center">
-              <Shield size={48} className="mx-auto text-[#CBD5E1] mb-3" />
-              <h4 className="text-base font-semibold text-[#1E293B]">暂无权限组</h4>
-              <p className="text-sm text-[#94A3B8] mt-1">点击左侧"+"按钮创建新的权限组</p>
+              <Shield size={48} className="mx-auto text-ink-4 mb-3" />
+              <h4 className="text-base font-semibold text-ink">暂无权限组</h4>
+              <p className="text-sm text-ink-3 mt-1">点击左侧"+"按钮创建新的权限组</p>
             </div>
           </div>
         )}
@@ -1166,7 +1166,7 @@ function PermissionGroupManagementTab() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="w-[400px]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#EF4444]">
+            <DialogTitle className="flex items-center gap-2 text-danger">
               <Trash2 size={18} />
               删除权限组
             </DialogTitle>
@@ -1176,7 +1176,7 @@ function PermissionGroupManagementTab() {
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>取消</Button>
-            <Button onClick={confirmDelete} className="bg-[#EF4444] hover:bg-[#DC2626] text-white gap-2">
+            <Button onClick={confirmDelete} className="bg-danger hover:bg-danger-strong text-ink-on-dark gap-2">
               <Trash2 size={14} /> 确认删除
             </Button>
           </DialogFooter>
@@ -1236,21 +1236,21 @@ function AuditLogTab() {
   }, [filtered]);
 
   const actionDotColor: Record<string, string> = {
-    '新增': '#10B981',
-    '修改': '#3B82F6',
-    '删除': '#EF4444',
-    '查看': '#94A3B8',
-    '登录': '#977653',
-    '登出': '#CBD5E1',
-    '导出': '#F59E0B',
+    '新增': 'rgb(var(--success))',
+    '修改': 'rgb(var(--info))',
+    '删除': 'rgb(var(--danger))',
+    '查看': 'rgb(var(--ink-3))',
+    '登录': 'rgb(var(--brand))',
+    '登出': 'rgb(var(--ink-4))',
+    '导出': 'rgb(var(--warning))',
   };
 
   return (
     <div className="space-y-4">
       {/* Filter */}
-      <div className="bg-white rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="bg-surface rounded-lg p-4 shadow-sm flex flex-wrap items-center gap-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
           <Input placeholder="搜索用户、描述..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-[200px] pl-9" />
         </div>
         <Select value={userFilter} onValueChange={setUserFilter}>
@@ -1285,11 +1285,11 @@ function AuditLogTab() {
       </div>
 
       {/* Timeline View */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="bg-surface rounded-xl shadow-sm p-6">
         {groupedByDate.length === 0 ? (
           <div className="text-center py-12">
-            <ClipboardList size={48} className="mx-auto text-[#CBD5E1] mb-3" />
-            <h4 className="text-base font-semibold text-[#1E293B]">暂无审计日志</h4>
+            <ClipboardList size={48} className="mx-auto text-ink-4 mb-3" />
+            <h4 className="text-base font-semibold text-ink">暂无审计日志</h4>
           </div>
         ) : (
           <div className="space-y-6">
@@ -1297,13 +1297,13 @@ function AuditLogTab() {
               <div key={date} className="relative">
                 {/* Date header */}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-2 h-2 rounded-full bg-[#977653]" />
-                  <span className="text-sm font-semibold text-[#1E293B]">{date}</span>
-                  <div className="flex-1 h-px bg-[#E2E8F0]" />
-                  <span className="text-xs text-[#94A3B8]">{dayLogs.length} 条记录</span>
+                  <div className="w-2 h-2 rounded-full bg-brand" />
+                  <span className="text-sm font-semibold text-ink">{date}</span>
+                  <div className="flex-1 h-px bg-surface-2" />
+                  <span className="text-xs text-ink-3">{dayLogs.length} 条记录</span>
                 </div>
                 {/* Timeline entries */}
-                <div className="ml-1 pl-4 border-l-2 border-[#E2E8F0] space-y-3">
+                <div className="ml-1 pl-4 border-l-2 border-line space-y-3">
                   {dayLogs.map((log, idx) => (
                     <motion.div
                       key={log.id}
@@ -1314,25 +1314,25 @@ function AuditLogTab() {
                     >
                       {/* Dot */}
                       <div
-                        className="absolute -left-[21px] top-2 w-3 h-3 rounded-full border-2 border-white shadow-sm"
-                        style={{ backgroundColor: actionDotColor[log.action] || '#94A3B8' }}
+                        className="absolute -left-[21px] top-2 w-3 h-3 rounded-full border-2 border-surface shadow-sm"
+                        style={{ backgroundColor: actionDotColor[log.action] || 'rgb(var(--ink-3))' }}
                       />
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-[#F7F6F4]/50 hover:bg-[#F7F6F4] transition-colors">
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-canvas/50 hover:bg-canvas transition-colors">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-[#94A3B8] font-mono">{log.timestamp.split(' ')[1]}</span>
+                            <span className="text-xs text-ink-3 font-mono">{log.timestamp.split(' ')[1]}</span>
                             <Badge className={cn('text-[10px] font-normal', ACTION_BADGE[log.action])}>{log.action}</Badge>
                             <Badge className={cn('text-[10px] font-normal', MODULE_BADGE[log.module])}>{log.module}</Badge>
-                            <span className="text-sm font-medium text-[#1E293B]">{log.user_name}</span>
+                            <span className="text-sm font-medium text-ink">{log.user_name}</span>
                             <Badge className={cn('text-[10px] font-normal', ROLE_BADGE[ROLES.find((r) => r.name === log.user_role)?.code || 'viewer'])}>
                               {log.user_role}
                             </Badge>
                           </div>
-                          <div className="text-sm text-[#64748B] mt-1">
-                            {log.description} · <span className="text-[#94A3B8]">{log.target}</span>
+                          <div className="text-sm text-ink-2 mt-1">
+                            {log.description} · <span className="text-ink-3">{log.target}</span>
                           </div>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-[#94A3B8]">IP: {log.ip_address}</span>
+                            <span className="text-xs text-ink-3">IP: {log.ip_address}</span>
                             <Badge className={cn('text-[10px] font-normal', log.status === '成功' ? 'bg-success-50 text-success-600' : 'bg-danger-50 text-danger-600')}>
                               {log.status}
                             </Badge>
@@ -1441,27 +1441,27 @@ function SystemSettingsTab() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-sm p-6"
+        className="bg-surface rounded-xl shadow-sm p-6"
       >
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E2E8F0]">
-          <Cog size={18} className="text-[#977653]" />
-          <h3 className="text-base font-semibold text-[#1E293B]">基本设置</h3>
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-line">
+          <Cog size={18} className="text-brand-ink" />
+          <h3 className="text-base font-semibold text-ink">基本设置</h3>
         </div>
         <div className="grid grid-cols-2 gap-5">
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">学校名称</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">学校名称</label>
             <Input value={settings.school_name} onChange={(e) => update('school_name', e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">联系电话</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">联系电话</label>
             <Input value={settings.school_phone} onChange={(e) => update('school_phone', e.target.value)} />
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">学校地址</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">学校地址</label>
             <Input value={settings.school_address} onChange={(e) => update('school_address', e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">IEP默认周期</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">IEP默认周期</label>
             <Select value={settings.iep_cycle} onValueChange={(v) => update('iep_cycle', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -1472,7 +1472,7 @@ function SystemSettingsTab() {
             </Select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">文件上传限制 (MB)</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">文件上传限制 (MB)</label>
             <Input type="number" value={settings.file_upload_limit} onChange={(e) => update('file_upload_limit', Number(e.target.value))} />
           </div>
         </div>
@@ -1483,34 +1483,34 @@ function SystemSettingsTab() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="bg-white rounded-xl shadow-sm p-6"
+        className="bg-surface rounded-xl shadow-sm p-6"
       >
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E2E8F0]">
-          <ShieldCheck size={18} className="text-[#977653]" />
-          <h3 className="text-base font-semibold text-[#1E293B]">安全设置</h3>
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-line">
+          <ShieldCheck size={18} className="text-brand-ink" />
+          <h3 className="text-base font-semibold text-ink">安全设置</h3>
         </div>
         <div className="grid grid-cols-2 gap-5">
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">密码最小长度</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">密码最小长度</label>
             <Input type="number" value={settings.password_min_length} onChange={(e) => update('password_min_length', Number(e.target.value))} min={6} max={32} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">登录失败锁定次数</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">登录失败锁定次数</label>
             <Input type="number" value={settings.login_fail_lock} onChange={(e) => update('login_fail_lock', Number(e.target.value))} min={3} max={10} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">锁定时间 (分钟)</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">锁定时间 (分钟)</label>
             <Input type="number" value={settings.lock_duration} onChange={(e) => update('lock_duration', Number(e.target.value))} min={5} max={120} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1E293B] mb-1.5">会话超时 (分钟)</label>
+            <label className="block text-sm font-medium text-ink mb-1.5">会话超时 (分钟)</label>
             <Input type="number" value={settings.session_timeout} onChange={(e) => update('session_timeout', Number(e.target.value))} min={10} max={120} />
           </div>
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-[#1E293B] mb-2">密码复杂度要求</label>
+            <label className="block text-sm font-medium text-ink mb-2">密码复杂度要求</label>
             <div className="flex flex-wrap gap-4">
               {['uppercase', 'lowercase', 'number', 'special'].map((type) => (
-                <label key={type} className="flex items-center gap-2 text-sm text-[#64748B] cursor-pointer">
+                <label key={type} className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
                   <Checkbox
                     checked={settings.password_complexity.includes(type)}
                     onCheckedChange={(checked) => {
@@ -1531,8 +1531,8 @@ function SystemSettingsTab() {
               checked={settings.force_change_password}
               onCheckedChange={(v) => update('force_change_password', v)}
             />
-            <label className="text-sm text-[#1E293B]">强制修改初始密码</label>
-            <span className="text-xs text-[#94A3B8]">首次登录必须修改默认密码</span>
+            <label className="text-sm text-ink">强制修改初始密码</label>
+            <span className="text-xs text-ink-3">首次登录必须修改默认密码</span>
           </div>
         </div>
       </motion.div>
@@ -1542,39 +1542,39 @@ function SystemSettingsTab() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-xl shadow-sm p-6"
+        className="bg-surface rounded-xl shadow-sm p-6"
       >
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E2E8F0]">
-          <Bell size={18} className="text-[#977653]" />
-          <h3 className="text-base font-semibold text-[#1E293B]">通知设置</h3>
+        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-line">
+          <Bell size={18} className="text-brand-ink" />
+          <h3 className="text-base font-semibold text-ink">通知设置</h3>
         </div>
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-2 border-b border-[#F7F6F4]">
+          <div className="flex items-center justify-between py-2 border-b border-canvas">
             <div>
-              <div className="text-sm font-medium text-[#1E293B]">IEP审批通知</div>
-              <div className="text-xs text-[#94A3B8]">有新IEP待审批时通知相关人员</div>
+              <div className="text-sm font-medium text-ink">IEP审批通知</div>
+              <div className="text-xs text-ink-3">有新IEP待审批时通知相关人员</div>
             </div>
             <Switch checked={settings.iep_notify} onCheckedChange={(v) => update('iep_notify', v)} />
           </div>
-          <div className="flex items-center justify-between py-2 border-b border-[#F7F6F4]">
+          <div className="flex items-center justify-between py-2 border-b border-canvas">
             <div>
-              <div className="text-sm font-medium text-[#1E293B]">签名提醒</div>
-              <div className="text-xs text-[#94A3B8]">自动发送签名提醒给家长</div>
+              <div className="text-sm font-medium text-ink">签名提醒</div>
+              <div className="text-xs text-ink-3">自动发送签名提醒给家长</div>
             </div>
             <Switch checked={settings.signature_reminder} onCheckedChange={(v) => update('signature_reminder', v)} />
           </div>
-          <div className="flex items-center gap-4 py-2 border-b border-[#F7F6F4]">
+          <div className="flex items-center gap-4 py-2 border-b border-canvas">
             <div className="flex-1">
-              <div className="text-sm font-medium text-[#1E293B]">签名提醒间隔</div>
-              <div className="text-xs text-[#94A3B8]">两次提醒之间的间隔天数</div>
+              <div className="text-sm font-medium text-ink">签名提醒间隔</div>
+              <div className="text-xs text-ink-3">两次提醒之间的间隔天数</div>
             </div>
             <Input type="number" value={settings.reminder_interval} onChange={(e) => update('reminder_interval', Number(e.target.value))} className="w-[100px]" min={1} max={30} />
-            <span className="text-sm text-[#94A3B8]">天</span>
+            <span className="text-sm text-ink-3">天</span>
           </div>
           <div className="flex items-center justify-between py-2">
             <div>
-              <div className="text-sm font-medium text-[#1E293B]">评估到期提醒</div>
-              <div className="text-xs text-[#94A3B8]">评估即将到期时提醒</div>
+              <div className="text-sm font-medium text-ink">评估到期提醒</div>
+              <div className="text-xs text-ink-3">评估即将到期时提醒</div>
             </div>
             <Switch checked={settings.evaluation_reminder} onCheckedChange={(v) => update('evaluation_reminder', v)} />
           </div>
@@ -1586,10 +1586,10 @@ function SystemSettingsTab() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-end gap-3 p-4 bg-white rounded-xl shadow-sm"
+          className="flex items-center justify-end gap-3 p-4 bg-surface rounded-xl shadow-sm"
         >
           <Button variant="outline" onClick={() => setChanged(false)}>恢复默认</Button>
-          <Button onClick={handleSave} className="bg-[#977653] hover:bg-[#7A5F42] text-white gap-2">
+          <Button onClick={handleSave} className="bg-brand hover:bg-brand-strong text-ink-on-dark gap-2">
             <Save size={16} /> 保存设置
           </Button>
         </motion.div>
@@ -1612,8 +1612,8 @@ export default function System() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight">系统管理</h1>
-        <p className="text-sm text-[#64748B] mt-1">用户、角色、权限与系统配置</p>
+        <h1 className="text-[28px] font-bold text-ink leading-tight">系统管理</h1>
+        <p className="text-sm text-ink-2 mt-1">用户、角色、权限与系统配置</p>
       </motion.div>
 
       {/* Tabs */}
@@ -1623,17 +1623,17 @@ export default function System() {
         transition={{ delay: 0.1 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 bg-white border border-[#E2E8F0] p-1 h-auto">
-            <TabsTrigger value="users" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+          <TabsList className="mb-6 bg-surface border border-line p-1 h-auto">
+            <TabsTrigger value="users" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <Users size={16} /> 用户管理
             </TabsTrigger>
-            <TabsTrigger value="roles" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+            <TabsTrigger value="roles" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <Shield size={16} /> 权限组管理
             </TabsTrigger>
-            <TabsTrigger value="audit" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+            <TabsTrigger value="audit" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <ClipboardList size={16} /> 审计日志
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-[#977653] data-[state=active]:text-white gap-1.5 px-4 py-2">
+            <TabsTrigger value="settings" className="data-[state=active]:bg-brand data-[state=active]:text-ink-on-dark gap-1.5 px-4 py-2">
               <Settings size={16} /> 系统设置
             </TabsTrigger>
           </TabsList>

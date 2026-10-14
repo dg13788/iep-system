@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Menu } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { labelForPath } from './navConfig';
+import { ThemeButton, ThemeOptions } from './ThemeSwitcher';
 
 /**
  * 顶栏
@@ -38,25 +39,28 @@ export default function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
   }, [userMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-20 h-14 bg-white/85 backdrop-blur-md border-b border-[#E2E8F0] flex items-center gap-1 px-2 sm:px-4 lg:px-6">
+    <header className="sticky top-0 z-20 h-14 bg-surface/85 backdrop-blur-md border-b border-line flex items-center gap-1 px-2 sm:px-4 lg:px-6">
       {/* 移动端主导航入口 */}
       <button
         type="button"
         onClick={onOpenNav}
         aria-label="打开主导航"
-        className="lg:hidden min-tap flex items-center justify-center -ml-1 rounded-lg text-[#475569] hover:bg-[#F1F5F9] press cursor-pointer"
+        className="lg:hidden min-tap flex items-center justify-center -ml-1 rounded-lg text-ink-2 hover:bg-surface-2 press cursor-pointer"
       >
         <Menu className="w-5 h-5" />
       </button>
 
       {/* 面包屑：窄屏只留当前页名，省下的宽度给内容 */}
       <nav className="flex items-center text-sm min-w-0" aria-label="当前位置">
-        <span className="hidden sm:inline text-[#64748B]">特教 IEP</span>
-        <span className="hidden sm:inline mx-2 text-[#CBD5E1]">/</span>
-        <span className="text-[#1E293B] font-medium truncate">{breadcrumb}</span>
+        <span className="hidden sm:inline text-ink-2">特教 IEP</span>
+        <span className="hidden sm:inline mx-2 text-ink-4">/</span>
+        <span className="text-ink font-medium truncate">{breadcrumb}</span>
       </nav>
 
       <div className="flex-1" />
+
+      {/* 换肤：环境变了要能立刻换，不必先去设置页找 */}
+      <ThemeButton />
 
       {/* 右侧：身份 + 用户菜单 */}
       <div className="relative" ref={menuRef}>
@@ -65,12 +69,12 @@ export default function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
           onClick={() => setUserMenuOpen((v) => !v)}
           aria-haspopup="menu"
           aria-expanded={userMenuOpen}
-          className="min-tap-h flex items-center gap-2 pl-1 pr-2 rounded-full hover:bg-[#F1F5F9] press cursor-pointer"
+          className="min-tap-h flex items-center gap-2 pl-1 pr-2 rounded-full hover:bg-surface-2 press cursor-pointer"
         >
           <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
-            <span className="text-xs font-bold text-white">{user?.name?.[0] || '用'}</span>
+            <span className="text-xs font-bold text-ink-on-dark">{user?.name?.[0] || '用'}</span>
           </div>
-          <span className="hidden md:block text-sm text-[#334155] max-w-[10rem] truncate">
+          <span className="hidden md:block text-sm text-ink-2 max-w-[10rem] truncate">
             {user?.name || '当前用户'}
           </span>
         </button>
@@ -85,13 +89,18 @@ export default function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -8, scale: 0.96 }}
                 transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-float border border-[#E2E8F0] z-50 py-1 overflow-hidden"
+                className="absolute right-0 top-full mt-2 w-64 bg-surface rounded-xl shadow-float border border-line z-50 py-1 overflow-hidden"
               >
-                <div className="px-4 py-3 border-b border-[#E2E8F0]">
-                  <p className="text-sm font-medium text-[#1E293B]">{user?.name || '当前用户'}</p>
-                  <p className="mt-0.5 text-xs text-[#64748B]">
+                <div className="px-4 py-3 border-b border-line">
+                  <p className="text-sm font-medium text-ink">{user?.name || '当前用户'}</p>
+                  <p className="mt-0.5 text-xs text-ink-2">
                     {user?.permission_group_name || user?.role || '未分配角色'}
                   </p>
+                </div>
+                {/* 外观：不设「外观设置」独立页面——只有 5 个选项，
+                    值得一个二级页不值得，但不该藏在二级页里 */}
+                <div className="border-b border-line">
+                  <ThemeOptions onDone={() => setUserMenuOpen(false)} />
                 </div>
                 {hasMenu('system') && (
                   <button
@@ -101,7 +110,7 @@ export default function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
                       setUserMenuOpen(false);
                       navigate('/system');
                     }}
-                    className="flex items-center gap-2 w-full px-4 py-3 text-sm text-[#1E293B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                    className="flex items-center gap-2 w-full px-4 py-3 text-sm text-ink hover:bg-canvas transition-colors cursor-pointer"
                   >
                     系统管理
                   </button>
@@ -113,7 +122,7 @@ export default function Topbar({ onOpenNav }: { onOpenNav: () => void }) {
                     setUserMenuOpen(false);
                     logout();
                   }}
-                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-[#DC2626] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
+                  className="flex items-center gap-2 w-full px-4 py-3 text-sm text-danger-strong hover:bg-danger-soft transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   退出登录

@@ -47,7 +47,7 @@ export default function School() {
 
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center text-sm text-[#94A3B8]">
+      <div className="h-64 flex items-center justify-center text-sm text-ink-3">
         <Loader2 className="w-4 h-4 animate-spin mr-2" />
         正在汇总本范围教学健康度…
       </div>
@@ -63,13 +63,13 @@ export default function School() {
     <div className="p-6 space-y-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold text-[#1E293B] flex items-center gap-2">
-            <SchoolIcon className="w-5 h-5 text-[#475569]" />
+          <h1 className="text-lg font-semibold text-ink flex items-center gap-2">
+            <SchoolIcon className="w-5 h-5 text-ink-2" />
             教学健康度
           </h1>
-          <p className="mt-1 text-xs text-[#64748B]">
+          <p className="mt-1 text-xs text-ink-2">
             {data.today} · 范围内 {data.plan_count} 个在执行的计划、{totalGoals} 个目标
-            <span className="ml-1 text-[#94A3B8]">（数据范围：{data.scope_type}）</span>
+            <span className="ml-1 text-ink-3">（数据范围：{data.scope_type}）</span>
           </p>
         </div>
         <Button variant="outline" className="h-11 lg:h-8" onClick={() => void load()}>
@@ -80,25 +80,25 @@ export default function School() {
 
       {/* 汇总 */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <Stat label="已达成" value={t.achieved ?? 0} dot="#059669" />
-        <Stat label="按预期" value={t.on_track ?? 0} dot="#2563EB" />
-        <Stat label="需观察" value={t.watch ?? 0} dot="#D97706" />
-        <Stat label="不及预期" value={t.behind ?? 0} dot="#DC2626" />
-        <Stat label="数据不足" value={t.unknown ?? 0} dot="#94A3B8" />
+        <Stat label="已达成" value={t.achieved ?? 0} dot="rgb(var(--success-strong))" />
+        <Stat label="按预期" value={t.on_track ?? 0} dot="rgb(var(--info-strong))" />
+        <Stat label="需观察" value={t.watch ?? 0} dot="rgb(var(--warning-strong))" />
+        <Stat label="不及预期" value={t.behind ?? 0} dot="rgb(var(--danger-strong))" />
+        <Stat label="数据不足" value={t.unknown ?? 0} dot="rgb(var(--ink-3))" />
       </div>
 
       {/* 班级健康度 */}
-      <section className="border border-[#E2E8F0] rounded-lg">
-        <div className="px-4 py-3 border-b border-[#F1F5F9]">
-          <span className="text-sm font-semibold text-[#1E293B]">班级目标健康度</span>
-          <span className="ml-2 text-[11px] text-[#94A3B8]">
+      <section className="border border-line rounded-lg">
+        <div className="px-4 py-3 border-b border-line">
+          <span className="text-sm font-semibold text-ink">班级目标健康度</span>
+          <span className="ml-2 text-[11px] text-ink-3">
             健康度 =（按预期进展 + 已达成）/ 目标总数
           </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-[#94A3B8] border-b border-[#F1F5F9]">
+              <tr className="text-ink-3 border-b border-line">
                 <th className="text-left py-2 px-4 font-normal">班级</th>
                 <th className="text-right py-2 font-normal">学生</th>
                 <th className="text-right py-2 font-normal">目标</th>
@@ -112,24 +112,24 @@ export default function School() {
             </thead>
             <tbody>
               {data.classes.map((c) => (
-                <tr key={c.class_id} className="border-b border-[#F8FAFC]">
-                  <td className="py-2 px-4 text-[#1E293B]">{c.class_name}</td>
-                  <td className="py-2 text-right text-[#64748B]">{c.student_count}</td>
-                  <td className="py-2 text-right text-[#64748B]">{c.goals}</td>
-                  <td className="py-2 text-right text-[#2563EB]">{c.on_track + c.achieved}</td>
-                  <td className="py-2 text-right text-[#D97706]">{c.watch}</td>
-                  <td className="py-2 text-right text-[#DC2626]">{c.behind}</td>
-                  <td className="py-2 text-right text-[#94A3B8]">{c.unknown}</td>
-                  <td className="py-2 text-right text-[#B45309]">{c.overdue}</td>
+                <tr key={c.class_id} className="border-b border-line">
+                  <td className="py-2 px-4 text-ink">{c.class_name}</td>
+                  <td className="py-2 text-right text-ink-2">{c.student_count}</td>
+                  <td className="py-2 text-right text-ink-2">{c.goals}</td>
+                  <td className="py-2 text-right text-info-strong">{c.on_track + c.achieved}</td>
+                  <td className="py-2 text-right text-warning-strong">{c.watch}</td>
+                  <td className="py-2 text-right text-danger-strong">{c.behind}</td>
+                  <td className="py-2 text-right text-ink-3">{c.unknown}</td>
+                  <td className="py-2 text-right text-warning-strong">{c.overdue}</td>
                   <td className="py-2 px-4 text-right">
                     {c.health === null ? (
-                      <span className="text-[#94A3B8]">—</span>
+                      <span className="text-ink-3">—</span>
                     ) : (
                       <span
                         className={cn(
                           'font-semibold',
-                          c.health >= 60 ? 'text-[#059669]'
-                            : c.health >= 30 ? 'text-[#D97706]' : 'text-[#DC2626]',
+                          c.health >= 60 ? 'text-success-strong'
+                            : c.health >= 30 ? 'text-warning-strong' : 'text-danger-strong',
                         )}
                       >
                         {c.health}%
@@ -145,25 +145,25 @@ export default function School() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* 逾期采集 */}
-        <section className="border border-[#E2E8F0] rounded-lg">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#F1F5F9]">
-            <ClipboardX className="w-4 h-4 text-[#B45309]" />
-            <span className="text-sm font-semibold text-[#1E293B]">逾期未采集</span>
-            <span className="text-[11px] text-[#94A3B8]">{data.overdue.length} 人</span>
+        <section className="border border-line rounded-lg">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
+            <ClipboardX className="w-4 h-4 text-warning-strong" />
+            <span className="text-sm font-semibold text-ink">逾期未采集</span>
+            <span className="text-[11px] text-ink-3">{data.overdue.length} 人</span>
           </div>
           {data.overdue.length === 0 ? (
-            <p className="px-4 py-4 text-xs text-[#94A3B8]">范围内没有逾期未采集的目标</p>
+            <p className="px-4 py-4 text-xs text-ink-3">范围内没有逾期未采集的目标</p>
           ) : (
-            <div className="divide-y divide-[#F1F5F9]">
+            <div className="divide-y divide-line">
               {data.overdue.map((o) => (
                 <div key={o.teacher_id} className="px-4 py-2.5 flex items-center gap-2">
-                  <span className="flex-1 text-xs text-[#1E293B]">{o.teacher_name}</span>
-                  <span className="text-[11px] text-[#B45309]">
+                  <span className="flex-1 text-xs text-ink">{o.teacher_name}</span>
+                  <span className="text-[11px] text-warning-strong">
                     {o.overdue_goals} 个目标
                     {o.max_days > 0 ? ` · 最长超期 ${o.max_days} 天` : ''}
                   </span>
                   {o.never > 0 && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#FEF3C7] text-[#92400E]">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-warning-soft text-warning-strong">
                       {o.never} 个从未采集
                     </span>
                   )}
@@ -174,33 +174,33 @@ export default function School() {
         </section>
 
         {/* 质检未通过 */}
-        <section className="border border-[#E2E8F0] rounded-lg">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#F1F5F9]">
-            <ShieldAlert className="w-4 h-4 text-[#DC2626]" />
-            <span className="text-sm font-semibold text-[#1E293B]">质检未通过</span>
-            <span className="text-[11px] text-[#94A3B8]">{data.qc_failed.length} 个计划</span>
+        <section className="border border-line rounded-lg">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
+            <ShieldAlert className="w-4 h-4 text-danger-strong" />
+            <span className="text-sm font-semibold text-ink">质检未通过</span>
+            <span className="text-[11px] text-ink-3">{data.qc_failed.length} 个计划</span>
           </div>
           {data.qc_failed.length === 0 ? (
-            <p className="px-4 py-4 text-xs text-[#94A3B8]">范围内没有质检未通过的计划</p>
+            <p className="px-4 py-4 text-xs text-ink-3">范围内没有质检未通过的计划</p>
           ) : (
-            <div className="divide-y divide-[#F1F5F9]">
+            <div className="divide-y divide-line">
               {data.qc_failed.map((q) => (
                 <div key={q.plan_id} className="px-4 py-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-[#1E293B]">{q.student_name}</span>
-                    <span className="text-[10px] text-[#94A3B8]">{q.class_name}</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#FEE2E2] text-[#B91C1C]">
+                    <span className="text-xs font-medium text-ink">{q.student_name}</span>
+                    <span className="text-[10px] text-ink-3">{q.class_name}</span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] bg-danger-soft text-danger-strong">
                       {q.error_count} 项必须处理
                     </span>
                     {q.warn_count > 0 && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#FEF3C7] text-[#B45309]">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-warning-soft text-warning-strong">
                         {q.warn_count} 项建议完善
                       </span>
                     )}
                   </div>
                   {q.top_issues.length > 0 && (
-                    <p className="mt-1 text-[11px] text-[#64748B] truncate">
-                      <AlertTriangle className="w-3 h-3 inline mr-1 text-[#B45309]" />
+                    <p className="mt-1 text-[11px] text-ink-2 truncate">
+                      <AlertTriangle className="w-3 h-3 inline mr-1 text-warning-strong" />
                       {q.top_issues.join('；')}
                     </p>
                   )}
@@ -211,19 +211,19 @@ export default function School() {
         </section>
       </div>
 
-      <p className="text-[11px] text-[#94A3B8] leading-relaxed">{data.note}</p>
+      <p className="text-[11px] text-ink-3 leading-relaxed">{data.note}</p>
     </div>
   );
 }
 
 function Stat({ label, value, dot }: { label: string; value: number; dot: string }) {
   return (
-    <div className="border border-[#E2E8F0] rounded-lg p-3">
+    <div className="border border-line rounded-lg p-3">
       <div className="flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dot }} />
-        <span className="text-[11px] text-[#64748B]">{label}</span>
+        <span className="text-[11px] text-ink-2">{label}</span>
       </div>
-      <p className="mt-1 text-lg font-semibold text-[#1E293B]">{value}</p>
+      <p className="mt-1 text-lg font-semibold text-ink">{value}</p>
     </div>
   );
 }

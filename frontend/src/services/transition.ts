@@ -196,9 +196,9 @@ export const ON_TRACK_TEXT: Record<OnTrackLabel, string> = {
 };
 
 export const ON_TRACK_DOT: Record<OnTrackLabel, string> = {
-  achieved: '#059669',
-  on_track: '#2563EB',
-  watch: '#D97706',
-  behind: '#DC2626',
-  unknown: '#94A3B8',
+  achieved: 'rgb(var(--success-strong))',
+  on_track: 'rgb(var(--info-strong))',
+  watch: 'rgb(var(--warning-strong))',
+  behind: 'rgb(var(--danger-strong))',
+  unknown: 'rgb(var(--ink-3))',
 };

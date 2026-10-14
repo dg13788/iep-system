@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Brain, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { ThemeButton } from '@/components/ThemeSwitcher';
 import { toast } from 'sonner';
 
 export default function Login() {
@@ -52,13 +53,19 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-[100dvh] bg-white">
+    <div className="flex min-h-[100dvh] bg-surface">
+      {/* 登录页也要能换肤：教师晚上在家登录，与白天在教室是两种光照。
+          没有这一入口，等他登录进系统才知道有夜间主题，为时已晚。 */}
+      <div className="absolute right-3 top-3 z-20 sm:right-5 sm:top-5">
+        <ThemeButton />
+      </div>
+
       {/* Left Side - Welcome */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden bg-gradient-to-br from-primary-50 to-[#F0EDE8]">
+      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden bg-gradient-to-br from-primary-50 to-canvas">
         <div className="absolute inset-0 opacity-10">
           <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="#977653" strokeWidth="0.5"/>
+              <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgb(var(--brand))" strokeWidth="0.5"/>
             </pattern>
             <rect width="100" height="100" fill="url(#grid)" />
           </svg>
@@ -72,7 +79,7 @@ export default function Login() {
           >
             <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 rounded-full bg-primary-500 flex items-center justify-center">
-                <Brain className="w-7 h-7 text-white" />
+                <Brain className="w-7 h-7 text-ink-on-dark" />
               </div>
               <span className="text-2xl font-bold text-primary-800">特教 IEP</span>
             </div>
@@ -83,12 +90,12 @@ export default function Login() {
               <span className="text-primary-500">以温度赋能教育</span>
             </h1>
 
-            <p className="text-lg text-[#64748B] leading-relaxed mb-8">
+            <p className="text-lg text-ink-2 leading-relaxed mb-8">
               特教 IEP 管理系统，专为特殊教育学校设计的个别化教育计划管理平台。
               让每一份教育计划都精准到位，让每一个孩子都被温柔以待。
             </p>
 
-            <div className="flex items-center gap-8 text-sm text-[#64748B]">
+            <div className="flex items-center gap-8 text-sm text-ink-2">
               <div className="flex flex-col items-center">
                 <span className="text-2xl font-bold text-primary-700">500+</span>
                 <span>服务学生</span>
@@ -123,7 +130,7 @@ export default function Login() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center px-6 sm:px-12 lg:px-16 bg-white">
+      <div className="flex-1 flex items-center justify-center px-6 sm:px-12 lg:px-16 bg-surface">
         <motion.div
           className="w-full max-w-md"
           initial={{ opacity: 0, x: 20 }}
@@ -133,18 +140,18 @@ export default function Login() {
           {/* Mobile Logo */}
           <div className="flex lg:hidden items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
+              <Brain className="w-6 h-6 text-ink-on-dark" />
             </div>
             <span className="text-xl font-bold text-primary-800">特教 IEP</span>
           </div>
 
-          <h2 className="text-2xl font-bold text-[#1E293B] mb-2">欢迎回来</h2>
-          <p className="text-[#64748B] mb-8">请登录您的账户以继续使用</p>
+          <h2 className="text-2xl font-bold text-ink mb-2">欢迎回来</h2>
+          <p className="text-ink-2 mb-8">请登录您的账户以继续使用</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Username */}
             <div>
-              <label htmlFor="login-username" className="block text-sm font-medium text-[#1E293B] mb-1.5">
+              <label htmlFor="login-username" className="block text-sm font-medium text-ink mb-1.5">
                 用户名
               </label>
               <input
@@ -162,20 +169,20 @@ export default function Login() {
                 placeholder="请输入用户名"
                 className={`
                   w-full h-11 lg:h-10 px-3 rounded-md border text-sm
-                  placeholder:text-[#94A3B8]
-                  focus:outline-none focus:border-[#3B82F6] focus:shadow-focus
+                  placeholder:text-ink-3
+                  focus:outline-none focus:border-line-focus focus:shadow-focus
                   transition-colors
-                  ${errors.username ? 'border-[#EF4444]' : 'border-[#CBD5E1]'}
+                  ${errors.username ? 'border-danger' : 'border-line-2'}
                 `}
               />
               {errors.username && (
-                <p className="mt-1 text-xs text-[#EF4444]" role="alert">{errors.username}</p>
+                <p className="mt-1 text-xs text-danger" role="alert">{errors.username}</p>
               )}
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="login-password" className="block text-sm font-medium text-[#1E293B] mb-1.5">
+              <label htmlFor="login-password" className="block text-sm font-medium text-ink mb-1.5">
                 密码
               </label>
               <div className="relative">
@@ -192,10 +199,10 @@ export default function Login() {
                   placeholder="请输入密码"
                   className={`
                     w-full h-11 lg:h-10 px-3 pr-12 rounded-md border text-sm
-                    placeholder:text-[#94A3B8]
-                    focus:outline-none focus:border-[#3B82F6] focus:shadow-focus
+                    placeholder:text-ink-3
+                    focus:outline-none focus:border-line-focus focus:shadow-focus
                     transition-colors
-                    ${errors.password ? 'border-[#EF4444]' : 'border-[#CBD5E1]'}
+                    ${errors.password ? 'border-danger' : 'border-line-2'}
                   `}
                 />
                 <button
@@ -204,13 +211,13 @@ export default function Login() {
                   aria-label={showPassword ? '隐藏密码' : '显示密码'}
                   aria-pressed={showPassword}
                   // 触控尺寸：原来是 16px 的图标裸按钮，指尖几乎点不中
-                  className="absolute right-1 top-1/2 -translate-y-1/2 min-h-11 lg:min-h-9 min-w-11 lg:min-w-9 flex items-center justify-center rounded-md text-[#94A3B8] hover:text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 min-h-11 lg:min-h-9 min-w-11 lg:min-w-9 flex items-center justify-center rounded-md text-ink-3 hover:text-ink-2 hover:bg-surface-2 cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-xs text-[#EF4444]" role="alert">{errors.password}</p>
+                <p className="mt-1 text-xs text-danger" role="alert">{errors.password}</p>
               )}
             </div>
 
@@ -224,9 +231,9 @@ export default function Login() {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-5 h-5 rounded border-[#CBD5E1] text-primary-500 focus:ring-primary-500 cursor-pointer"
+                  className="w-5 h-5 rounded border-line-2 text-primary-500 focus:ring-primary-500 cursor-pointer"
                 />
-                <span className="text-sm text-[#64748B]">记住我</span>
+                <span className="text-sm text-ink-2">记住我</span>
               </label>
               {/* 原本这个按钮点了没有任何反应——界面上不该存在没有行为的控件。
                   本系统由学校自部署，重置密码只能走管理员，所以如实告知。 */}
@@ -244,7 +251,7 @@ export default function Login() {
               type="submit"
               disabled={isLoading}
               className={`
-                w-full h-11 rounded-md bg-primary-500 text-white font-medium
+                w-full h-11 rounded-md bg-primary-500 text-ink-on-dark font-medium
                 hover:bg-primary-600 active:bg-primary-700
                 transition-colors duration-150
                 disabled:opacity-60 disabled:cursor-not-allowed
@@ -265,7 +272,7 @@ export default function Login() {
             </button>
 
             {/* Hint */}
-            <p className="text-xs text-center text-[#94A3B8] mt-4">
+            <p className="text-xs text-center text-ink-3 mt-4">
               默认账户：admin / admin123
             </p>
           </form>

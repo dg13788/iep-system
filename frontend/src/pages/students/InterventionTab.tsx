@@ -23,10 +23,10 @@ import type { BipIncident, BipPlan, IncidentStat } from '@/services/intervention
 import { useConfirm } from '@/components/feedback/ConfirmProvider';
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-[#F1F5F9] text-[#64748B]',
-  active: 'bg-[#ECFDF5] text-[#059669]',
-  revised: 'bg-[#EFF6FF] text-[#2563EB]',
-  closed: 'bg-[#F1F5F9] text-[#94A3B8]',
+  draft: 'bg-surface-2 text-ink-2',
+  active: 'bg-success-soft text-success-strong',
+  revised: 'bg-info-soft text-info-strong',
+  closed: 'bg-surface-2 text-ink-3',
 };
 
 const FUNCTION_OPTIONS = ['获得关注', '逃避任务', '获得实物/活动', '自我刺激', '感觉调节', '其他'];
@@ -65,7 +65,7 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
       description: (
         <>
           将删除「{bip.target_behavior || '该计划'}」及其全部记录。
-          <b className="text-[#B91C1C]">删除后不可撤销</b>
+          <b className="text-danger-strong">删除后不可撤销</b>
           。
         </>
       ),
@@ -83,7 +83,7 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 flex items-center justify-center text-[#64748B]">
+      <div className="bg-surface rounded-lg border border-line p-8 flex items-center justify-center text-ink-2">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> 行为干预计划加载中...
       </div>
     );
@@ -92,13 +92,13 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-[#1E293B] flex items-center gap-2">
+        <h4 className="text-sm font-semibold text-ink flex items-center gap-2">
           <Activity className="w-4 h-4 text-primary-500" /> 行为干预计划（BIP）
         </h4>
         {canEdit && (
           <button
             onClick={() => { setEditing(null); setCreating(true); }}
-            className="flex items-center gap-1 h-8 px-3 rounded-md border border-[#977653] text-[#977653] text-xs font-medium hover:bg-[#F5F0EB] cursor-pointer"
+            className="flex items-center gap-1 h-8 px-3 rounded-md border border-brand text-brand-ink text-xs font-medium hover:bg-brand-soft cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" /> 新建 BIP
           </button>
@@ -116,23 +116,23 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
       )}
 
       {list.length === 0 && !creating && (
-        <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 text-center">
-          <p className="text-sm text-[#64748B]">{studentName} 尚无行为干预计划</p>
-          <p className="text-xs text-[#94A3B8] mt-1">当学生出现持续的问题行为时，应制定 BIP 并进行 ABC 功能分析</p>
+        <div className="bg-surface rounded-lg border border-line p-8 text-center">
+          <p className="text-sm text-ink-2">{studentName} 尚无行为干预计划</p>
+          <p className="text-xs text-ink-3 mt-1">当学生出现持续的问题行为时，应制定 BIP 并进行 ABC 功能分析</p>
         </div>
       )}
 
       {list.map((bip) => (
-        <div key={bip.id} className="bg-white rounded-lg border border-[#E2E8F0] overflow-hidden">
+        <div key={bip.id} className="bg-surface rounded-lg border border-line overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h5 className="text-sm font-semibold text-[#1E293B]">{bip.target_behavior}</h5>
+                <h5 className="text-sm font-semibold text-ink">{bip.target_behavior}</h5>
                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[bip.status] ?? STATUS_COLORS.draft}`}>
                   {BIP_STATUS_CN[bip.status] ?? bip.status}
                 </span>
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-ink-3 mt-1">
                 {bip.plan_code} · 功能假设：{bip.behavior_function || '—'} · 开始：{bip.start_date || '—'}
                 {bip.next_review_date ? ` · 复评：${bip.next_review_date}` : ''}
               </p>
@@ -140,7 +140,7 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
             <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setExpandedId(expandedId === bip.id ? null : bip.id)}
-                className="h-8 px-2.5 rounded-md border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer flex items-center gap-1"
+                className="h-8 px-2.5 rounded-md border border-line text-xs text-ink-2 hover:bg-canvas cursor-pointer flex items-center gap-1"
               >
                 {expandedId === bip.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 {expandedId === bip.id ? '收起' : '详情'}
@@ -148,7 +148,7 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
               {canEdit && (
                 <button
                   onClick={() => { setEditing(bip); setCreating(false); }}
-                  className="h-8 px-2.5 rounded-md border border-[#E2E8F0] text-xs text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer"
+                  className="h-8 px-2.5 rounded-md border border-line text-xs text-ink-2 hover:bg-canvas cursor-pointer"
                 >
                   编辑
                 </button>
@@ -156,7 +156,7 @@ export default function InterventionTab({ studentId, studentName }: { studentId:
               {canEdit && (
                 <button
                   onClick={() => void handleDelete(bip)}
-                  className="h-8 px-2 rounded-md border border-[#FECACA] text-xs text-[#DC2626] hover:bg-[#FEF2F2] cursor-pointer"
+                  className="h-8 px-2 rounded-md border border-danger-line text-xs text-danger-strong hover:bg-danger-soft cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -199,26 +199,26 @@ function BipDetail({ bip, canRecord }: { bip: BipPlan; canRecord: boolean }) {
   const Row = ({ label, value }: { label: string; value?: string | null }) =>
     value ? (
       <div>
-        <p className="text-xs text-[#94A3B8] mb-0.5">{label}</p>
-        <p className="text-sm text-[#475569]">{value}</p>
+        <p className="text-xs text-ink-3 mb-0.5">{label}</p>
+        <p className="text-sm text-ink-2">{value}</p>
       </div>
     ) : null;
 
   return (
-    <div className="border-t border-[#F1F5F9] px-4 py-4 space-y-4">
+    <div className="border-t border-line px-4 py-4 space-y-4">
       {/* ABC 分析 */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#FFF9F0] rounded-lg p-3">
-          <p className="text-xs font-bold text-[#B45309] mb-1">A · 前因</p>
-          <p className="text-sm text-[#475569]">{bip.antecedent || '—'}</p>
+        <div className="bg-brand-soft rounded-lg p-3">
+          <p className="text-xs font-bold text-warning-strong mb-1">A · 前因</p>
+          <p className="text-sm text-ink-2">{bip.antecedent || '—'}</p>
         </div>
-        <div className="bg-[#FEF2F2] rounded-lg p-3">
-          <p className="text-xs font-bold text-[#DC2626] mb-1">B · 行为</p>
-          <p className="text-sm text-[#475569]">{bip.behavior_desc || '—'}</p>
+        <div className="bg-danger-soft rounded-lg p-3">
+          <p className="text-xs font-bold text-danger-strong mb-1">B · 行为</p>
+          <p className="text-sm text-ink-2">{bip.behavior_desc || '—'}</p>
         </div>
-        <div className="bg-[#EFF6FF] rounded-lg p-3">
-          <p className="text-xs font-bold text-[#2563EB] mb-1">C · 后果</p>
-          <p className="text-sm text-[#475569]">{bip.consequence || '—'}</p>
+        <div className="bg-info-soft rounded-lg p-3">
+          <p className="text-xs font-bold text-info-strong mb-1">C · 后果</p>
+          <p className="text-sm text-ink-2">{bip.consequence || '—'}</p>
         </div>
       </div>
 
@@ -233,16 +233,16 @@ function BipDetail({ bip, canRecord }: { bip: BipPlan; canRecord: boolean }) {
       </div>
 
       {/* 事件台账 */}
-      <div className="border-t border-[#F1F5F9] pt-3">
+      <div className="border-t border-line pt-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <h6 className="text-xs font-semibold text-[#1E293B]">行为事件台账（{incidents?.length ?? 0} 条）</h6>
+            <h6 className="text-xs font-semibold text-ink">行为事件台账（{incidents?.length ?? 0} 条）</h6>
             {stat && Number(stat.cnt) > 0 && (
-              <span className="text-[11px] text-[#94A3B8]">
+              <span className="text-[11px] text-ink-3">
                 平均有效性 {Number(stat.avg_effect ?? 0).toFixed(1)}/5
                 {stat.avg_minutes != null && <> · 平均时长 {Number(stat.avg_minutes).toFixed(1)} 分钟</>}
                 {Number(stat.injury_count ?? 0) > 0 && (
-                  <> · <span className="text-[#DC2626]">受伤 {stat.injury_count} 次</span></>
+                  <> · <span className="text-danger-strong">受伤 {stat.injury_count} 次</span></>
                 )}
               </span>
             )}
@@ -250,7 +250,7 @@ function BipDetail({ bip, canRecord }: { bip: BipPlan; canRecord: boolean }) {
           {canRecord && (
             <button
               onClick={() => setAdding(!adding)}
-              className="flex items-center gap-1 text-xs text-[#977653] hover:underline cursor-pointer"
+              className="flex items-center gap-1 text-xs text-brand-ink hover:underline cursor-pointer"
             >
               <FilePlus2 className="w-3.5 h-3.5" /> 登记事件
             </button>
@@ -266,27 +266,27 @@ function BipDetail({ bip, canRecord }: { bip: BipPlan; canRecord: boolean }) {
         )}
 
         {incidents === null ? (
-          <p className="text-xs text-[#94A3B8]">台账加载中...</p>
+          <p className="text-xs text-ink-3">台账加载中...</p>
         ) : incidents.length === 0 ? (
-          <p className="text-xs text-[#94A3B8]">尚无事件记录</p>
+          <p className="text-xs text-ink-3">尚无事件记录</p>
         ) : (
           <div className="space-y-2">
             {incidents.slice(0, 10).map((r) => (
-              <div key={r.id} className="bg-[#F7F6F4] rounded-lg px-3 py-2.5 text-xs">
-                <div className="flex items-center gap-2 flex-wrap text-[#64748B]">
-                  <span className="font-medium text-[#1E293B]">{r.occurred_at}</span>
+              <div key={r.id} className="bg-canvas rounded-lg px-3 py-2.5 text-xs">
+                <div className="flex items-center gap-2 flex-wrap text-ink-2">
+                  <span className="font-medium text-ink">{r.occurred_at}</span>
                   {r.location && <span>@{r.location}</span>}
                   <span className={`px-1.5 py-0.5 rounded ${
-                    r.intensity === '重度' ? 'bg-[#FEE2E2] text-[#DC2626]' :
-                    r.intensity === '中度' ? 'bg-[#FEF3C7] text-[#D97706]' :
-                    'bg-[#ECFDF5] text-[#059669]'
+                    r.intensity === '重度' ? 'bg-danger-soft text-danger-strong' :
+                    r.intensity === '中度' ? 'bg-warning-soft text-warning-strong' :
+                    'bg-success-soft text-success-strong'
                   }`}>{r.intensity}</span>
-                  {Number(r.has_injury) === 1 && <span className="px-1.5 py-0.5 rounded bg-[#FEE2E2] text-[#DC2626]">有受伤</span>}
+                  {Number(r.has_injury) === 1 && <span className="px-1.5 py-0.5 rounded bg-danger-soft text-danger-strong">有受伤</span>}
                   {r.effectiveness != null && <span>干预有效性 {r.effectiveness}/5</span>}
                   {r.reporter_name && <span>记录：{r.reporter_name}</span>}
                 </div>
                 {(r.antecedent || r.behavior || r.consequence) && (
-                  <p className="mt-1.5 text-[#475569] leading-relaxed">
+                  <p className="mt-1.5 text-ink-2 leading-relaxed">
                     {r.antecedent && <>前因：{r.antecedent}；</>}
                     {r.behavior && <>行为：{r.behavior}；</>}
                     {r.consequence && <>后果：{r.consequence}</>}
@@ -355,30 +355,30 @@ function BipEditor({
 
   const Area = ({ label, k, placeholder }: { label: string; k: keyof typeof form; placeholder?: string }) => (
     <div>
-      <label className="block text-xs font-semibold text-[#1E293B] mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-ink mb-1">{label}</label>
       <Textarea value={form[k]} onChange={(e) => set(k)(e.target.value)} placeholder={placeholder} rows={2} className="text-sm" />
     </div>
   );
 
   return (
-    <div className="bg-[#FFFDF8] rounded-lg border border-[#F5E6C8] p-4 space-y-3">
-      <h5 className="text-sm font-semibold text-[#1E293B]">{bip ? '编辑 BIP' : '新建 BIP'}</h5>
+    <div className="bg-brand-soft rounded-lg border border-warning-soft p-4 space-y-3">
+      <h5 className="text-sm font-semibold text-ink">{bip ? '编辑 BIP' : '新建 BIP'}</h5>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">目标行为（可观察描述）*</label>
+          <label className="block text-xs font-semibold text-ink mb-1">目标行为（可观察描述）*</label>
           <input
             value={form.target_behavior}
             onChange={(e) => set('target_behavior')(e.target.value)}
             placeholder="如：集体课中离座奔跑"
-            className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+            className="w-full h-9 px-3 rounded-md border border-line text-sm"
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">行为功能假设</label>
+          <label className="block text-xs font-semibold text-ink mb-1">行为功能假设</label>
           <select
             value={form.behavior_function}
             onChange={(e) => set('behavior_function')(e.target.value)}
-            className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm bg-white"
+            className="w-full h-9 px-3 rounded-md border border-line text-sm bg-surface"
           >
             <option value="">请选择</option>
             {FUNCTION_OPTIONS.map((o) => (
@@ -402,25 +402,25 @@ function BipEditor({
       </div>
       <div className="grid grid-cols-3 gap-3 items-end">
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">开始日期</label>
-          <input type="date" value={form.start_date} onChange={(e) => set('start_date')(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">开始日期</label>
+          <input type="date" value={form.start_date} onChange={(e) => set('start_date')(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">状态</label>
-          <select value={form.status} onChange={(e) => set('status')(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm bg-white">
+          <label className="block text-xs font-semibold text-ink mb-1">状态</label>
+          <select value={form.status} onChange={(e) => set('status')(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm bg-surface">
             {Object.entries(BIP_STATUS_CN).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
         </div>
         <div className="flex items-center gap-2 justify-end">
-          <button onClick={onCancel} disabled={saving} className="h-9 px-3 rounded-md border border-[#CBD5E1] text-xs font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">
+          <button onClick={onCancel} disabled={saving} className="h-9 px-3 rounded-md border border-line-2 text-xs font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60">
             取消
           </button>
           <button
             onClick={() => void handleSave()}
             disabled={saving}
-            className="flex items-center gap-1 h-9 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-1 h-9 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             {saving ? '保存中...' : '保存'}
@@ -484,59 +484,59 @@ function IncidentForm({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-[#F5E6C8] p-3.5 space-y-3 mb-3">
+    <div className="bg-surface rounded-lg border border-warning-soft p-3.5 space-y-3 mb-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">发生时间 *</label>
-          <input type="datetime-local" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">发生时间 *</label>
+          <input type="datetime-local" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">地点</label>
-          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">地点</label>
+          <input value={location} onChange={(e) => setLocation(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">前因</label>
-          <input value={antecedent} onChange={(e) => setAntecedent(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">前因</label>
+          <input value={antecedent} onChange={(e) => setAntecedent(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">行为</label>
-          <input value={behavior} onChange={(e) => setBehavior(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">行为</label>
+          <input value={behavior} onChange={(e) => setBehavior(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">后果</label>
-          <input value={consequence} onChange={(e) => setConsequence(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">后果</label>
+          <input value={consequence} onChange={(e) => setConsequence(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
       </div>
       <div className="grid grid-cols-4 gap-3 items-end">
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">强度</label>
-          <select value={intensity} onChange={(e) => setIntensity(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm bg-white">
+          <label className="block text-xs font-semibold text-ink mb-1">强度</label>
+          <select value={intensity} onChange={(e) => setIntensity(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm bg-surface">
             {BIP_INTENSITIES.map((o) => (
               <option key={o} value={o}>{o}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">所用干预</label>
-          <input value={intervention} onChange={(e) => setIntervention(e.target.value)} className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm" />
+          <label className="block text-xs font-semibold text-ink mb-1">所用干预</label>
+          <input value={intervention} onChange={(e) => setIntervention(e.target.value)} className="w-full h-9 px-3 rounded-md border border-line text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">干预有效性 {effectiveness}/5</label>
+          <label className="block text-xs font-semibold text-ink mb-1">干预有效性 {effectiveness}/5</label>
           <input type="range" min={1} max={5} value={effectiveness} onChange={(e) => setEffectiveness(Number(e.target.value))} className="w-full" />
         </div>
-        <label className="flex items-center gap-2 text-xs text-[#475569] cursor-pointer pb-2">
-          <input type="checkbox" checked={hasInjury} onChange={(e) => setHasInjury(e.target.checked)} className="w-4 h-4 rounded border-[#CBD5E1]" />
+        <label className="flex items-center gap-2 text-xs text-ink-2 cursor-pointer pb-2">
+          <input type="checkbox" checked={hasInjury} onChange={(e) => setHasInjury(e.target.checked)} className="w-4 h-4 rounded border-line-2" />
           有人员受伤
         </label>
       </div>
       <div className="flex items-center justify-end gap-2">
-        <button onClick={onCancel} disabled={saving} className="h-8 px-3 rounded-md border border-[#CBD5E1] text-xs font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60">取消</button>
+        <button onClick={onCancel} disabled={saving} className="h-8 px-3 rounded-md border border-line-2 text-xs font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60">取消</button>
         <button
           onClick={() => void handleSave()}
           disabled={saving}
-          className="flex items-center gap-1 h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+          className="flex items-center gap-1 h-8 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
           {saving ? '登记中...' : '登记'}

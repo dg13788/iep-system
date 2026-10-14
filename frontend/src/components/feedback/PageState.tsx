@@ -19,7 +19,7 @@ import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
 
 /** 单块骨架 */
 export function Skel({ className }: { className?: string }) {
-  return <UiSkeleton className={cn('shimmer bg-[#EEF1F5]', className)} />;
+  return <UiSkeleton className={cn('shimmer bg-surface-2', className)} />;
 }
 
 /** 列表骨架：用于待办 / 台账类区块 */
@@ -43,8 +43,8 @@ export function ListSkeleton({ rows = 4 }: { rows?: number }) {
 /** 卡片骨架 */
 export function CardSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-white overflow-hidden" aria-hidden="true">
-      <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center gap-2">
+    <div className="rounded-xl border border-line bg-surface overflow-hidden" aria-hidden="true">
+      <div className="px-4 py-3 border-b border-line flex items-center gap-2">
         <Skel className="h-4 w-4 rounded" />
         <Skel className="h-3.5 w-24" />
       </div>
@@ -76,12 +76,12 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="w-11 h-11 rounded-full bg-[#F1F5F9] flex items-center justify-center">
-        {icon ?? <Inbox className="w-5 h-5 text-[#94A3B8]" />}
+      <div className="w-11 h-11 rounded-full bg-surface-2 flex items-center justify-center">
+        {icon ?? <Inbox className="w-5 h-5 text-ink-3" />}
       </div>
-      <p className="mt-3 text-sm font-medium text-[#475569]">{title}</p>
+      <p className="mt-3 text-sm font-medium text-ink-2">{title}</p>
       {description && (
-        <p className="mt-1 text-xs leading-relaxed text-[#94A3B8] max-w-[36ch]">
+        <p className="mt-1 text-xs leading-relaxed text-ink-3 max-w-[36ch]">
           {description}
         </p>
       )}
@@ -108,12 +108,12 @@ export function ErrorState({
       )}
       role="alert"
     >
-      <p className="text-sm text-[#B91C1C]">{message}</p>
+      <p className="text-sm text-danger-strong">{message}</p>
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="mt-3 min-tap-h inline-flex items-center gap-1.5 rounded-lg border border-[#E2E8F0] px-4 text-sm text-[#475569] hover:bg-[#F7F6F4] press cursor-pointer"
+          className="mt-3 min-tap-h inline-flex items-center gap-1.5 rounded-lg border border-line px-4 text-sm text-ink-2 hover:bg-canvas press cursor-pointer"
         >
           <RotateCw className="w-3.5 h-3.5" />
           重试

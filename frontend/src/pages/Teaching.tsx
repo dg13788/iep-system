@@ -95,14 +95,14 @@ const SESSION_TYPE_CONFIG: Record<string, { label: string; className: string }> 
 };
 
 const SUBJECT_COLORS: Record<string, string> = {
-  '语言训练': '#977653',
-  '社交训练': '#3B82F6',
-  '生活自理': '#10B981',
-  '认知训练': '#F59E0B',
-  '感觉统合': '#8B5CF6',
-  '精细动作': '#EC4899',
-  '音乐治疗': '#06B6D4',
-  '美术创作': '#F97316',
+  '语言训练': 'rgb(var(--brand))',
+  '社交训练': 'rgb(var(--info))',
+  '生活自理': 'rgb(var(--success))',
+  '认知训练': 'rgb(var(--warning))',
+  '感觉统合': 'rgb(var(--violet))',
+  '精细动作': 'rgb(var(--danger))',
+  '音乐治疗': 'rgb(var(--info))',
+  '美术创作': 'rgb(var(--warning))',
 };
 
 /* ------------------------------------------------------------------ */
@@ -124,25 +124,25 @@ function ScoreSlider({
   };
 
   const colorClass =
-    localValue >= 80 ? 'text-[#10B981]' :
-    localValue >= 60 ? 'text-[#F59E0B]' :
-    localValue >= 40 ? 'text-[#F97316]' :
-    'text-[#EF4444]';
+    localValue >= 80 ? 'text-success' :
+    localValue >= 60 ? 'text-warning' :
+    localValue >= 40 ? 'text-warning' :
+    'text-danger';
 
   const bgColorClass =
-    localValue >= 80 ? 'accent-[#10B981]' :
-    localValue >= 60 ? 'accent-[#F59E0B]' :
-    localValue >= 40 ? 'accent-[#F97316]' :
-    'accent-[#EF4444]';
+    localValue >= 80 ? 'accent-success' :
+    localValue >= 60 ? 'accent-warning' :
+    localValue >= 40 ? 'accent-warning' :
+    'accent-danger';
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#64748B]">0</span>
+        <span className="text-sm text-ink-2">0</span>
         <span className={cn("text-2xl font-bold transition-colors", colorClass)}>
           {localValue}
         </span>
-        <span className="text-sm text-[#64748B]">100</span>
+        <span className="text-sm text-ink-2">100</span>
       </div>
       <input
         type="range"
@@ -152,9 +152,9 @@ function ScoreSlider({
         value={localValue}
         onChange={handleChange}
         className={cn("w-full h-3 cursor-pointer", bgColorClass)}
-        style={{ accentColor: localValue >= 80 ? '#10B981' : localValue >= 60 ? '#F59E0B' : localValue >= 40 ? '#F97316' : '#EF4444' }}
+        style={{ accentColor: localValue >= 80 ? 'rgb(var(--success))' : localValue >= 60 ? 'rgb(var(--warning))' : localValue >= 40 ? 'rgb(var(--warning))' : 'rgb(var(--danger))' }}
       />
-      <div className="flex justify-between text-xs text-[#94A3B8]">
+      <div className="flex justify-between text-xs text-ink-3">
         <span>需加强</span>
         <span>一般</span>
         <span>良好</span>
@@ -201,15 +201,15 @@ function StarRating({
             className={cn(
               'transition-colors',
               (hover ? s <= hover : s <= value)
-                ? 'fill-[#F59E0B] text-[#F59E0B]'
-                : 'text-[#CBD5E1]',
+                ? 'fill-warning text-warning'
+                : 'text-ink-4',
               !readOnly && (hover ? s <= hover : s <= value) && 'scale-110',
             )}
             style={{ transition: 'transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           />
         </button>
       ))}
-      {value > 0 && <span className="ml-1 text-xs text-[#94A3B8]">{labels[value]}</span>}
+      {value > 0 && <span className="ml-1 text-xs text-ink-3">{labels[value]}</span>}
     </div>
   );
 }
@@ -274,18 +274,18 @@ function CalendarView({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
+    <div className="bg-surface rounded-xl shadow-sm">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-[#E2E8F0]">
+      <div className="flex items-center justify-between p-4 border-b border-line">
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="p-1.5 rounded-md hover:bg-[#F7F6F4] transition-colors cursor-pointer">
-            <ChevronLeft size={18} className="text-[#64748B]" />
+          <button onClick={prevMonth} className="p-1.5 rounded-md hover:bg-canvas transition-colors cursor-pointer">
+            <ChevronLeft size={18} className="text-ink-2" />
           </button>
-          <span className="text-base font-semibold text-[#1E293B] min-w-[120px] text-center">
+          <span className="text-base font-semibold text-ink min-w-[120px] text-center">
             {year}年 {month + 1}月
           </span>
-          <button onClick={nextMonth} className="p-1.5 rounded-md hover:bg-[#F7F6F4] transition-colors cursor-pointer">
-            <ChevronRight size={18} className="text-[#64748B]" />
+          <button onClick={nextMonth} className="p-1.5 rounded-md hover:bg-canvas transition-colors cursor-pointer">
+            <ChevronRight size={18} className="text-ink-2" />
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -294,9 +294,9 @@ function CalendarView({
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 border-b border-[#E2E8F0]">
+      <div className="grid grid-cols-7 border-b border-line">
         {weekDays.map((d) => (
-          <div key={d} className="py-2 text-center text-sm font-semibold text-[#94A3B8]">
+          <div key={d} className="py-2 text-center text-sm font-semibold text-ink-3">
             {d}
           </div>
         ))}
@@ -315,18 +315,18 @@ function CalendarView({
               transition={{ delay: idx * 0.01, duration: 0.2 }}
               onClick={() => dayRecords.length > 0 && onSelectDay(day.dateStr)}
               className={cn(
-                'min-h-[100px] border-b border-r border-[#E2E8F0] p-1.5 transition-colors relative',
-                day.isCurrentMonth ? 'bg-white' : 'bg-[#F7F6F4]/50',
-                dayRecords.length > 0 && day.isCurrentMonth && 'cursor-pointer hover:bg-[#F7F6F4]',
+                'min-h-[100px] border-b border-r border-line p-1.5 transition-colors relative',
+                day.isCurrentMonth ? 'bg-surface' : 'bg-canvas/50',
+                dayRecords.length > 0 && day.isCurrentMonth && 'cursor-pointer hover:bg-canvas',
               )}
             >
               <div className="flex items-center justify-center w-7 h-7 text-sm mb-1">
                 {isToday ? (
-                  <span className="w-7 h-7 flex items-center justify-center rounded-full bg-[#977653] text-white font-medium text-xs">
+                  <span className="w-7 h-7 flex items-center justify-center rounded-full bg-brand text-ink-on-dark font-medium text-xs">
                     {day.date}
                   </span>
                 ) : (
-                  <span className={cn('text-sm', !day.isCurrentMonth && 'text-[#CBD5E1]')}>
+                  <span className={cn('text-sm', !day.isCurrentMonth && 'text-ink-4')}>
                     {day.date}
                   </span>
                 )}
@@ -343,16 +343,16 @@ function CalendarView({
                   title="点击查看该条教学记录"
                   className="text-xs truncate px-1.5 py-0.5 rounded mb-0.5 cursor-pointer hover:opacity-80 transition-opacity"
                   style={{
-                    backgroundColor: `${SUBJECT_COLORS[r.subject] || '#977653'}15`,
-                    color: SUBJECT_COLORS[r.subject] || '#977653',
-                    borderLeft: `2px solid ${SUBJECT_COLORS[r.subject] || '#977653'}`,
+                    backgroundColor: `${SUBJECT_COLORS[r.subject] || 'rgb(var(--brand))'}15`,
+                    color: SUBJECT_COLORS[r.subject] || 'rgb(var(--brand))',
+                    borderLeft: `2px solid ${SUBJECT_COLORS[r.subject] || 'rgb(var(--brand))'}`,
                   }}
                 >
                   {r.student_name} · {r.subject.slice(0, 4)}
                 </div>
               ))}
               {dayRecords.length > 3 && (
-                <div className="text-xs text-[#94A3B8] px-1.5">+{dayRecords.length - 3} 条</div>
+                <div className="text-xs text-ink-3 px-1.5">+{dayRecords.length - 3} 条</div>
               )}
             </motion.div>
           );
@@ -381,11 +381,11 @@ function DayRecordsPanel({
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[400px] sm:max-w-[400px] p-0">
-        <SheetHeader className="p-4 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-4 border-b border-line">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg">{date} 教学记录</SheetTitle>
-            <button onClick={onClose} className="p-1 rounded-md hover:bg-[#F7F6F4] cursor-pointer">
-              <X size={18} className="text-[#94A3B8]" />
+            <button onClick={onClose} className="p-1 rounded-md hover:bg-canvas cursor-pointer">
+              <X size={18} className="text-ink-3" />
             </button>
           </div>
           <SheetDescription>共 {records.length} 条记录</SheetDescription>
@@ -399,20 +399,20 @@ function DayRecordsPanel({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ delay: i * 0.06, duration: 0.25 }}
-                className="p-3 rounded-lg border border-[#E2E8F0] bg-[#F7F6F4]/50 hover:shadow-sm transition-shadow cursor-pointer"
+                className="p-3 rounded-lg border border-line bg-canvas/50 hover:shadow-sm transition-shadow cursor-pointer"
                 onClick={() => onViewRecord(r)}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-[#1E293B]">{r.student_name}</span>
+                  <span className="text-sm font-semibold text-ink">{r.student_name}</span>
                   <Badge className={cn('text-xs', SESSION_TYPE_CONFIG[r.session_type]?.className)}>
                     {r.session_type}
                   </Badge>
                 </div>
-                <div className="text-xs text-[#64748B] mb-1">{r.subject} · {r.teacher}</div>
-                <div className="text-xs text-[#94A3B8] line-clamp-2">{r.teaching_content}</div>
+                <div className="text-xs text-ink-2 mb-1">{r.subject} · {r.teacher}</div>
+                <div className="text-xs text-ink-3 line-clamp-2">{r.teaching_content}</div>
                 <div className="flex items-center justify-between mt-2">
                   <StarRating value={r.effectiveness_score} size={14} readOnly />
-                  <span className="text-xs text-[#94A3B8]">{r.duration_minutes}分钟</span>
+                  <span className="text-xs text-ink-3">{r.duration_minutes}分钟</span>
                 </div>
               </motion.div>
             ))}
@@ -628,7 +628,7 @@ function RecordFormDrawer({
         "p-0 overflow-y-auto",
         recordMode === 'quick' ? "w-[480px] sm:max-w-[480px]" : "w-[720px] sm:max-w-[720px]"
       )}>
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <SheetTitle className="text-xl">
             {isEditing ? '编辑教学记录' : recordMode === 'quick' ? '快速记录' : '录入教学记录'}
           </SheetTitle>
@@ -644,15 +644,15 @@ function RecordFormDrawer({
         {/* Mode Toggle Tabs */}
         {!isEditing && (
           <div className="px-6 pt-4">
-            <div className="inline-flex rounded-lg border border-[#E2E8F0] overflow-hidden w-full">
+            <div className="inline-flex rounded-lg border border-line overflow-hidden w-full">
               <button
                 type="button"
                 onClick={() => setRecordMode('quick')}
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors cursor-pointer',
                   recordMode === 'quick'
-                    ? 'bg-[#F97316] text-white'
-                    : 'bg-white text-[#64748B] hover:bg-[#F7F6F4]'
+                    ? 'bg-warning text-ink-on-dark'
+                    : 'bg-surface text-ink-2 hover:bg-canvas'
                 )}
               >
                 <Zap size={16} /> 快速记录
@@ -663,8 +663,8 @@ function RecordFormDrawer({
                 className={cn(
                   'flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors cursor-pointer',
                   recordMode === 'full'
-                    ? 'bg-[#977653] text-white'
-                    : 'bg-white text-[#64748B] hover:bg-[#F7F6F4]'
+                    ? 'bg-brand text-ink-on-dark'
+                    : 'bg-surface text-ink-2 hover:bg-canvas'
                 )}
               >
                 <BookPlus size={16} /> 完整记录
@@ -685,15 +685,15 @@ function RecordFormDrawer({
               transition={{ delay: 0.05 }}
               className="space-y-3"
             >
-              <label className="block text-base font-semibold text-[#1E293B]">
-                学生 <span className="text-[#EF4444]">*</span>
+              <label className="block text-base font-semibold text-ink">
+                学生 <span className="text-danger">*</span>
               </label>
               <Select value={form.student_name} onValueChange={(v) => update('student_name', v)}>
                 <SelectTrigger className="w-full h-12 text-base">
                   <SelectValue placeholder="选择学生" />
                 </SelectTrigger>
                 <SelectContent>
-                  {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-[#94A3B8]">暂无可选学生</div>}
+                  {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-ink-3">暂无可选学生</div>}
                 </SelectContent>
               </Select>
             </motion.div>
@@ -705,8 +705,8 @@ function RecordFormDrawer({
               transition={{ delay: 0.1 }}
               className="space-y-3"
             >
-              <label className="block text-base font-semibold text-[#1E293B]">
-                IEP 目标 <span className="text-[#EF4444]">*</span>
+              <label className="block text-base font-semibold text-ink">
+                IEP 目标 <span className="text-danger">*</span>
               </label>
               <Select
                 value={form.iep_goal}
@@ -720,7 +720,7 @@ function RecordFormDrawer({
                   {goalOptions.length > 0 ? (
                     goalOptions.map((g) => (<SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>))
                   ) : (
-                    <div className="px-2 py-2 text-xs text-[#94A3B8]">
+                    <div className="px-2 py-2 text-xs text-ink-3">
                       {!form.student_name ? '请先选择学生' : goalLoading ? '正在加载该学生的 IEP 目标…' : '该学生暂无 IEP 目标'}
                     </div>
                   )}
@@ -735,11 +735,11 @@ function RecordFormDrawer({
               transition={{ delay: 0.15 }}
               className="space-y-3"
             >
-              <label className="block text-base font-semibold text-[#1E293B]">
-                进度评分 <span className="text-[#EF4444]">*</span>
-                <span className="ml-2 text-xs text-[#94A3B8] font-normal">0-100 分</span>
+              <label className="block text-base font-semibold text-ink">
+                进度评分 <span className="text-danger">*</span>
+                <span className="ml-2 text-xs text-ink-3 font-normal">0-100 分</span>
               </label>
-              <div className="p-4 rounded-xl bg-[#F7F6F4] border border-[#E2E8F0]">
+              <div className="p-4 rounded-xl bg-canvas border border-line">
                 <ScoreSlider
                   value={form.effectiveness_score || 0}
                   onChange={(v) => update('effectiveness_score', v)}
@@ -754,8 +754,8 @@ function RecordFormDrawer({
               transition={{ delay: 0.2 }}
               className="space-y-3"
             >
-              <label className="block text-base font-semibold text-[#1E293B]">
-                关键备注 <span className="text-[#94A3B8] font-normal text-sm">（可选）</span>
+              <label className="block text-base font-semibold text-ink">
+                关键备注 <span className="text-ink-3 font-normal text-sm">（可选）</span>
               </label>
               <Textarea
                 value={form.teaching_content || ''}
@@ -770,15 +770,15 @@ function RecordFormDrawer({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="flex items-center justify-between p-4 rounded-xl bg-[#F7F6F4] border border-[#E2E8F0]"
+              className="flex items-center justify-between p-4 rounded-xl bg-canvas border border-line"
             >
               <div className="flex items-center gap-3">
                 <Star size={20} className={cn(
-                  form.is_key_record ? 'fill-[#F59E0B] text-[#F59E0B]' : 'text-[#CBD5E1]'
+                  form.is_key_record ? 'fill-warning text-warning' : 'text-ink-4'
                 )} />
                 <div>
-                  <div className="text-sm font-semibold text-[#1E293B]">标记为关键记录</div>
-                  <div className="text-xs text-[#94A3B8]">关键记录会高亮显示，便于后续回顾</div>
+                  <div className="text-sm font-semibold text-ink">标记为关键记录</div>
+                  <div className="text-xs text-ink-3">关键记录会高亮显示，便于后续回顾</div>
                 </div>
               </div>
               <Switch
@@ -798,23 +798,23 @@ function RecordFormDrawer({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
             >
-              <h3 className="text-sm font-semibold text-[#1E293B] mb-3 pb-2 border-b border-[#E2E8F0]">基本信息</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 pb-2 border-b border-line">基本信息</h3>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">学生 <span className="text-[#EF4444]">*</span></label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">学生 <span className="text-danger">*</span></label>
                   <Select value={form.student_name} onValueChange={(v) => update('student_name', v)}>
                     <SelectTrigger className="w-full"><SelectValue placeholder="选择学生" /></SelectTrigger>
                     <SelectContent>
-                      {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-[#94A3B8]">暂无可选学生</div>}
+                      {students.length > 0 ? students.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-ink-3">暂无可选学生</div>}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">记录日期 <span className="text-[#EF4444]">*</span></label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">记录日期 <span className="text-danger">*</span></label>
                   <Input type="date" value={form.date} onChange={(e) => update('date', e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">记录类型 <span className="text-[#EF4444]">*</span></label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">记录类型 <span className="text-danger">*</span></label>
                   <Select value={form.session_type} onValueChange={(v) => update('session_type', v)}>
                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -831,9 +831,9 @@ function RecordFormDrawer({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <h3 className="text-sm font-semibold text-[#1E293B] mb-3 pb-2 border-b border-[#E2E8F0]">IEP目标关联</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 pb-2 border-b border-line">IEP目标关联</h3>
               <div>
-                <label className="block text-sm font-medium text-[#1E293B] mb-1.5">关联IEP目标（可选）</label>
+                <label className="block text-sm font-medium text-ink mb-1.5">关联IEP目标（可选）</label>
                 <Select
                   value={form.iep_goal}
                   onValueChange={(v) => update('iep_goal', v)}
@@ -844,7 +844,7 @@ function RecordFormDrawer({
                     {goalOptions.length > 0 ? (
                       goalOptions.map((g) => (<SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>))
                     ) : (
-                      <div className="px-2 py-2 text-xs text-[#94A3B8]">
+                      <div className="px-2 py-2 text-xs text-ink-3">
                         {!form.student_name ? '请先选择学生' : goalLoading ? '正在加载该学生的 IEP 目标…' : '该学生暂无 IEP 目标'}
                       </div>
                     )}
@@ -859,11 +859,11 @@ function RecordFormDrawer({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
             >
-              <h3 className="text-sm font-semibold text-[#1E293B] mb-3 pb-2 border-b border-[#E2E8F0]">教学内容</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 pb-2 border-b border-line">教学内容</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#1E293B] mb-1.5">学科/领域 <span className="text-[#EF4444]">*</span></label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">学科/领域 <span className="text-danger">*</span></label>
                     <Select value={form.subject} onValueChange={(v) => update('subject', v)}>
                       <SelectTrigger className="w-full"><SelectValue placeholder="选择学科" /></SelectTrigger>
                       <SelectContent>
@@ -872,12 +872,12 @@ function RecordFormDrawer({
                     </Select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#1E293B] mb-1.5">时长（分钟）</label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">时长（分钟）</label>
                     <Input type="number" value={form.duration_minutes} onChange={(e) => update('duration_minutes', Number(e.target.value))} min={5} max={240} />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">教学过程描述 <span className="text-[#EF4444]">*</span></label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">教学过程描述 <span className="text-danger">*</span></label>
                   <Textarea
                     value={form.teaching_content}
                     onChange={(e) => update('teaching_content', e.target.value)}
@@ -886,7 +886,7 @@ function RecordFormDrawer({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">教学方法</label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">教学方法</label>
                   <Input value={form.teaching_method} onChange={(e) => update('teaching_method', e.target.value)} placeholder="如：示范教学、游戏教学、情景教学..." />
                 </div>
               </div>
@@ -898,10 +898,10 @@ function RecordFormDrawer({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h3 className="text-sm font-semibold text-[#1E293B] mb-3 pb-2 border-b border-[#E2E8F0]">教学反思</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 pb-2 border-b border-line">教学反思</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">教学效果 <span className="text-[#EF4444]">*</span></label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">教学效果 <span className="text-danger">*</span></label>
                   <StarRating
                     value={form.effectiveness_score || 0}
                     onChange={(v) => update('effectiveness_score', v)}
@@ -909,7 +909,7 @@ function RecordFormDrawer({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">学生表现 <span className="text-[#EF4444]">*</span></label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">学生表现 <span className="text-danger">*</span></label>
                   <Textarea
                     value={form.student_performance}
                     onChange={(e) => update('student_performance', e.target.value)}
@@ -919,7 +919,7 @@ function RecordFormDrawer({
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#1E293B] mb-1.5">遇到的困难</label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">遇到的困难</label>
                     <Textarea
                       value={form.difficulties}
                       onChange={(e) => update('difficulties', e.target.value)}
@@ -928,7 +928,7 @@ function RecordFormDrawer({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#1E293B] mb-1.5">调整策略</label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">调整策略</label>
                     <Textarea
                       value={form.adjustments}
                       onChange={(e) => update('adjustments', e.target.value)}
@@ -946,20 +946,20 @@ function RecordFormDrawer({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
             >
-              <h3 className="text-sm font-semibold text-[#1E293B] mb-3 pb-2 border-b border-[#E2E8F0]">其他</h3>
+              <h3 className="text-sm font-semibold text-ink mb-3 pb-2 border-b border-line">其他</h3>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-[#1E293B] mb-1.5">使用教具</label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">使用教具</label>
                     <Input value={form.materials_used} onChange={(e) => update('materials_used', e.target.value)} placeholder="使用的教学材料..." />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#1E293B] mb-1.5">课后作业</label>
+                    <label className="block text-sm font-medium text-ink mb-1.5">课后作业</label>
                     <Input value={form.homework} onChange={(e) => update('homework', e.target.value)} placeholder="布置的课后作业..." />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1E293B] mb-1.5">下次计划</label>
+                  <label className="block text-sm font-medium text-ink mb-1.5">下次计划</label>
                   <Input value={form.next_plan} onChange={(e) => update('next_plan', e.target.value)} placeholder="下次教学的计划安排..." />
                 </div>
                 <div className="flex items-center gap-3">
@@ -967,23 +967,23 @@ function RecordFormDrawer({
                     checked={form.is_key_record || false}
                     onCheckedChange={(v) => update('is_key_record', v)}
                   />
-                  <label className="text-sm text-[#1E293B]">标记为关键记录</label>
-                  {form.is_key_record && <Star size={16} className="fill-[#F59E0B] text-[#F59E0B]" />}
+                  <label className="text-sm text-ink">标记为关键记录</label>
+                  {form.is_key_record && <Star size={16} className="fill-warning text-warning" />}
                 </div>
               </div>
             </motion.div>
           </div>
         )}
 
-        <SheetFooter className="border-t border-[#E2E8F0] p-6">
+        <SheetFooter className="border-t border-line p-6">
           <Button variant="outline" onClick={onClose}>取消</Button>
           <Button
             onClick={handleSave}
             className={cn(
-              'text-white',
+              'text-ink-on-dark',
               recordMode === 'quick'
-                ? 'bg-[#F97316] hover:bg-[#EA580C]'
-                : 'bg-[#977653] hover:bg-[#7A5F42]'
+                ? 'bg-warning hover:bg-warning-strong'
+                : 'bg-brand hover:bg-brand-strong'
             )}
           >
             {recordMode === 'quick' ? (
@@ -1016,14 +1016,14 @@ function RecordDetailDrawer({
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-[640px] sm:max-w-[640px] p-0 overflow-y-auto">
-        <SheetHeader className="p-6 border-b border-[#E2E8F0]">
+        <SheetHeader className="p-6 border-b border-line">
           <div className="flex items-center gap-2 mb-2">
             <Badge className={SESSION_TYPE_CONFIG[record.session_type]?.className}>
               {record.session_type}
             </Badge>
             {record.is_key_record && (
               <Badge className="bg-warning-50 text-warning-600">
-                <Star size={12} className="fill-[#F59E0B] text-[#F59E0B] mr-1" />
+                <Star size={12} className="fill-warning text-warning mr-1" />
                 关键记录
               </Badge>
             )}
@@ -1037,71 +1037,71 @@ function RecordDetailDrawer({
         <div className="p-6 space-y-5">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-sm font-bold text-[#977653]">
+              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center text-sm font-bold text-brand-ink">
                 {record.student_name[0]}
               </div>
               <div>
-                <div className="text-sm font-semibold text-[#1E293B]">{record.student_name}</div>
-                <div className="text-xs text-[#94A3B8]">{record.iep_goal}</div>
+                <div className="text-sm font-semibold text-ink">{record.student_name}</div>
+                <div className="text-xs text-ink-3">{record.iep_goal}</div>
               </div>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
-            <div className="p-4 rounded-lg bg-[#F7F6F4]">
-              <h4 className="text-sm font-semibold text-[#1E293B] mb-2">教学过程</h4>
-              <p className="text-sm text-[#64748B] leading-relaxed">{record.teaching_content}</p>
+            <div className="p-4 rounded-lg bg-canvas">
+              <h4 className="text-sm font-semibold text-ink mb-2">教学过程</h4>
+              <p className="text-sm text-ink-2 leading-relaxed">{record.teaching_content}</p>
             </div>
-            <div className="p-4 rounded-lg bg-[#F7F6F4]">
-              <h4 className="text-sm font-semibold text-[#1E293B] mb-2">教学方法</h4>
-              <p className="text-sm text-[#64748B]">{record.teaching_method || '—'}</p>
+            <div className="p-4 rounded-lg bg-canvas">
+              <h4 className="text-sm font-semibold text-ink mb-2">教学方法</h4>
+              <p className="text-sm text-ink-2">{record.teaching_method || '—'}</p>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="space-y-3">
-            <h4 className="text-sm font-semibold text-[#1E293B]">教学反思</h4>
+            <h4 className="text-sm font-semibold text-ink">教学反思</h4>
             <div className="flex items-center gap-2">
               <StarRating value={record.effectiveness_score} size={18} readOnly />
-              <span className="text-sm text-[#64748B]">{record.effectiveness_score} 分</span>
+              <span className="text-sm text-ink-2">{record.effectiveness_score} 分</span>
             </div>
-            <div className="p-4 rounded-lg bg-[#F7F6F4]">
-              <div className="text-xs text-[#94A3B8] mb-1">学生表现</div>
-              <p className="text-sm text-[#64748B]">{record.student_performance}</p>
+            <div className="p-4 rounded-lg bg-canvas">
+              <div className="text-xs text-ink-3 mb-1">学生表现</div>
+              <p className="text-sm text-ink-2">{record.student_performance}</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-[#F7F6F4]">
-                <div className="text-xs text-[#94A3B8] mb-1">遇到的困难</div>
-                <p className="text-sm text-[#64748B]">{record.difficulties || '—'}</p>
+              <div className="p-3 rounded-lg bg-canvas">
+                <div className="text-xs text-ink-3 mb-1">遇到的困难</div>
+                <p className="text-sm text-ink-2">{record.difficulties || '—'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-[#F7F6F4]">
-                <div className="text-xs text-[#94A3B8] mb-1">调整策略</div>
-                <p className="text-sm text-[#64748B]">{record.adjustments || '—'}</p>
+              <div className="p-3 rounded-lg bg-canvas">
+                <div className="text-xs text-ink-3 mb-1">调整策略</div>
+                <p className="text-sm text-ink-2">{record.adjustments || '—'}</p>
               </div>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="space-y-3">
-            <h4 className="text-sm font-semibold text-[#1E293B]">其他信息</h4>
+            <h4 className="text-sm font-semibold text-ink">其他信息</h4>
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-lg bg-[#F7F6F4]">
-                <div className="text-xs text-[#94A3B8] mb-1">使用教具</div>
-                <p className="text-sm text-[#64748B]">{record.materials_used || '—'}</p>
+              <div className="p-3 rounded-lg bg-canvas">
+                <div className="text-xs text-ink-3 mb-1">使用教具</div>
+                <p className="text-sm text-ink-2">{record.materials_used || '—'}</p>
               </div>
-              <div className="p-3 rounded-lg bg-[#F7F6F4]">
-                <div className="text-xs text-[#94A3B8] mb-1">课后作业</div>
-                <p className="text-sm text-[#64748B]">{record.homework || '—'}</p>
+              <div className="p-3 rounded-lg bg-canvas">
+                <div className="text-xs text-ink-3 mb-1">课后作业</div>
+                <p className="text-sm text-ink-2">{record.homework || '—'}</p>
               </div>
             </div>
-            <div className="p-3 rounded-lg bg-[#F7F6F4]">
-              <div className="text-xs text-[#94A3B8] mb-1">下次计划</div>
-              <p className="text-sm text-[#64748B]">{record.next_plan || '—'}</p>
+            <div className="p-3 rounded-lg bg-canvas">
+              <div className="text-xs text-ink-3 mb-1">下次计划</div>
+              <p className="text-sm text-ink-2">{record.next_plan || '—'}</p>
             </div>
           </motion.div>
         </div>
 
-        <SheetFooter className="border-t border-[#E2E8F0] p-6">
+        <SheetFooter className="border-t border-line p-6">
           <Button variant="outline" onClick={onClose}>关闭</Button>
-          <Button onClick={() => onEdit(record)} className="bg-[#977653] hover:bg-[#7A5F42] text-white">
+          <Button onClick={() => onEdit(record)} className="bg-brand hover:bg-brand-strong text-ink-on-dark">
             <Pencil size={16} className="mr-1" /> 编辑
           </Button>
         </SheetFooter>
@@ -1262,7 +1262,7 @@ export default function Teaching() {
       description: (
         <>
           删除后该次授课的试次与评分将一并消失，
-          <b className="text-[#B91C1C]">不可撤销</b>
+          <b className="text-danger-strong">不可撤销</b>
           ，也会影响目标掌握度的统计。
         </>
       ),
@@ -1307,8 +1307,8 @@ export default function Teaching() {
         className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mb-6"
       >
         <div className="min-w-0">
-          <h1 className="text-[28px] font-bold text-[#1E293B] leading-tight whitespace-nowrap">教学记录</h1>
-          <p className="text-sm text-[#64748B] mt-1">日常教学记录、反思与效果评估</p>
+          <h1 className="text-[28px] font-bold text-ink leading-tight whitespace-nowrap">教学记录</h1>
+          <p className="text-sm text-ink-2 mt-1">日常教学记录、反思与效果评估</p>
         </div>
         <div className="flex items-center gap-3">
           {/* Quick Record Button */}
@@ -1320,7 +1320,7 @@ export default function Teaching() {
                   setRecordMode('quick');
                   setFormOpen(true);
                 }}
-                className="h-11 lg:h-10 bg-[#F97316] hover:bg-[#EA580C] text-white gap-2"
+                className="h-11 lg:h-10 bg-warning hover:bg-warning-strong text-ink-on-dark gap-2"
               >
                 <Zap size={18} /> 快速记录
               </Button>
@@ -1331,7 +1331,7 @@ export default function Teaching() {
                   setRecordMode('full');
                   setFormOpen(true);
                 }}
-                className="h-11 lg:h-10 bg-[#977653] hover:bg-[#7A5F42] text-white gap-2"
+                className="h-11 lg:h-10 bg-brand hover:bg-brand-strong text-ink-on-dark gap-2"
               >
                 <BookPlus size={18} /> 录入教学记录
               </Button>
@@ -1345,11 +1345,11 @@ export default function Teaching() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-white rounded-lg p-4 mb-6 shadow-sm"
+        className="bg-surface rounded-lg p-4 mb-6 shadow-sm"
       >
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
             <Input
               placeholder="搜索学生、教师、内容..."
               value={search}
@@ -1361,7 +1361,7 @@ export default function Teaching() {
             <SelectTrigger className="w-[160px]"><SelectValue placeholder="学生" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部学生</SelectItem>
-              {studentOptions.length > 0 ? studentOptions.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-[#94A3B8]">暂无可选学生</div>}
+              {studentOptions.length > 0 ? studentOptions.map((s) => (<SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)) : <div className="px-2 py-2 text-xs text-ink-3">暂无可选学生</div>}
             </SelectContent>
           </Select>
           <Select value={subjectFilter} onValueChange={setSubjectFilter}>
@@ -1380,11 +1380,11 @@ export default function Teaching() {
           </Select>
           <div className="flex items-center gap-2">
             <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[130px]" />
-            <span className="text-[#94A3B8]">-</span>
+            <span className="text-ink-3">-</span>
             <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[130px]" />
           </div>
           <div className="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
-            <label className="flex items-center gap-1.5 text-sm text-[#64748B] cursor-pointer whitespace-nowrap">
+            <label className="flex items-center gap-1.5 text-sm text-ink-2 cursor-pointer whitespace-nowrap">
               <Checkbox checked={keyOnlyFilter} onCheckedChange={(v) => setKeyOnlyFilter(v === true)} />
               仅关键记录
             </label>
@@ -1432,12 +1432,12 @@ export default function Teaching() {
         transition={{ delay: 0.15 }}
         className="flex justify-end mb-4"
       >
-        <div className="inline-flex rounded-md border border-[#E2E8F0] overflow-hidden">
+        <div className="inline-flex rounded-md border border-line overflow-hidden">
           <button
             onClick={() => setViewMode('list')}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors cursor-pointer min-h-11 lg:min-h-8',
-              viewMode === 'list' ? 'bg-[#977653] text-white' : 'bg-white text-[#64748B] hover:bg-[#F7F6F4]',
+              viewMode === 'list' ? 'bg-brand text-ink-on-dark' : 'bg-surface text-ink-2 hover:bg-canvas',
             )}
           >
             <LayoutList size={16} /> 列表
@@ -1446,7 +1446,7 @@ export default function Teaching() {
             onClick={() => setViewMode('calendar')}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-sm transition-colors cursor-pointer min-h-11 lg:min-h-8',
-              viewMode === 'calendar' ? 'bg-[#977653] text-white' : 'bg-white text-[#64748B] hover:bg-[#F7F6F4]',
+              viewMode === 'calendar' ? 'bg-brand text-ink-on-dark' : 'bg-surface text-ink-2 hover:bg-canvas',
             )}
           >
             <CalendarIcon size={16} /> 日历
@@ -1464,43 +1464,43 @@ export default function Teaching() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-surface rounded-xl shadow-sm overflow-hidden">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-[#F7F6F4] hover:bg-[#F7F6F4]">
+                  <TableRow className="bg-canvas hover:bg-canvas">
                     <TableHead className="w-[40px]">
                       <Checkbox
                         checked={selectedRecords.size === paginatedRecords.length && paginatedRecords.length > 0}
                         onCheckedChange={toggleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold">日期</TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold">学生</TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold">IEP目标</TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold">记录类型</TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold">效果评分</TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold">关键</TableHead>
-                    <TableHead className="text-xs text-[#94A3B8] font-semibold text-right">操作</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold">日期</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold">学生</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold">IEP目标</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold">记录类型</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold">效果评分</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold">关键</TableHead>
+                    <TableHead className="text-xs text-ink-3 font-semibold text-right">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedRecords.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-16">
-                        <BookOpen size={48} className="mx-auto text-[#CBD5E1] mb-3" />
-                        <h4 className="text-base font-semibold text-[#1E293B] mb-1">暂无教学记录</h4>
-                        <p className="text-sm text-[#64748B] mb-3">{readOnly ? '暂无可见的教学记录' : '点击上方按钮录入第一条记录'}</p>
+                        <BookOpen size={48} className="mx-auto text-ink-4 mb-3" />
+                        <h4 className="text-base font-semibold text-ink mb-1">暂无教学记录</h4>
+                        <p className="text-sm text-ink-2 mb-3">{readOnly ? '暂无可见的教学记录' : '点击上方按钮录入第一条记录'}</p>
                         {!readOnly && (
                           <div className="flex items-center justify-center gap-3">
                             <Button
                               onClick={() => { setEditingRecord(null); setRecordMode('quick'); setFormOpen(true); }}
-                              className="bg-[#F97316] hover:bg-[#EA580C] text-white"
+                              className="bg-warning hover:bg-warning-strong text-ink-on-dark"
                             >
                               <Zap size={16} className="mr-1" /> 快速记录
                             </Button>
                             <Button
                               onClick={() => { setEditingRecord(null); setRecordMode('full'); setFormOpen(true); }}
-                              className="bg-[#977653] hover:bg-[#7A5F42] text-white"
+                              className="bg-brand hover:bg-brand-strong text-ink-on-dark"
                             >
                               <BookPlus size={16} className="mr-1" /> 录入教学记录
                             </Button>
@@ -1515,7 +1515,7 @@ export default function Teaching() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.04 }}
-                        className="border-b border-[#E2E8F0] hover:bg-[#F7F6F4] transition-colors"
+                        className="border-b border-line hover:bg-canvas transition-colors"
                       >
                         <TableCell>
                           <Checkbox
@@ -1523,16 +1523,16 @@ export default function Teaching() {
                             onCheckedChange={() => toggleSelect(record.id)}
                           />
                         </TableCell>
-                        <TableCell className="text-sm text-[#1E293B]">{record.date}</TableCell>
+                        <TableCell className="text-sm text-ink">{record.date}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-xs font-bold text-[#977653]">
+                            <div className="w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center text-xs font-bold text-brand-ink">
                               {record.student_name[0]}
                             </div>
-                            <span className="text-sm font-medium text-[#1E293B]">{record.student_name}</span>
+                            <span className="text-sm font-medium text-ink">{record.student_name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm text-[#64748B] max-w-[200px] truncate" title={record.iep_goal}>
+                        <TableCell className="text-sm text-ink-2 max-w-[200px] truncate" title={record.iep_goal}>
                           {record.iep_goal}
                         </TableCell>
                         <TableCell>
@@ -1545,23 +1545,23 @@ export default function Teaching() {
                         </TableCell>
                         <TableCell>
                           {record.is_key_record ? (
-                            <Star size={16} className="fill-[#F59E0B] text-[#F59E0B]" />
+                            <Star size={16} className="fill-warning text-warning" />
                           ) : (
-                            <span className="text-[#CBD5E1]">—</span>
+                            <span className="text-ink-4">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button variant="ghost" size="sm" aria-label="查看记录" title="查看" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => handleViewRecord(record)}>
-                              <Eye size={14} className="text-[#64748B]" />
+                              <Eye size={14} className="text-ink-2" />
                             </Button>
                             {!readOnly && (
                               <>
                                 <Button variant="ghost" size="sm" aria-label="编辑记录" title="编辑" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => { setEditingRecord(record); setFormOpen(true); }}>
-                                  <Pencil size={14} className="text-[#64748B]" />
+                                  <Pencil size={14} className="text-ink-2" />
                                 </Button>
                                 <Button variant="ghost" size="sm" aria-label="删除记录" title="删除" className="h-11 w-11 lg:h-8 lg:w-8 p-0" onClick={() => handleDelete(record.id)}>
-                                  <X size={14} className="text-[#EF4444]" />
+                                  <X size={14} className="text-danger" />
                                 </Button>
                               </>
                             )}
@@ -1576,7 +1576,7 @@ export default function Teaching() {
               {/* Pagination */}
               {paginatedRecords.length > 0 && (
                 <Pagination
-                  className="px-4 py-3 border-t border-[#E2E8F0]"
+                  className="px-4 py-3 border-t border-line"
                   page={currentPage}
                   totalPages={totalPages}
                   onChange={setCurrentPage}

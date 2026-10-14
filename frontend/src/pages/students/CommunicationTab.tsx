@@ -72,7 +72,7 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 flex items-center justify-center text-[#64748B]">
+      <div className="bg-surface rounded-lg border border-line p-8 flex items-center justify-center text-ink-2">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> 沟通方式加载中...
       </div>
     );
@@ -80,16 +80,16 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-5 space-y-4">
+      <div className="bg-surface rounded-lg border border-line p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-[#1E293B] flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-ink flex items-center gap-2">
             <MessagesSquare className="w-4 h-4 text-primary-500" /> 沟通方式
           </h4>
           {canEdit && (
             <button
               onClick={() => void handleSave()}
               disabled={saving}
-              className="flex items-center gap-1 h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+              className="flex items-center gap-1 h-8 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               {saving ? '保存中...' : '保存'}
@@ -98,7 +98,7 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-2">主要沟通方式（可多选）</label>
+          <label className="block text-xs font-semibold text-ink mb-2">主要沟通方式（可多选）</label>
           <div className="flex flex-wrap gap-2">
             {(methodDict.length > 0
               ? methodDict
@@ -118,8 +118,8 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
                   disabled={!canEdit}
                   className={`h-9 px-4 rounded-full border text-sm font-medium transition-all cursor-pointer disabled:cursor-default ${
                     active
-                      ? 'border-transparent bg-[#977653] text-white'
-                      : 'border-[#E2E8F0] text-[#64748B] hover:border-[#CBD5E1]'
+                      ? 'border-transparent bg-brand text-ink-on-dark'
+                      : 'border-line text-ink-2 hover:border-line-2'
                   }`}
                 >
                   {m.name}
@@ -131,12 +131,12 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">理解水平（接受性语言）</label>
+            <label className="block text-xs font-semibold text-ink mb-1.5">理解水平（接受性语言）</label>
             <select
               value={profile.receptive_level}
               disabled={!canEdit}
               onChange={(e) => setProfile((p) => ({ ...p, receptive_level: e.target.value }))}
-              className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm bg-white disabled:bg-[#F7F6F4]"
+              className="w-full h-9 px-3 rounded-md border border-line text-sm bg-surface disabled:bg-canvas"
             >
               <option value="">未评估</option>
               {LEVEL_OPTIONS.map((o) => (
@@ -145,12 +145,12 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">表达水平（表达性语言）</label>
+            <label className="block text-xs font-semibold text-ink mb-1.5">表达水平（表达性语言）</label>
             <select
               value={profile.expressive_level}
               disabled={!canEdit}
               onChange={(e) => setProfile((p) => ({ ...p, expressive_level: e.target.value }))}
-              className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm bg-white disabled:bg-[#F7F6F4]"
+              className="w-full h-9 px-3 rounded-md border border-line text-sm bg-surface disabled:bg-canvas"
             >
               <option value="">未评估</option>
               {LEVEL_OPTIONS.map((o) => (
@@ -161,21 +161,21 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">AAC 辅具</label>
+          <label className="block text-xs font-semibold text-ink mb-1.5">AAC 辅具</label>
           {canEdit ? (
             <input
               value={profile.aac_device}
               onChange={(e) => setProfile((p) => ({ ...p, aac_device: e.target.value }))}
               placeholder="如：平板沟通软件（TD Snap）、PECS 沟通本"
-              className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              className="w-full h-9 px-3 rounded-md border border-line text-sm"
             />
           ) : (
-            <p className="text-sm text-[#475569] bg-[#F7F6F4] rounded-md px-3 py-2">{profile.aac_device || '—'}</p>
+            <p className="text-sm text-ink-2 bg-canvas rounded-md px-3 py-2">{profile.aac_device || '—'}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">沟通说明（教学提示）</label>
+          <label className="block text-xs font-semibold text-ink mb-1.5">沟通说明（教学提示）</label>
           {canEdit ? (
             <Textarea
               value={profile.communication_notes}
@@ -185,7 +185,7 @@ export default function CommunicationTab({ studentId }: { studentId: number }) {
               className="text-sm"
             />
           ) : (
-            <p className="text-sm text-[#475569] bg-[#F7F6F4] rounded-md px-3 py-2 min-h-[3rem]">
+            <p className="text-sm text-ink-2 bg-canvas rounded-md px-3 py-2 min-h-[3rem]">
               {profile.communication_notes || '—'}
             </p>
           )}

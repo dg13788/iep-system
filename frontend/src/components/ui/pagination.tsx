@@ -72,9 +72,9 @@ export function Pagination({
       )}
     >
       <div className="flex items-center gap-3 justify-center">
-        {summary && <div className="text-sm text-[#64748B]">{summary}</div>}
+        {summary && <div className="text-sm text-ink-2">{summary}</div>}
         {totalPages > 1 && (
-          <div className="text-sm text-[#64748B] sm:hidden tabular-nums">
+          <div className="text-sm text-ink-2 sm:hidden tabular-nums">
             第 {page} / {totalPages} 页
           </div>
         )}
@@ -90,7 +90,7 @@ export function Pagination({
               onClick={() => onChange(Math.max(1, page - 1))}
               className={cn(
                 btn,
-                'h-11 lg:h-9 min-w-11 lg:min-w-9 px-3 border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F7F6F4]',
+                'h-11 lg:h-9 min-w-11 lg:min-w-9 px-3 border border-line bg-surface text-ink-2 hover:bg-canvas',
               )}
             >
               <ChevronLeft className="w-4 h-4 sm:hidden" />
@@ -104,7 +104,7 @@ export function Pagination({
                   <span
                     key={`gap-${idx}`}
                     aria-hidden="true"
-                    className="w-8 text-center text-[#94A3B8] select-none"
+                    className="w-8 text-center text-ink-3 select-none"
                   >
                     …
                   </span>
@@ -119,8 +119,8 @@ export function Pagination({
                       btn,
                       'h-11 lg:h-9 min-w-11 lg:min-w-9 px-2 tabular-nums',
                       it === page
-                        ? 'bg-[#977653] text-white'
-                        : 'text-[#64748B] hover:bg-[#F7F6F4]',
+                        ? 'bg-brand text-ink-on-dark'
+                        : 'text-ink-2 hover:bg-canvas',
                     )}
                   >
                     {it}
@@ -136,7 +136,7 @@ export function Pagination({
               onClick={() => onChange(Math.min(totalPages, page + 1))}
               className={cn(
                 btn,
-                'h-11 lg:h-9 min-w-11 lg:min-w-9 px-3 border border-[#E2E8F0] bg-white text-[#475569] hover:bg-[#F7F6F4]',
+                'h-11 lg:h-9 min-w-11 lg:min-w-9 px-3 border border-line bg-surface text-ink-2 hover:bg-canvas',
               )}
             >
               <span className="hidden sm:inline">下一页</span>

@@ -66,14 +66,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         <AlertDialogContent className="w-[calc(100vw-2rem)] max-w-[420px] rounded-2xl p-5 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base">{opts?.title}</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm leading-relaxed text-[#64748B]">
+            <AlertDialogDescription className="text-sm leading-relaxed text-ink-2">
               {opts?.description}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-5 gap-2">
             <AlertDialogCancel
               autoFocus
-              className="min-tap-h mt-0 rounded-lg border-[#E2E8F0] sm:min-w-[88px]"
+              className="min-tap-h mt-0 rounded-lg border-line sm:min-w-[88px]"
             >
               {opts?.cancelText || '取消'}
             </AlertDialogCancel>
@@ -82,7 +82,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 e.preventDefault();
                 close(true);
               }}
-              className="min-tap-h mt-0 rounded-lg bg-[#DC2626] text-white hover:bg-[#B91C1C] sm:min-w-[88px]"
+              className="min-tap-h mt-0 rounded-lg bg-danger-strong text-ink-on-dark hover:bg-danger-strong sm:min-w-[88px]"
             >
               {opts?.confirmText || '删除'}
             </AlertDialogAction>

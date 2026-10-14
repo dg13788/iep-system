@@ -53,17 +53,17 @@ import TrialCounter from './iep/TrialCounter';
 const DUE_VISIBLE = 8;
 
 const LEVEL_META: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-  adjust:   { label: '建议调整干预', bg: 'bg-[#FEF2F2]', text: 'text-[#B91C1C]', dot: '#DC2626' },
-  watch:    { label: '需关注',       bg: 'bg-[#FFFBEB]', text: 'text-[#B45309]', dot: '#D97706' },
-  mastered: { label: '已达标待复核', bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]', dot: '#2563EB' },
+  adjust:   { label: '建议调整干预', bg: 'bg-danger-soft', text: 'text-danger-strong', dot: 'rgb(var(--danger-strong))' },
+  watch:    { label: '需关注',       bg: 'bg-warning-soft', text: 'text-warning-strong', dot: 'rgb(var(--warning-strong))' },
+  mastered: { label: '已达标待复核', bg: 'bg-info-soft', text: 'text-info-strong', dot: 'rgb(var(--info-strong))' },
 };
 
 const KIND_META: Record<string, { label: string; bg: string; text: string }> = {
-  review_due:        { label: '复审',     bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]' },
-  approval:          { label: '审批',     bg: 'bg-[#FFFBEB]', text: 'text-[#B45309]' },
-  parent_sign:       { label: '家长签署', bg: 'bg-[#F5F3FF]', text: 'text-[#6D28D9]' },
-  draft:             { label: '草稿',     bg: 'bg-[#F1F5F9]', text: 'text-[#475569]' },
-  adjustment_review: { label: '效果复核', bg: 'bg-[#ECFDF5]', text: 'text-[#047857]' },
+  review_due:        { label: '复审',     bg: 'bg-info-soft', text: 'text-info-strong' },
+  approval:          { label: '审批',     bg: 'bg-warning-soft', text: 'text-warning-strong' },
+  parent_sign:       { label: '家长签署', bg: 'bg-violet-soft', text: 'text-violet' },
+  draft:             { label: '草稿',     bg: 'bg-surface-2', text: 'text-ink-2' },
+  adjustment_review: { label: '效果复核', bg: 'bg-success-soft', text: 'text-success-strong' },
 };
 
 function greeting(): string {
@@ -150,11 +150,11 @@ export default function Today() {
       {/* 头部 */}
       <div className="flex items-start justify-between gap-3 mb-5">
         <div className="min-w-0">
-          <p className="text-xs text-[#94A3B8]">{todayText()}</p>
-          <h1 className="mt-0.5 text-xl sm:text-2xl font-semibold tracking-tight text-[#1E293B]">
+          <p className="text-xs text-ink-3">{todayText()}</p>
+          <h1 className="mt-0.5 text-xl sm:text-2xl font-semibold tracking-tight text-ink">
             {greeting()}，{user?.name || '老师'}
           </h1>
-          <p className="mt-1.5 text-sm text-[#64748B] leading-relaxed">
+          <p className="mt-1.5 text-sm text-ink-2 leading-relaxed">
             {total === 0
               ? '今天没有待办，可以安心上课。'
               : `今天有 ${wb.counts.due} 项目标待采集、${wb.counts.attention} 个目标需要关注、${wb.counts.upcoming} 项事项临近时限。`}
@@ -174,7 +174,7 @@ export default function Today() {
       </div>
 
       {wb.readonly && (
-        <div className="mb-5 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-xs text-[#64748B]">
+        <div className="mb-5 rounded-lg border border-line bg-surface-3 px-4 py-3 text-xs text-ink-2">
           {wb.note || '当前账号为只读视角，不提供教学待办。'}
         </div>
       )}
@@ -197,13 +197,13 @@ export default function Today() {
       >
         {wb.due.length === 0 ? (
           <Empty
-            icon={<Timer className="w-5 h-5 text-[#94A3B8]" />}
+            icon={<Timer className="w-5 h-5 text-ink-3" />}
             title="今天没有需要补记的数据"
             description="所有目标都在采集周期内。中途加练的试次可以随时从 IEP 计划里补记。"
           />
         ) : (
           <>
-            <div className="divide-y divide-[#F1F5F9]">
+            <div className="divide-y divide-line">
               {visibleDue.map((it) => (
                 <DueRow
                   key={`${it.objective_id}`}
@@ -217,7 +217,7 @@ export default function Today() {
             {wb.due.length > DUE_VISIBLE && (
               <button
                 onClick={() => setDueExpanded((v) => !v)}
-                className="mt-2 flex items-center gap-1 text-xs text-[#2563EB] cursor-pointer rounded-md px-2 -mx-2 min-h-11 lg:min-h-8 hover:bg-primary/5 press"
+                className="mt-2 flex items-center gap-1 text-xs text-info-strong cursor-pointer rounded-md px-2 -mx-2 min-h-11 lg:min-h-8 hover:bg-primary/5 press"
               >
                 {dueExpanded ? '收起' : `展开全部 ${wb.due.length} 项`}
                 <ChevronDown className={cn('w-3 h-3 transition-transform', dueExpanded && 'rotate-180')} />
@@ -236,12 +236,12 @@ export default function Today() {
       >
         {wb.attention.length === 0 ? (
           <Empty
-            icon={<CheckCircle2 className="w-5 h-5 text-[#94A3B8]" />}
+            icon={<CheckCircle2 className="w-5 h-5 text-ink-3" />}
             title="没有目标触发关注信号"
             description="依据已采集数据判断，暂不需要调整干预。继续按计划采集即可。"
           />
         ) : (
-          <div className="divide-y divide-[#F1F5F9]">
+          <div className="divide-y divide-line">
             {wb.attention.map((it) => (
               <AttentionRow
                 key={it.goal_id}
@@ -264,12 +264,12 @@ export default function Today() {
       >
         {wb.upcoming.length === 0 ? (
           <Empty
-            icon={<CalendarClock className="w-5 h-5 text-[#94A3B8]" />}
+            icon={<CalendarClock className="w-5 h-5 text-ink-3" />}
             title="30 天内没有到期事项"
             description="复审、审批、家长签署都在时限内。"
           />
         ) : (
-          <div className="divide-y divide-[#F1F5F9]">
+          <div className="divide-y divide-line">
             {wb.upcoming.map((it, i) => (
               <UpcomingRow key={`${it.kind}-${it.plan_id}-${i}`} item={it} onOpen={() => openPlan(it.plan_id)} />
             ))}
@@ -277,7 +277,7 @@ export default function Today() {
         )}
       </Section>
 
-      <p className="mt-6 text-[11px] text-[#94A3B8]">
+      <p className="mt-6 text-[11px] text-ink-3">
         数据范围：{wb.scope_type === 'all' ? '全校' : '我负责的班级/学生'} ·
         生成于 {wb.generated_at} · 旧统计仪表盘仍在左侧「仪表盘」
       </p>
@@ -325,22 +325,22 @@ function Section({
 }) {
   return (
     // 用极轻的阴影 + 留白表达"这是一张卡片"，而不是靠一圈重边框把界面切成表格
-    <section className="mb-5 rounded-xl border border-[#E2E8F0] bg-white shadow-card overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#F1F5F9]">
+    <section className="mb-5 rounded-xl border border-line bg-surface shadow-card overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="w-6 h-6 shrink-0 rounded-full bg-[#F1F5F9] flex items-center justify-center text-[#475569]">
+          <span className="w-6 h-6 shrink-0 rounded-full bg-surface-2 flex items-center justify-center text-ink-2">
             {icon}
           </span>
-          <h2 className="text-sm font-semibold text-[#1E293B]">{title}</h2>
-          <span className="px-1.5 py-0.5 rounded-full bg-[#F1F5F9] text-[11px] font-medium text-[#475569] tabular">
+          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          <span className="px-1.5 py-0.5 rounded-full bg-surface-2 text-[11px] font-medium text-ink-2 tabular">
             {count}
           </span>
         </div>
-        {hint && <p className="text-[11px] text-[#94A3B8] truncate hidden sm:block">{hint}</p>}
+        {hint && <p className="text-[11px] text-ink-3 truncate hidden sm:block">{hint}</p>}
       </div>
       <div className="px-4 py-3">{children}</div>
       {footnote && (
-        <p className="px-4 py-2.5 border-t border-[#F1F5F9] bg-[#FFFBEB] text-[11px] text-[#B45309]">
+        <p className="px-4 py-2.5 border-t border-line bg-warning-soft text-[11px] text-warning-strong">
           {footnote}
         </p>
       )}
@@ -377,28 +377,28 @@ function DueRow({
     <div className="relative flex flex-col gap-2 py-3 pl-3 sm:flex-row sm:items-center sm:gap-3 sm:pl-4">
       {overdue && (
         <span
-          className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-[#DC2626]"
+          className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-danger-strong"
           aria-hidden="true"
         />
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-[#1E293B]">{item.student_name}</span>
-          {item.class_name && <span className="text-[11px] text-[#94A3B8]">{item.class_name}</span>}
+          <span className="text-sm font-medium text-ink">{item.student_name}</span>
+          {item.class_name && <span className="text-[11px] text-ink-3">{item.class_name}</span>}
           <span
             className={cn(
               'px-1.5 py-0.5 rounded text-[10px] font-medium',
-              overdue ? 'bg-[#FEE2E2] text-[#B91C1C]' : dueToday ? 'bg-[#FFFBEB] text-[#B45309]' : 'bg-[#F1F5F9] text-[#64748B]',
+              overdue ? 'bg-danger-soft text-danger-strong' : dueToday ? 'bg-warning-soft text-warning-strong' : 'bg-surface-2 text-ink-2',
             )}
           >
             {overdue ? `逾期 ${item.days_overdue} 天` : dueToday ? '今天该采集' : `${-item.days_overdue} 天后`}
           </span>
           {item.record_count === 0 && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#EFF6FF] text-[#1D4ED8]">从未采集</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] bg-info-soft text-info-strong">从未采集</span>
           )}
         </div>
-        <p className="mt-0.5 text-xs text-[#475569] truncate">{item.objective_title}</p>
-        <p className="mt-0.5 text-[11px] text-[#94A3B8] truncate">
+        <p className="mt-0.5 text-xs text-ink-2 truncate">{item.objective_title}</p>
+        <p className="mt-0.5 text-[11px] text-ink-3 truncate">
           长期目标：{item.goal_title}
           {item.last_date ? ` · 上次 ${item.last_date}` : ''}
           {item.frequency ? ` · ${item.frequency}${item.frequency_defaulted ? '（未设定，按周排）' : ''}` : ''}
@@ -444,15 +444,15 @@ function AttentionRow({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-[#1E293B]">{item.student_name}</span>
+            <span className="text-sm font-medium text-ink">{item.student_name}</span>
             <span className={cn('px-1.5 py-0.5 rounded-full text-[10px] font-medium', m.bg, m.text)}>
               {item.level_text}
             </span>
             {item.points > 0 && (
-              <span className="text-[10px] text-[#94A3B8]">{item.points} 个数据点</span>
+              <span className="text-[10px] text-ink-3">{item.points} 个数据点</span>
             )}
           </div>
-          <p className="mt-0.5 text-xs text-[#475569] truncate">{item.goal_title}</p>
+          <p className="mt-0.5 text-xs text-ink-2 truncate">{item.goal_title}</p>
         </div>
         {/* 两个操作在手机上等分整行（各 44px 高），桌面上回到紧凑尺寸 */}
         <div className="flex items-center gap-1.5 shrink-0">
@@ -479,16 +479,16 @@ function AttentionRow({
 
       <ul className="mt-2 space-y-0.5">
         {item.reasons.slice(0, 2).map((r, i) => (
-          <li key={i} className="text-[11px] text-[#64748B] leading-relaxed">
+          <li key={i} className="text-[11px] text-ink-2 leading-relaxed">
             · {r}
           </li>
         ))}
       </ul>
 
       {item.suggestions.length > 0 && (
-        <div className="mt-2 flex items-start gap-1.5 bg-[#F8FAFC] rounded-md px-2.5 py-2">
-          <Sparkles className="w-3 h-3 text-[#94A3B8] mt-0.5 shrink-0" />
-          <p className="text-[11px] text-[#64748B] leading-relaxed">
+        <div className="mt-2 flex items-start gap-1.5 bg-surface-3 rounded-md px-2.5 py-2">
+          <Sparkles className="w-3 h-3 text-ink-3 mt-0.5 shrink-0" />
+          <p className="text-[11px] text-ink-2 leading-relaxed">
             可考虑的方向：{item.suggestions.map((s) => s.text).join('；')}
           </p>
         </div>
@@ -506,25 +506,25 @@ function UpcomingRow({ item, onOpen }: { item: UpcomingItem; onOpen: () => void 
   return (
     <button
       onClick={onOpen}
-      className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-[#F8FAFC] -mx-1 px-1 rounded cursor-pointer"
+      className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-surface-3 -mx-1 px-1 rounded cursor-pointer"
     >
       <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0', k.bg, k.text)}>
         {k.label}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-[#1E293B] truncate">
+        <p className="text-xs text-ink truncate">
           {item.student_name} · {item.title}
         </p>
         <p
           className={cn(
             'text-[11px] truncate',
-            item.severity === 'overdue' ? 'text-[#B91C1C]' : 'text-[#64748B]',
+            item.severity === 'overdue' ? 'text-danger-strong' : 'text-ink-2',
           )}
         >
           {item.text}
         </p>
       </div>
-      <ChevronRight className="w-3.5 h-3.5 text-[#CBD5E1] shrink-0" />
+      <ChevronRight className="w-3.5 h-3.5 text-ink-4 shrink-0" />
     </button>
   );
 }
@@ -576,26 +576,26 @@ function QuickAdjust({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
-      <div className="w-full sm:max-w-[520px] bg-white rounded-t-2xl sm:rounded-2xl shadow-xl">
-        <div className="px-5 py-4 border-b border-[#E2E8F0]">
-          <h3 className="text-base font-semibold text-[#1E293B]">登记干预调整</h3>
-          <p className="mt-0.5 text-xs text-[#64748B] truncate">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-overlay/40 p-0 sm:p-4">
+      <div className="w-full sm:max-w-[520px] bg-surface rounded-t-2xl sm:rounded-2xl shadow-xl">
+        <div className="px-5 py-4 border-b border-line">
+          <h3 className="text-base font-semibold text-ink">登记干预调整</h3>
+          <p className="mt-0.5 text-xs text-ink-2 truncate">
             {item.student_name} · {item.goal_title}
           </p>
         </div>
 
         <div className="px-5 py-4">
-          <div className="rounded-lg bg-[#F8FAFC] border border-[#E2E8F0] p-3 mb-4">
-            <p className="text-[11px] font-medium text-[#475569] mb-1">系统给出的判断依据</p>
+          <div className="rounded-lg bg-surface-3 border border-line p-3 mb-4">
+            <p className="text-[11px] font-medium text-ink-2 mb-1">系统给出的判断依据</p>
             <ul className="space-y-0.5">
               {item.reasons.map((r, i) => (
-                <li key={i} className="text-[11px] text-[#64748B] leading-relaxed">· {r}</li>
+                <li key={i} className="text-[11px] text-ink-2 leading-relaxed">· {r}</li>
               ))}
             </ul>
           </div>
 
-          <p className="text-xs font-medium text-[#475569] mb-1.5">调整类型</p>
+          <p className="text-xs font-medium text-ink-2 mb-1.5">调整类型</p>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="h-9 mb-3">
               <SelectValue />
@@ -607,7 +607,7 @@ function QuickAdjust({
             </SelectContent>
           </Select>
 
-          <p className="text-xs font-medium text-[#475569] mb-1.5">具体改了什么（必填）</p>
+          <p className="text-xs font-medium text-ink-2 mb-1.5">具体改了什么（必填）</p>
           <Textarea
             value={detail}
             onChange={(e) => setDetail(e.target.value)}
@@ -616,19 +616,19 @@ function QuickAdjust({
             className="text-xs"
           />
 
-          <p className="text-xs font-medium text-[#475569] mt-3 mb-1.5">再监控到期日</p>
+          <p className="text-xs font-medium text-ink-2 mt-3 mb-1.5">再监控到期日</p>
           <input
             type="date"
             value={due}
             onChange={(e) => setDue(e.target.value)}
-            className="h-9 px-3 rounded-md border border-[#E2E8F0] text-xs text-[#1E293B]"
+            className="h-9 px-3 rounded-md border border-line text-xs text-ink"
           />
-          <p className="mt-1.5 text-[11px] text-[#94A3B8]">
+          <p className="mt-1.5 text-[11px] text-ink-3">
             到期后会出现在「临期事项」，提醒你回头看这次调整到底有没有用。
           </p>
         </div>
 
-        <div className="px-5 py-4 border-t border-[#E2E8F0] flex items-center justify-end gap-2">
+        <div className="px-5 py-4 border-t border-line flex items-center justify-end gap-2">
           <Button variant="outline" className="h-9" onClick={onClose}>取消</Button>
           <Button className="h-9" onClick={save} disabled={saving}>
             {saving ? '保存中…' : '保存'}

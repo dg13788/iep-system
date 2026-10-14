@@ -96,7 +96,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 flex items-center justify-center text-[#64748B]">
+      <div className="bg-surface rounded-lg border border-line p-8 flex items-center justify-center text-ink-2">
         <Loader2 className="w-5 h-5 animate-spin mr-2" /> 安全档案加载中...
       </div>
     );
@@ -105,7 +105,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
   const p = profile ?? {};
   const Field = ({ label, k, placeholder }: { label: string; k: keyof SafetyProfile; placeholder?: string }) => (
     <div>
-      <label className="block text-xs font-semibold text-[#1E293B] mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-ink mb-1">{label}</label>
       {canEdit ? (
         <Textarea
           value={String(p[k] ?? '')}
@@ -115,7 +115,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
           className="text-sm"
         />
       ) : (
-        <p className="text-sm text-[#475569] bg-[#F7F6F4] rounded-md px-3 py-2 min-h-[2.5rem]">
+        <p className="text-sm text-ink-2 bg-canvas rounded-md px-3 py-2 min-h-[2.5rem]">
           {String(p[k] ?? '') || '—'}
         </p>
       )}
@@ -136,12 +136,12 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       : Object.entries(options);
     return (
       <div>
-        <label className="block text-xs font-semibold text-[#1E293B] mb-1">{label}</label>
+        <label className="block text-xs font-semibold text-ink mb-1">{label}</label>
         {canEdit ? (
           <select
             value={String(p[k] ?? '')}
             onChange={(e) => set({ [k]: e.target.value } as Partial<SafetyProfile>)}
-            className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm bg-white"
+            className="w-full h-9 px-3 rounded-md border border-line text-sm bg-surface"
           >
             <option value="">未填写</option>
             {entries.map(([v, label2]) => (
@@ -149,7 +149,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
             ))}
           </select>
         ) : (
-          <p className="text-sm text-[#475569] bg-[#F7F6F4] rounded-md px-3 py-2">
+          <p className="text-sm text-ink-2 bg-canvas rounded-md px-3 py-2">
             {entries.find(([v]) => v === p[k])?.[1] ?? (String(p[k] ?? '') || '—')}
           </p>
         )}
@@ -161,9 +161,9 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
     <div className="space-y-4">
       {/* 高危警示条 */}
       {(Number(p.has_epilepsy) === 1 || parseAllergens(p.allergens) || p.wandering_risk === 'high') && (
-        <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-4 py-3 flex items-start gap-2">
-          <ShieldAlert className="w-4 h-4 text-[#DC2626] mt-0.5 shrink-0" />
-          <div className="text-xs text-[#991B1B] leading-relaxed">
+        <div className="bg-danger-soft border border-danger-line rounded-lg px-4 py-3 flex items-start gap-2">
+          <ShieldAlert className="w-4 h-4 text-danger-strong mt-0.5 shrink-0" />
+          <div className="text-xs text-danger-strong leading-relaxed">
             <strong>高危提示：</strong>
             {Number(p.has_epilepsy) === 1 && '该生有癫痫史；'}
             {parseAllergens(p.allergens) && `过敏原：${parseAllergens(p.allergens)}；`}
@@ -174,13 +174,13 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       )}
 
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-[#1E293B] flex items-center gap-2">
+        <h4 className="text-sm font-semibold text-ink flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-warning-500" /> 教学现场安全档案
         </h4>
         <div className="flex items-center gap-2">
           <button
             onClick={() => void openCard()}
-            className="flex items-center gap-1 h-8 px-3 rounded-md border border-[#977653] text-[#977653] text-xs font-medium hover:bg-[#F5F0EB] cursor-pointer"
+            className="flex items-center gap-1 h-8 px-3 rounded-md border border-brand text-brand-ink text-xs font-medium hover:bg-brand-soft cursor-pointer"
           >
             <Printer className="w-3.5 h-3.5" /> 紧急情况一览卡
           </button>
@@ -188,7 +188,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
             <button
               onClick={() => void handleSave()}
               disabled={saving}
-              className="flex items-center gap-1 h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+              className="flex items-center gap-1 h-8 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
             >
               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               {saving ? '保存中...' : '保存档案'}
@@ -198,15 +198,15 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       </div>
 
       {/* 癫痫与急救 */}
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-5 space-y-3">
-        <h5 className="text-sm font-semibold text-[#1E293B]">癫痫史与急救</h5>
-        <label className="flex items-center gap-2 text-sm text-[#475569] cursor-pointer">
+      <div className="bg-surface rounded-lg border border-line p-5 space-y-3">
+        <h5 className="text-sm font-semibold text-ink">癫痫史与急救</h5>
+        <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
           <input
             type="checkbox"
             checked={Number(p.has_epilepsy) === 1}
             disabled={!canEdit}
             onChange={(e) => set({ has_epilepsy: e.target.checked ? 1 : 0 })}
-            className="w-4 h-4 rounded border-[#CBD5E1]"
+            className="w-4 h-4 rounded border-line-2"
           />
           有癫痫史
         </label>
@@ -220,10 +220,10 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       </div>
 
       {/* 过敏与饮食 */}
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-5 space-y-3">
-        <h5 className="text-sm font-semibold text-[#1E293B]">过敏与饮食安全</h5>
+      <div className="bg-surface rounded-lg border border-line p-5 space-y-3">
+        <h5 className="text-sm font-semibold text-ink">过敏与饮食安全</h5>
         <div>
-          <label className="block text-xs font-semibold text-[#1E293B] mb-1">过敏原清单（顿号分隔）</label>
+          <label className="block text-xs font-semibold text-ink mb-1">过敏原清单（顿号分隔）</label>
           {canEdit ? (
             <Textarea
               value={parseAllergens(p.allergens)}
@@ -236,7 +236,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
               className="text-sm"
             />
           ) : (
-            <p className="text-sm text-[#475569] bg-[#F7F6F4] rounded-md px-3 py-2">{parseAllergens(p.allergens) || '—'}</p>
+            <p className="text-sm text-ink-2 bg-canvas rounded-md px-3 py-2">{parseAllergens(p.allergens) || '—'}</p>
           )}
         </div>
         <div className="grid grid-cols-1 gap-3">
@@ -250,8 +250,8 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       </div>
 
       {/* 行为与危机处置 */}
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-5 space-y-3">
-        <h5 className="text-sm font-semibold text-[#1E293B]">行为触发与危机处置</h5>
+      <div className="bg-surface rounded-lg border border-line p-5 space-y-3">
+        <h5 className="text-sm font-semibold text-ink">行为触发与危机处置</h5>
         <div className="grid grid-cols-1 gap-3">
           <Field label="攻击/自伤行为触发因素" k="aggression_trigger" />
           <Field label="降阶策略（先做什么）" k="deescalation" />
@@ -261,8 +261,8 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       </div>
 
       {/* 日常看护 */}
-      <div className="bg-white rounded-lg border border-[#E2E8F0] p-5 space-y-3">
-        <h5 className="text-sm font-semibold text-[#1E293B]">日常看护</h5>
+      <div className="bg-surface rounded-lg border border-line p-5 space-y-3">
+        <h5 className="text-sm font-semibold text-ink">日常看护</h5>
         <div className="grid grid-cols-2 gap-3">
           <SelectField label="走失风险" k="wandering_risk" options={WANDERING_RISKS} />
           <SelectField label="如厕依赖等级" k="toilet_independence" options={TOILET_LEVELS} />
@@ -273,39 +273,39 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
       </div>
 
       {p.emergency_updated_at && (
-        <p className="text-xs text-[#94A3B8]">安全信息最近更新：{p.emergency_updated_at}</p>
+        <p className="text-xs text-ink-3">安全信息最近更新：{p.emergency_updated_at}</p>
       )}
 
       {/* 紧急情况一览卡（打印用） */}
       {showCard && (
-        <div className="fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-6" onClick={() => setShowCard(false)}>
+        <div className="fixed inset-0 z-[80] bg-overlay/50 flex items-center justify-center p-6" onClick={() => setShowCard(false)}>
           <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto"
+            className="bg-surface rounded-xl shadow-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] print:hidden">
-              <h3 className="text-base font-semibold text-[#1E293B]">紧急情况一览卡</h3>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line print:hidden">
+              <h3 className="text-base font-semibold text-ink">紧急情况一览卡</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="flex items-center gap-1 h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer"
+                  className="flex items-center gap-1 h-8 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" /> 打印
                 </button>
-                <button onClick={() => setShowCard(false)} className="text-xs text-[#64748B] hover:underline cursor-pointer">关闭</button>
+                <button onClick={() => setShowCard(false)} className="text-xs text-ink-2 hover:underline cursor-pointer">关闭</button>
               </div>
             </div>
             {cardLoading || !card ? (
-              <div className="p-10 flex items-center justify-center text-[#64748B]">
+              <div className="p-10 flex items-center justify-center text-ink-2">
                 <Loader2 className="w-5 h-5 animate-spin mr-2" /> 生成中...
               </div>
             ) : (
               <div className="p-6 space-y-4" id="emergency-card-print">
-                <div className="border-2 border-[#DC2626] rounded-lg p-4">
-                  <h3 className="text-xl font-bold text-center text-[#1E293B]">
+                <div className="border-2 border-danger-strong rounded-lg p-4">
+                  <h3 className="text-xl font-bold text-center text-ink">
                     紧急情况一览卡 —— {String(card.name ?? studentName)}
                   </h3>
-                  <p className="text-center text-sm text-[#64748B] mt-1">
+                  <p className="text-center text-sm text-ink-2 mt-1">
                     {String(card.class_name ?? '')} · {String(card.gender ?? '')} · {String(card.birth_date ?? '')}
                     {card.disability_type_name ? ` · ${String(card.disability_type_name)}` : ''}
                     {card.disability_level_name ? `（${String(card.disability_level_name)}）` : ''}
@@ -362,7 +362,7 @@ export default function SafetyTab({ studentId, studentName }: { studentId: numbe
                   ]} />
                 )}
 
-                <p className="text-xs text-center text-[#94A3B8]">
+                <p className="text-xs text-center text-ink-3">
                   本卡信息最近更新：{String(card.emergency_updated_at ?? '—')} · 请带班教师随身携带
                 </p>
               </div>
@@ -386,13 +386,13 @@ function CardBlock({
   const visible = rows.filter(([, v]) => v && v.trim());
   if (visible.length === 0) return null;
   return (
-    <div className={`border rounded-lg p-3.5 ${danger ? 'border-[#FECACA] bg-[#FFF7F7]' : 'border-[#E2E8F0]'}`}>
-      <h4 className={`text-sm font-bold mb-2 ${danger ? 'text-[#DC2626]' : 'text-[#1E293B]'}`}>{title}</h4>
+    <div className={`border rounded-lg p-3.5 ${danger ? 'border-danger-line bg-danger-soft' : 'border-line'}`}>
+      <h4 className={`text-sm font-bold mb-2 ${danger ? 'text-danger-strong' : 'text-ink'}`}>{title}</h4>
       <dl className="space-y-1.5">
         {visible.map(([k, v]) => (
           <div key={k} className="flex gap-3 text-sm">
-            <dt className="shrink-0 w-20 text-[#64748B]">{k}</dt>
-            <dd className="flex-1 text-[#1E293B]">{v}</dd>
+            <dt className="shrink-0 w-20 text-ink-2">{k}</dt>
+            <dd className="flex-1 text-ink">{v}</dd>
           </div>
         ))}
       </dl>

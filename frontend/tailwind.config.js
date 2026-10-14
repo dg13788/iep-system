@@ -1,106 +1,216 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // class 策略：换肤靠 <html data-theme="dark"> 切换（见 index.css 的 token 体系）
   darkMode: ["class"],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      // 【token 接线 · 第 2/3 处】
+      // 全部用 rgb(var(--x) / <alpha-value>)：<alpha-value> 让 Tailwind
+      // 能拼出 bg-surface/50、text-ink-3/70 这类透明度修饰——
+      // 深色主题做层次主要靠半透明叠加，没有这个占位符就做不出来。
+      // 变量定义在 src/index.css 的 :root / [data-theme] 区块。
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        /* ---- shadcn 语义层（ui/ 组件使用，格式已由 hsl 改为 rgb） ---- */
+        border: 'rgb(var(--border) / <alpha-value>)',
+        input: 'rgb(var(--input) / <alpha-value>)',
+        ring: 'rgb(var(--ring) / <alpha-value>)',
+        background: 'rgb(var(--background) / <alpha-value>)',
+        foreground: 'rgb(var(--foreground) / <alpha-value>)',
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-          50: '#F5F0EB',
-          100: '#EBE3DA',
-          200: '#D6C8B8',
-          300: '#C1AC96',
-          400: '#AC9174',
-          500: '#977653',
-          600: '#7A5F42',
-          700: '#5C4832',
-          800: '#3D3122',
-          900: '#1F1911',
+          DEFAULT: 'rgb(var(--primary) / <alpha-value>)',
+          foreground: 'rgb(var(--primary-foreground) / <alpha-value>)',
+          // 色阶接入 token，深色主题下不会残留浅色块的违和感
+          50: 'rgb(var(--brand-soft) / <alpha-value>)',
+          100: 'rgb(var(--brand-soft) / <alpha-value>)',
+          200: 'rgb(var(--brand-line) / <alpha-value>)',
+          300: 'rgb(var(--brand) / <alpha-value>)',
+          400: 'rgb(var(--brand) / <alpha-value>)',
+          500: 'rgb(var(--brand) / <alpha-value>)',
+          600: 'rgb(var(--brand-strong) / <alpha-value>)',
+          700: 'rgb(var(--brand-deep) / <alpha-value>)',
+          800: 'rgb(var(--brand-deep) / <alpha-value>)',
+          900: 'rgb(var(--brand-deep) / <alpha-value>)',
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-          50: '#F0F2F5',
-          100: '#D9DEE6',
-          200: '#B3BCCD',
-          300: '#8D9AB4',
-          400: '#66789A',
-          500: '#405680',
-          600: '#334566',
-          700: '#26344D',
+          DEFAULT: 'rgb(var(--secondary) / <alpha-value>)',
+          foreground: 'rgb(var(--secondary-foreground) / <alpha-value>)',
+          50: 'rgb(var(--surface-2) / <alpha-value>)',
+          100: 'rgb(var(--surface-2) / <alpha-value>)',
+          200: 'rgb(var(--line) / <alpha-value>)',
+          300: 'rgb(var(--line-2) / <alpha-value>)',
+          400: 'rgb(var(--ink-3) / <alpha-value>)',
+          500: 'rgb(var(--secondary) / <alpha-value>)',
+          600: 'rgb(var(--ink-2) / <alpha-value>)',
+          700: 'rgb(var(--ink) / <alpha-value>)',
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: 'rgb(var(--destructive) / <alpha-value>)',
+          foreground: 'rgb(var(--destructive-foreground) / <alpha-value>)',
+          50: 'rgb(var(--danger-soft) / <alpha-value>)',
+          100: 'rgb(var(--danger-soft) / <alpha-value>)',
+          200: 'rgb(var(--danger-line) / <alpha-value>)',
+          400: 'rgb(var(--danger) / <alpha-value>)',
+          500: 'rgb(var(--danger) / <alpha-value>)',
+          600: 'rgb(var(--danger-strong) / <alpha-value>)',
+        },
+
+        /* ---- 业务语义层（token 化后的主力命名空间） ----
+           ink / line / surface / brand / success|warning|danger|info|violet
+           命名按用途而非颜色：同一个语义在不同主题下取不同色值。 */
+
+        // 表面：画布 / 卡片 / 次级 / 悬停 / 反色（侧栏）
+        canvas: 'rgb(var(--canvas) / <alpha-value>)',
+        // 遮罩：抽屉/对话框的压暗层。配 /50 /30 使用
+        overlay: 'rgb(var(--overlay) / <alpha-value>)',
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          2: 'rgb(var(--surface-2) / <alpha-value>)',
+          3: 'rgb(var(--surface-3) / <alpha-value>)',
+          inverse: 'rgb(var(--surface-inverse) / <alpha-value>)',
+          'inverse-2': 'rgb(var(--surface-inverse-2) / <alpha-value>)',
+          'inverse-3': 'rgb(var(--surface-inverse-3) / <alpha-value>)',
+        },
+        // 文字：主 / 次 / 弱 / 极弱 + 深面上的文字
+        ink: {
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          2: 'rgb(var(--ink-2) / <alpha-value>)',
+          3: 'rgb(var(--ink-3) / <alpha-value>)',
+          4: 'rgb(var(--ink-4) / <alpha-value>)',
+          'on-dark': 'rgb(var(--ink-on-dark) / <alpha-value>)',
+          'on-dark-2': 'rgb(var(--ink-on-dark-2) / <alpha-value>)',
+          'on-dark-3': 'rgb(var(--ink-on-dark-3) / <alpha-value>)',
+        },
+        // 线：常规边框 / 强分隔 / 焦点环
+        line: {
+          DEFAULT: 'rgb(var(--line) / <alpha-value>)',
+          2: 'rgb(var(--line-2) / <alpha-value>)',
+          focus: 'rgb(var(--line-focus) / <alpha-value>)',
+        },
+        // 品牌
+        brand: {
+          DEFAULT: 'rgb(var(--brand) / <alpha-value>)',
+          strong: 'rgb(var(--brand-strong) / <alpha-value>)',
+          deep: 'rgb(var(--brand-deep) / <alpha-value>)',
+          soft: 'rgb(var(--brand-soft) / <alpha-value>)',
+          line: 'rgb(var(--brand-line) / <alpha-value>)',
+          ink: 'rgb(var(--brand-ink) / <alpha-value>)',
         },
         success: {
-          50: '#ECFDF5',
-          500: '#10B981',
-          600: '#059669',
+          DEFAULT: 'rgb(var(--success) / <alpha-value>)',
+          soft: 'rgb(var(--success-soft) / <alpha-value>)',
+          strong: 'rgb(var(--success-strong) / <alpha-value>)',
+          // 数字档位：既有业务代码大量使用 success-50/500/600 这类写法。
+          // 全部指向同一组 token，换肤时自动跟随；若不接，Tailwind 静默不生成
+          // 这些类 → 状态色失效（构建类名校验器 build_class_verify.py 会报出）。
+          50: 'rgb(var(--success-soft) / <alpha-value>)',
+          100: 'rgb(var(--success-soft) / <alpha-value>)',
+          200: 'rgb(var(--success-soft) / <alpha-value>)',
+          300: 'rgb(var(--success) / <alpha-value>)',
+          400: 'rgb(var(--success) / <alpha-value>)',
+          500: 'rgb(var(--success) / <alpha-value>)',
+          600: 'rgb(var(--success-strong) / <alpha-value>)',
+          700: 'rgb(var(--success-strong) / <alpha-value>)',
         },
         warning: {
-          50: '#FFFBEB',
-          500: '#F59E0B',
-          600: '#D97706',
+          DEFAULT: 'rgb(var(--warning) / <alpha-value>)',
+          soft: 'rgb(var(--warning-soft) / <alpha-value>)',
+          strong: 'rgb(var(--warning-strong) / <alpha-value>)',
+          50: 'rgb(var(--warning-soft) / <alpha-value>)',
+          100: 'rgb(var(--warning-soft) / <alpha-value>)',
+          200: 'rgb(var(--warning-soft) / <alpha-value>)',
+          300: 'rgb(var(--warning) / <alpha-value>)',
+          400: 'rgb(var(--warning) / <alpha-value>)',
+          500: 'rgb(var(--warning) / <alpha-value>)',
+          600: 'rgb(var(--warning-strong) / <alpha-value>)',
+          700: 'rgb(var(--warning-strong) / <alpha-value>)',
         },
         danger: {
-          50: '#FEF2F2',
-          500: '#EF4444',
-          600: '#DC2626',
+          DEFAULT: 'rgb(var(--danger) / <alpha-value>)',
+          soft: 'rgb(var(--danger-soft) / <alpha-value>)',
+          strong: 'rgb(var(--danger-strong) / <alpha-value>)',
+          line: 'rgb(var(--danger-line) / <alpha-value>)',
+          50: 'rgb(var(--danger-soft) / <alpha-value>)',
+          100: 'rgb(var(--danger-soft) / <alpha-value>)',
+          200: 'rgb(var(--danger-line) / <alpha-value>)',
+          300: 'rgb(var(--danger) / <alpha-value>)',
+          400: 'rgb(var(--danger) / <alpha-value>)',
+          500: 'rgb(var(--danger) / <alpha-value>)',
+          600: 'rgb(var(--danger-strong) / <alpha-value>)',
+          700: 'rgb(var(--danger-strong) / <alpha-value>)',
         },
         info: {
-          50: '#EFF6FF',
-          500: '#3B82F6',
-          600: '#2563EB',
+          DEFAULT: 'rgb(var(--info) / <alpha-value>)',
+          soft: 'rgb(var(--info-soft) / <alpha-value>)',
+          strong: 'rgb(var(--info-strong) / <alpha-value>)',
+          50: 'rgb(var(--info-soft) / <alpha-value>)',
+          100: 'rgb(var(--info-soft) / <alpha-value>)',
+          200: 'rgb(var(--info-soft) / <alpha-value>)',
+          300: 'rgb(var(--info) / <alpha-value>)',
+          400: 'rgb(var(--info) / <alpha-value>)',
+          500: 'rgb(var(--info) / <alpha-value>)',
+          600: 'rgb(var(--info-strong) / <alpha-value>)',
+          700: 'rgb(var(--info-strong) / <alpha-value>)',
         },
+        violet: {
+          DEFAULT: 'rgb(var(--violet) / <alpha-value>)',
+          soft: 'rgb(var(--violet-soft) / <alpha-value>)',
+        },
+        // purple 是 violet 的历史别名：既有代码仍有 2 处使用 purple-50/500，
+        // 别名删不得（删了这两处样式直接失效且构建不报错）。
         purple: {
-          50: '#F5F3FF',
-          500: '#8B5CF6',
+          DEFAULT: 'rgb(var(--violet) / <alpha-value>)',
+          50: 'rgb(var(--violet-soft) / <alpha-value>)',
+          100: 'rgb(var(--violet-soft) / <alpha-value>)',
+          200: 'rgb(var(--violet-soft) / <alpha-value>)',
+          300: 'rgb(var(--violet) / <alpha-value>)',
+          400: 'rgb(var(--violet) / <alpha-value>)',
+          500: 'rgb(var(--violet) / <alpha-value>)',
+          600: 'rgb(var(--violet) / <alpha-value>)',
+          700: 'rgb(var(--violet) / <alpha-value>)',
         },
-        'bg-main': '#F7F6F4',
-        'bg-card': '#FFFFFF',
-        'bg-sidebar': '#1E293B',
-        'bg-sidebar-hover': '#334155',
-        'bg-sidebar-active': '#3B82F6',
-        'text-primary': '#1E293B',
-        'text-secondary': '#64748B',
-        'text-muted': '#94A3B8',
-        'text-inverse': '#FFFFFF',
-        'border-light': '#E2E8F0',
-        'border-medium': '#CBD5E1',
-        'border-focus': '#3B82F6',
+
+        /* ---- 旧类名别名（保持既有代码零改动即可继续工作）
+               这些名字指向同一批 token，是迁移期的桥，不是新真源。 ---- */
+        'bg-main': 'rgb(var(--canvas) / <alpha-value>)',
+        'bg-card': 'rgb(var(--surface) / <alpha-value>)',
+        'bg-sidebar': 'rgb(var(--surface-inverse) / <alpha-value>)',
+        'bg-sidebar-hover': 'rgb(var(--surface-inverse-2) / <alpha-value>)',
+        'bg-sidebar-active': 'rgb(var(--surface-inverse-3) / <alpha-value>)',
+        'text-primary': 'rgb(var(--ink) / <alpha-value>)',
+        'text-secondary': 'rgb(var(--ink-2) / <alpha-value>)',
+        'text-muted': 'rgb(var(--ink-3) / <alpha-value>)',
+        'text-inverse': 'rgb(var(--ink-on-dark) / <alpha-value>)',
+        'border-light': 'rgb(var(--line) / <alpha-value>)',
+        'border-medium': 'rgb(var(--line-2) / <alpha-value>)',
+        'border-focus': 'rgb(var(--line-focus) / <alpha-value>)',
+
+        /* shadcn 扩展槽位，同样接到 token */
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: 'rgb(var(--muted) / <alpha-value>)',
+          foreground: 'rgb(var(--muted-foreground) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: 'rgb(var(--accent) / <alpha-value>)',
+          foreground: 'rgb(var(--accent-foreground) / <alpha-value>)',
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: 'rgb(var(--popover) / <alpha-value>)',
+          foreground: 'rgb(var(--popover-foreground) / <alpha-value>)',
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: 'rgb(var(--card) / <alpha-value>)',
+          foreground: 'rgb(var(--card-foreground) / <alpha-value>)',
         },
         sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
+          DEFAULT: 'rgb(var(--sidebar-background) / <alpha-value>)',
+          foreground: 'rgb(var(--sidebar-foreground) / <alpha-value>)',
+          primary: 'rgb(var(--sidebar-primary) / <alpha-value>)',
+          'primary-foreground': 'rgb(var(--sidebar-primary-foreground) / <alpha-value>)',
+          accent: 'rgb(var(--sidebar-accent) / <alpha-value>)',
+          'accent-foreground': 'rgb(var(--sidebar-accent-foreground) / <alpha-value>)',
+          border: 'rgb(var(--sidebar-border) / <alpha-value>)',
+          ring: 'rgb(var(--sidebar-ring) / <alpha-value>)',
         },
       },
       fontFamily: {
@@ -128,12 +238,12 @@ module.exports = {
         xs: "calc(var(--radius) - 6px)",
       },
       boxShadow: {
-        xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
-        sm: '0 1px 2px rgba(0,0,0,0.04)',
-        md: '0 4px 12px rgba(0,0,0,0.06)',
-        lg: '0 8px 24px rgba(0,0,0,0.08)',
-        xl: '0 16px 48px rgba(0,0,0,0.1)',
-        focus: '0 0 0 3px rgba(59,130,246,0.15)',
+        xs: "0 1px 2px 0 rgb(var(--shadow-tint) / var(--shadow-alpha))",
+        sm: '0 1px 2px rgb(var(--shadow-tint) / var(--shadow-alpha))',
+        md: '0 4px 12px rgb(var(--shadow-tint) / var(--shadow-alpha))',
+        lg: '0 8px 24px rgb(var(--shadow-tint) / var(--shadow-alpha-strong))',
+        xl: '0 16px 48px rgb(var(--shadow-tint) / var(--shadow-alpha-strong))',
+        focus: '0 0 0 3px rgb(var(--line-focus) / 0.15)',
         // 层次阴影：用变量统一，避免各处手写阴影深浅不一
         card: 'var(--shadow-card)',
         raised: 'var(--shadow-raised)',
@@ -187,5 +297,19 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // --------------------------------------------------------------
+    // 补两个 Tailwind v3 缺失的内置变体
+    // v4 才内置 aria-invalid / has-focus，v3 里直接写会「静默不生成」——
+    // 后果是：表单校验失败时没有红框（用户看不出哪一项填错了），
+    // 日历这类组合控件聚焦时没有外框高亮（焦点在哪看不见）。
+    // 用 addVariant 而非 variants.extend：后者在这套 v3.4 构建链上未生效，
+    // 同样表现为静默不生成，只能靠 demo_data/temp/build_class_verify.py 扫出来。
+    // --------------------------------------------------------------
+    require("tailwindcss/plugin")(({ addVariant }) => {
+      addVariant("aria-invalid", '&[aria-invalid="true"]');
+      addVariant("has-focus", "&:focus-within");
+    }),
+  ],
 }

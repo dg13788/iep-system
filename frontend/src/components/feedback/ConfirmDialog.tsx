@@ -63,14 +63,14 @@ export default function ConfirmDialog({
       <AlertDialogContent className="w-[calc(100vw-2rem)] max-w-[420px] rounded-2xl p-5 sm:p-6">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base">{title}</AlertDialogTitle>
-          <AlertDialogDescription className="text-sm leading-relaxed text-[#64748B]">
+          <AlertDialogDescription className="text-sm leading-relaxed text-ink-2">
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-5 gap-2">
           <AlertDialogCancel
             disabled={busy}
-            className="min-tap-h mt-0 rounded-lg border-[#E2E8F0] sm:min-w-[88px]"
+            className="min-tap-h mt-0 rounded-lg border-line sm:min-w-[88px]"
             // 焦点默认落在取消：手快连按回车不会误删
             autoFocus
           >
@@ -84,7 +84,7 @@ export default function ConfirmDialog({
             }}
             className={
               destructive
-                ? 'min-tap-h mt-0 rounded-lg bg-[#DC2626] text-white hover:bg-[#B91C1C] sm:min-w-[88px]'
+                ? 'min-tap-h mt-0 rounded-lg bg-danger-strong text-ink-on-dark hover:bg-danger-strong sm:min-w-[88px]'
                 : 'min-tap-h mt-0 rounded-lg sm:min-w-[88px]'
             }
           >

@@ -132,7 +132,7 @@ function ConfirmPhraseInput({
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-1 text-xs text-[#977653] hover:text-[#7c6244]"
+          className="flex items-center gap-1 text-xs text-brand-ink hover:text-brand-ink"
         >
           {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
           {copied ? '已复制' : '复制短语'}
@@ -143,19 +143,19 @@ function ConfirmPhraseInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder ?? phrase}
-          className={matched ? 'border-[#16A34A] focus-visible:ring-[#16A34A]' : touched ? 'border-[#DC2626]' : ''}
+          className={matched ? 'border-success-strong focus-visible:ring-success-strong' : touched ? 'border-danger-strong' : ''}
         />
-        {matched && <Check className="w-4 h-4 text-[#16A34A] self-center flex-shrink-0" />}
+        {matched && <Check className="w-4 h-4 text-success-strong self-center flex-shrink-0" />}
       </div>
       {touched && !matched && (
-        <p className="text-xs text-[#DC2626] mt-1">
+        <p className="text-xs text-danger-strong mt-1">
           与「{phrase}」不一致（当前输入：{value === '' ? '空' : visualizeInvisible(value)}），请照「{phrase}」输入或点右上角复制
         </p>
       )}
       {matched && hasPadding && (
-        <p className="text-xs text-[#B45309] mt-1">已忽略首尾空格/不可见字符，按「{phrase}」匹配</p>
+        <p className="text-xs text-warning-strong mt-1">已忽略首尾空格/不可见字符，按「{phrase}」匹配</p>
       )}
-      {matched && !hasPadding && <p className="text-xs text-[#16A34A] mt-1">确认短语正确</p>}
+      {matched && !hasPadding && <p className="text-xs text-success-strong mt-1">确认短语正确</p>}
     </div>
   );
 }
@@ -199,7 +199,7 @@ function OverviewTab({ onBackupsChanged }: { onBackupsChanged: () => void }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-sm text-[#94A3B8]">
+      <div className="flex items-center justify-center py-16 text-sm text-ink-3">
         <Loader2 className="w-4 h-4 animate-spin mr-2" /> 正在统计…
       </div>
     );
@@ -219,37 +219,37 @@ function OverviewTab({ onBackupsChanged }: { onBackupsChanged: () => void }) {
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {cards.map((c) => (
-          <div key={c.label} className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-3">
-            <p className="text-xs text-[#94A3B8]">{c.label}</p>
-            <p className="text-lg font-semibold text-[#1E293B] mt-0.5">{c.value}</p>
+          <div key={c.label} className="bg-surface border border-line rounded-lg px-3 py-3">
+            <p className="text-xs text-ink-3">{c.label}</p>
+            <p className="text-lg font-semibold text-ink mt-0.5">{c.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 bg-white border border-[#E2E8F0] rounded-lg px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 bg-surface border border-line rounded-lg px-4 py-3">
         <Button onClick={handleBackup} disabled={backing} className="gap-1.5">
           {backing ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDriveDownload className="w-4 h-4" />}
           一键备份
         </Button>
-        <span className="text-xs text-[#64748B]">
+        <span className="text-xs text-ink-2">
           最近备份：{data.last_backup ? `${data.last_backup}（${data.last_backup_at}）` : '暂无'}
         </span>
-        <span className="text-xs text-[#94A3B8] ml-auto">
+        <span className="text-xs text-ink-3 ml-auto">
           PHP {data.env.php_version} · MySQL {String(data.env.db_version).split('-')[0]} · 备份目录
-          {data.env.backup_dir_writable ? '可写' : <span className="text-[#DC2626]">不可写</span>}
+          {data.env.backup_dir_writable ? '可写' : <span className="text-danger-strong">不可写</span>}
         </span>
       </div>
 
-      <div className="bg-white border border-[#E2E8F0] rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#F1F5F9] flex items-center gap-2">
-          <Database className="w-4 h-4 text-[#977653]" />
-          <h3 className="text-sm font-semibold text-[#1E293B]">核心业务数据行数</h3>
+      <div className="bg-surface border border-line rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-line flex items-center gap-2">
+          <Database className="w-4 h-4 text-brand-ink" />
+          <h3 className="text-sm font-semibold text-ink">核心业务数据行数</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#F1F5F9]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-surface-2">
           {Object.entries(data.table_counts).map(([t, n]) => (
-            <div key={t} className="bg-white px-4 py-2.5">
-              <p className="text-xs text-[#94A3B8]">{data.table_labels[t] ?? t}</p>
-              <p className="text-sm font-medium text-[#1E293B]">{n ?? '—'}</p>
+            <div key={t} className="bg-surface px-4 py-2.5">
+              <p className="text-xs text-ink-3">{data.table_labels[t] ?? t}</p>
+              <p className="text-sm font-medium text-ink">{n ?? '—'}</p>
             </div>
           ))}
         </div>
@@ -295,7 +295,7 @@ function AllDataTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 bg-white border border-[#E2E8F0] rounded-lg px-4 py-3">
+      <div className="flex flex-wrap items-center gap-3 bg-surface border border-line rounded-lg px-4 py-3">
         <Select value={table} onValueChange={(v) => { setTable(v); setPage(1); }}>
           <SelectTrigger className="w-56">
             <SelectValue />
@@ -311,7 +311,7 @@ function AllDataTab() {
 
         <div className="flex items-center gap-2">
           <Switch id="wd" checked={withDeleted} onCheckedChange={(v) => { setWithDeleted(v); setPage(1); }} />
-          <Label htmlFor="wd" className="text-xs text-[#64748B]">含已删除</Label>
+          <Label htmlFor="wd" className="text-xs text-ink-2">含已删除</Label>
         </div>
 
         <Button
@@ -329,18 +329,18 @@ function AllDataTab() {
           <Download className="w-4 h-4" /> 导出本表 CSV
         </Button>
 
-        <span className="text-xs text-[#94A3B8] ml-auto">
+        <span className="text-xs text-ink-3 ml-auto">
           共 {result?.total ?? 0} 行 · 仅管理员可见 · 单次最多 100 行
         </span>
       </div>
 
-      <div className="bg-white border border-[#E2E8F0] rounded-lg overflow-x-auto">
+      <div className="bg-surface border border-line rounded-lg overflow-x-auto">
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-sm text-[#94A3B8]">
+          <div className="flex items-center justify-center py-16 text-sm text-ink-3">
             <Loader2 className="w-4 h-4 animate-spin mr-2" /> 查询中…
           </div>
         ) : !result || result.list.length === 0 ? (
-          <p className="py-16 text-center text-sm text-[#94A3B8]">该表暂无数据</p>
+          <p className="py-16 text-center text-sm text-ink-3">该表暂无数据</p>
         ) : (
           <Table>
             <TableHeader>
@@ -373,7 +373,7 @@ function AllDataTab() {
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
           <ChevronLeft className="w-4 h-4" />
         </Button>
-        <span className="text-xs text-[#64748B]">{page} / {totalPages}</span>
+        <span className="text-xs text-ink-2">{page} / {totalPages}</span>
         <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
           <ChevronRight className="w-4 h-4" />
         </Button>
@@ -462,10 +462,10 @@ function ImportTab() {
   return (
     <div className="space-y-4">
       {/* 步骤 1：选择模块 */}
-      <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-3">
+      <div className="bg-surface border border-line rounded-lg px-4 py-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Table2 className="w-4 h-4 text-[#977653]" />
-          <h3 className="text-sm font-semibold text-[#1E293B]">第一步：选择导入模块</h3>
+          <Table2 className="w-4 h-4 text-brand-ink" />
+          <h3 className="text-sm font-semibold text-ink">第一步：选择导入模块</h3>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {IMPORT_MODULES.map((m) => (
@@ -475,12 +475,12 @@ function ImportTab() {
               onClick={() => { setModule(m.module); resetFlow(); }}
               className={`text-left px-3 py-2.5 rounded-lg border text-xs transition-colors ${
                 module === m.module
-                  ? 'border-[#977653] bg-[#FDF6E9] text-[#1E293B]'
-                  : 'border-[#E2E8F0] bg-white text-[#64748B] hover:border-[#CBD5E1]'
+                  ? 'border-brand bg-brand-soft text-ink'
+                  : 'border-line bg-surface text-ink-2 hover:border-line-2'
               }`}
             >
               <span className="block font-medium">{m.label}</span>
-              <span className="block text-[#94A3B8] mt-0.5 leading-snug">{m.hint}</span>
+              <span className="block text-ink-3 mt-0.5 leading-snug">{m.hint}</span>
             </button>
           ))}
         </div>
@@ -501,15 +501,15 @@ function ImportTab() {
           >
             <FileDown className="w-3.5 h-3.5" /> 下载导入模板（{activeMeta.label}）
           </Button>
-          <span className="text-xs text-[#94A3B8]">模板只有一行表头，按列填写后上传</span>
+          <span className="text-xs text-ink-3">模板只有一行表头，按列填写后上传</span>
         </div>
 
-        <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-3 py-2">
-          <p className="text-xs text-[#64748B] mb-1.5">
+        <div className="bg-surface-3 border border-line rounded-md px-3 py-2">
+          <p className="text-xs text-ink-2 mb-1.5">
             模板列格式（来自系统当前口径，改模板只需改后端一处）：
           </p>
           {columnsLoading ? (
-            <span className="text-xs text-[#94A3B8]">加载中…</span>
+            <span className="text-xs text-ink-3">加载中…</span>
           ) : columns.length > 0 ? (
             <div className="flex flex-wrap gap-1">
               {columns.map((c, i) => (
@@ -519,16 +519,16 @@ function ImportTab() {
               ))}
             </div>
           ) : (
-            <span className="text-xs text-[#94A3B8]">列格式加载失败，可点上方按钮下载模板查看</span>
+            <span className="text-xs text-ink-3">列格式加载失败，可点上方按钮下载模板查看</span>
           )}
         </div>
       </div>
 
       {/* 步骤 2：选择文件 */}
-      <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-3">
+      <div className="bg-surface border border-line rounded-lg px-4 py-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Upload className="w-4 h-4 text-[#977653]" />
-          <h3 className="text-sm font-semibold text-[#1E293B]">第二步：选择填好的文件（csv / xlsx / xls）</h3>
+          <Upload className="w-4 h-4 text-brand-ink" />
+          <h3 className="text-sm font-semibold text-ink">第二步：选择填好的文件（csv / xlsx / xls）</h3>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Input
@@ -543,7 +543,7 @@ function ImportTab() {
             开始预检（不写入数据）
           </Button>
           {file && (
-            <span className="text-xs text-[#64748B]">
+            <span className="text-xs text-ink-2">
               已选择：{file.name}（{(file.size / 1024).toFixed(1)} KB）
             </span>
           )}
@@ -552,25 +552,25 @@ function ImportTab() {
 
       {/* 步骤 3：预检报告 */}
       {precheck && (
-        <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-3">
+        <div className="bg-surface border border-line rounded-lg px-4 py-4 space-y-3">
           <div className="flex items-center gap-2">
-            <ListChecks className="w-4 h-4 text-[#977653]" />
-            <h3 className="text-sm font-semibold text-[#1E293B]">第三步：预检报告</h3>
+            <ListChecks className="w-4 h-4 text-brand-ink" />
+            <h3 className="text-sm font-semibold text-ink">第三步：预检报告</h3>
           </div>
           <div className="flex flex-wrap gap-4">
-            <div className="px-3 py-2 rounded-md bg-[#F0FDF4] border border-[#BBF7D0]">
-              <p className="text-xs text-[#15803D]">可导入</p>
-              <p className="text-lg font-semibold text-[#15803D]">{precheck.would_insert} 行</p>
+            <div className="px-3 py-2 rounded-md bg-success-soft border border-success-soft">
+              <p className="text-xs text-success-strong">可导入</p>
+              <p className="text-lg font-semibold text-success-strong">{precheck.would_insert} 行</p>
             </div>
-            <div className="px-3 py-2 rounded-md bg-[#FEF2F2] border border-[#FECACA]">
-              <p className="text-xs text-[#B91C1C]">将跳过</p>
-              <p className="text-lg font-semibold text-[#B91C1C]">{precheck.would_skip} 行</p>
+            <div className="px-3 py-2 rounded-md bg-danger-soft border border-danger-line">
+              <p className="text-xs text-danger-strong">将跳过</p>
+              <p className="text-lg font-semibold text-danger-strong">{precheck.would_skip} 行</p>
             </div>
           </div>
           {precheck.errors.length > 0 && (
-            <div className="max-h-40 overflow-y-auto rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2">
+            <div className="max-h-40 overflow-y-auto rounded-md border border-line bg-surface-3 px-3 py-2">
               {precheck.errors.map((err, i) => (
-                <p key={i} className="text-xs text-[#B91C1C] leading-relaxed">{err}</p>
+                <p key={i} className="text-xs text-danger-strong leading-relaxed">{err}</p>
               ))}
             </div>
           )}
@@ -584,25 +584,25 @@ function ImportTab() {
               确认导入 {precheck.would_insert} 行
             </Button>
             <Button variant="outline" onClick={resetFlow} disabled={importing}>重新选择文件</Button>
-            <span className="text-xs text-[#94A3B8]">预检未写入任何数据；确认后才会真正落库</span>
+            <span className="text-xs text-ink-3">预检未写入任何数据；确认后才会真正落库</span>
           </div>
         </div>
       )}
 
       {/* 步骤 4：导入结果 */}
       {result && (
-        <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-3">
+        <div className="bg-surface border border-line rounded-lg px-4 py-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-[#16A34A]" />
-            <h3 className="text-sm font-semibold text-[#1E293B]">导入结果</h3>
+            <Check className="w-4 h-4 text-success-strong" />
+            <h3 className="text-sm font-semibold text-ink">导入结果</h3>
           </div>
-          <p className="text-xs text-[#64748B]">
-            成功 <b className="text-[#15803D]">{result.inserted}</b> 条 · 跳过 <b className="text-[#B91C1C]">{result.failed}</b> 条 · 共 {result.total} 行
+          <p className="text-xs text-ink-2">
+            成功 <b className="text-success-strong">{result.inserted}</b> 条 · 跳过 <b className="text-danger-strong">{result.failed}</b> 条 · 共 {result.total} 行
           </p>
           {result.errors.length > 0 && (
-            <div className="max-h-40 overflow-y-auto rounded-md border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2">
+            <div className="max-h-40 overflow-y-auto rounded-md border border-line bg-surface-3 px-3 py-2">
               {result.errors.map((err, i) => (
-                <p key={i} className="text-xs text-[#B91C1C] leading-relaxed">{err}</p>
+                <p key={i} className="text-xs text-danger-strong leading-relaxed">{err}</p>
               ))}
             </div>
           )}
@@ -692,17 +692,17 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3 bg-white border border-[#E2E8F0] rounded-lg px-4 py-3">
+      <div className="flex items-center gap-3 bg-surface border border-line rounded-lg px-4 py-3">
         <Button onClick={handleCreate} disabled={creating} className="gap-1.5">
           {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <HardDriveDownload className="w-4 h-4" />}
           一键备份
         </Button>
-        <span className="text-xs text-[#64748B]">
+        <span className="text-xs text-ink-2">
           纯 PHP 导出整库 SQL，不依赖 mysqldump；恢复前会自动再留一份当前状态
         </span>
       </div>
 
-      <div className="bg-white border border-[#E2E8F0] rounded-lg overflow-hidden">
+      <div className="bg-surface border border-line rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -714,9 +714,9 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={4} className="text-center py-10 text-xs text-[#94A3B8]">加载中…</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center py-10 text-xs text-ink-3">加载中…</TableCell></TableRow>
             ) : list.length === 0 ? (
-              <TableRow><TableCell colSpan={4} className="text-center py-10 text-xs text-[#94A3B8]">暂无备份文件</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center py-10 text-xs text-ink-3">暂无备份文件</TableCell></TableRow>
             ) : list.map((b) => (
               <TableRow key={b.file}>
                 <TableCell className="text-xs font-mono">{b.file}</TableCell>
@@ -731,7 +731,7 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
                   <Button variant="ghost" size="sm" title="恢复" onClick={() => { setRestoreTarget(b.file); setConfirm(''); setPassword(''); }}>
                     <RotateCcw className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-[#DC2626]" title="删除" onClick={() => setDeleteTarget(b.file)}>
+                  <Button variant="ghost" size="sm" className="text-danger-strong" title="删除" onClick={() => setDeleteTarget(b.file)}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </TableCell>
@@ -744,7 +744,7 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
       <Dialog open={restoreTarget !== null} onOpenChange={(o) => !o && setRestoreTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#B45309]">
+            <DialogTitle className="flex items-center gap-2 text-warning-strong">
               <AlertTriangle className="w-4 h-4" /> 恢复备份：{restoreTarget}
             </DialogTitle>
             <DialogDescription className="text-xs leading-relaxed">
@@ -764,7 +764,7 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
               label="请输入备份文件名以确认"
             />
             {reasons.length > 0 && (
-              <p className="text-xs text-[#94A3B8]">还需完成：{reasons.join('、')}</p>
+              <p className="text-xs text-ink-3">还需完成：{reasons.join('、')}</p>
             )}
           </div>
           <DialogFooter>
@@ -786,8 +786,8 @@ function BackupTab({ refreshKey, onChanged }: { refreshKey: number; onChanged: (
         title="删除这个备份文件？"
         description={
           <>
-            将删除备份 <code className="px-1 rounded bg-[#F1F5F9]">{deleteTarget}</code>。
-            <b className="text-[#B91C1C]">删除后该时间点的数据将无法恢复</b>
+            将删除备份 <code className="px-1 rounded bg-surface-2">{deleteTarget}</code>。
+            <b className="text-danger-strong">删除后该时间点的数据将无法恢复</b>
             ，请先确认已不需要它。
           </>
         }
@@ -840,9 +840,9 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-[#FEF2F2] border border-[#FECACA] rounded-lg px-4 py-3 flex gap-3">
-        <ShieldAlert className="w-5 h-5 text-[#DC2626] flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-[#7F1D1D] leading-relaxed">
+      <div className="bg-danger-soft border border-danger-line rounded-lg px-4 py-3 flex gap-3">
+        <ShieldAlert className="w-5 h-5 text-danger-strong flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-danger-strong leading-relaxed">
           <p className="font-semibold mb-1">不可逆操作，请务必先做备份</p>
           <p>
             初始化会清空全部业务数据（学生 / 班级 / IEP / 评估 / 教学记录 / 行为干预 / 转衔 /
@@ -853,7 +853,7 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
         </div>
       </div>
 
-      <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-4">
+      <div className="bg-surface border border-line rounded-lg px-4 py-4 space-y-4">
         <div>
           <Label className="text-xs">初始化模式</Label>
           <div className="flex gap-4 mt-2">
@@ -868,7 +868,7 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
                 />
                 <span className="text-xs">
                   <b>{m === 'reset' ? '清空业务数据' : '清空并重建最小演示数据'}</b>
-                  <span className="block text-[#94A3B8]">
+                  <span className="block text-ink-3">
                     {m === 'reset'
                       ? '业务数据全部清空，等待录入真实数据；账号/权限/字典/模板保留'
                       : '写入 3 个班级 + 6 名学生 + 对应家长，便于演示'}
@@ -893,7 +893,7 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
         </div>
 
         {!canRun && (
-          <p className="text-xs text-[#94A3B8]">还需完成：{reasons.join('、')}</p>
+          <p className="text-xs text-ink-3">还需完成：{reasons.join('、')}</p>
         )}
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -901,34 +901,34 @@ function InitTab({ onChanged }: { onChanged: () => void }) {
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             执行初始化
           </Button>
-          <span className="text-xs text-[#94A3B8]">需点击此按钮才会执行，不会自动运行；执行前系统会自动备份当前数据</span>
+          <span className="text-xs text-ink-3">需点击此按钮才会执行，不会自动运行；执行前系统会自动备份当前数据</span>
         </div>
       </div>
 
       {report && (
-        <div className="bg-white border border-[#E2E8F0] rounded-lg px-4 py-4 space-y-2">
+        <div className="bg-surface border border-line rounded-lg px-4 py-4 space-y-2">
           <div className="flex items-center gap-2">
-            <Check className="w-4 h-4 text-[#16A34A]" />
-            <h3 className="text-sm font-semibold text-[#1E293B]">本次初始化报告</h3>
+            <Check className="w-4 h-4 text-success-strong" />
+            <h3 className="text-sm font-semibold text-ink">本次初始化报告</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <p className="text-xs text-[#94A3B8]">模式</p>
+              <p className="text-xs text-ink-3">模式</p>
               <p className="text-sm font-medium">{report.mode === 'demo' ? '清空并重建演示数据' : '清空业务数据'}</p>
             </div>
             <div>
-              <p className="text-xs text-[#94A3B8]">清空业务表</p>
+              <p className="text-xs text-ink-3">清空业务表</p>
               <p className="text-sm font-medium">{report.cleared} 张</p>
             </div>
             <div>
-              <p className="text-xs text-[#94A3B8]">演示种子语句</p>
+              <p className="text-xs text-ink-3">演示种子语句</p>
               <p className="text-sm font-medium">{report.seeded} 条</p>
             </div>
             <div>
-              <p className="text-xs text-[#94A3B8]">初始化前自动备份</p>
+              <p className="text-xs text-ink-3">初始化前自动备份</p>
               <button
                 type="button"
-                className="text-sm font-medium text-[#977653] hover:underline font-mono"
+                className="text-sm font-medium text-brand-ink hover:underline font-mono"
                 onClick={async () => {
                   try { await downloadAdminBackup(report.backup); } catch { toast.error('下载失败'); }
                 }}
@@ -953,14 +953,14 @@ export default function AdminConsole() {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[#1E293B] flex items-center justify-center">
-          <ShieldAlert className="w-5 h-5 text-white" />
+        <div className="w-10 h-10 rounded-lg bg-surface-inverse flex items-center justify-center">
+          <ShieldAlert className="w-5 h-5 text-ink-on-dark" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-[#1E293B]">管理控制台</h1>
-          <p className="text-xs text-[#94A3B8]">系统管理员专属：所有数据 · 数据导入 · 一键备份 · 系统初始化</p>
+          <h1 className="text-xl font-semibold text-ink">管理控制台</h1>
+          <p className="text-xs text-ink-3">系统管理员专属：所有数据 · 数据导入 · 一键备份 · 系统初始化</p>
         </div>
-        <Badge className="ml-auto bg-[#FEF3C7] text-[#B45309]">权限组：超级管理员</Badge>
+        <Badge className="ml-auto bg-warning-soft text-warning-strong">权限组：超级管理员</Badge>
       </div>
 
       <Tabs defaultValue="overview">

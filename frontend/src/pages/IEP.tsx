@@ -186,7 +186,7 @@ export default function IEP() {
       description: (
         <>
           将删除该 IEP 计划，连同其下全部长期目标、短期目标、任务步骤与试次记录。
-          <b className="text-[#B91C1C]">删除后不可撤销</b>
+          <b className="text-danger-strong">删除后不可撤销</b>
           ，学生的进度曲线会随之消失。如果只是填错了，建议改用编辑。
         </>
       ),

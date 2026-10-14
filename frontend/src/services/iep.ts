@@ -1340,13 +1340,13 @@ export async function deleteAdjustment(id: number): Promise<void> {
 
 /** 决策等级的展示元信息（颜色/文案），与后端 level 一一对应 */
 export const DECISION_META: Record<DecisionLevel, { label: string; bg: string; text: string; dot: string }> = {
-  regression: { label: '出现倒退',   bg: 'bg-[#7F1D1D]', text: 'text-[#FEE2E2]', dot: '#991B1B' },
-  adjust:   { label: '建议调整干预', bg: 'bg-[#FEF2F2]', text: 'text-[#B91C1C]', dot: '#DC2626' },
-  watch:    { label: '需关注',       bg: 'bg-[#FFFBEB]', text: 'text-[#B45309]', dot: '#D97706' },
-  on_track: { label: '进展符合预期', bg: 'bg-[#ECFDF5]', text: 'text-[#047857]', dot: '#059669' },
-  stale:    { label: '数据已过期',   bg: 'bg-[#F1F5F9]', text: 'text-[#475569]', dot: '#64748B' },
-  mastered: { label: '已达标待复核', bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]', dot: '#2563EB' },
-  nodata:   { label: '尚无数据',     bg: 'bg-[#F8FAFC]', text: 'text-[#64748B]', dot: '#94A3B8' },
+  regression: { label: '出现倒退',   bg: 'bg-danger-strong', text: 'text-danger-strong', dot: 'rgb(var(--danger-strong))' },
+  adjust:   { label: '建议调整干预', bg: 'bg-danger-soft', text: 'text-danger-strong', dot: 'rgb(var(--danger-strong))' },
+  watch:    { label: '需关注',       bg: 'bg-warning-soft', text: 'text-warning-strong', dot: 'rgb(var(--warning-strong))' },
+  on_track: { label: '进展符合预期', bg: 'bg-success-soft', text: 'text-success-strong', dot: 'rgb(var(--success-strong))' },
+  stale:    { label: '数据已过期',   bg: 'bg-surface-2', text: 'text-ink-2', dot: 'rgb(var(--ink-2))' },
+  mastered: { label: '已达标待复核', bg: 'bg-info-soft', text: 'text-info-strong', dot: 'rgb(var(--info-strong))' },
+  nodata:   { label: '尚无数据',     bg: 'bg-surface-3', text: 'text-ink-2', dot: 'rgb(var(--ink-3))' },
 };
 
 export const CHANGE_TYPE_LABEL: Record<string, string> = {

@@ -165,8 +165,8 @@ export default function ClassManagement({
     }
   };
 
-  const inputClass = 'h-10 bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]';
-  const selectClass = 'h-10 bg-[#F7F6F4] border-[#E2E8F0]';
+  const inputClass = 'h-10 bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]';
+  const selectClass = 'h-10 bg-canvas border-line';
 
   return (
     <div>
@@ -181,20 +181,20 @@ export default function ClassManagement({
           <Button
             variant="outline"
             size="sm"
-            className="h-9 w-9 p-0 text-[#64748B] border-[#E2E8F0] hover:bg-[#F7F6F4]"
+            className="h-9 w-9 p-0 text-ink-2 border-line hover:bg-canvas"
             onClick={onBack}
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-[28px] font-bold text-[#1E293B] tracking-tight">班级管理</h1>
-            <p className="text-sm text-[#64748B] mt-1">管理班级信息、班主任分配与容量设置</p>
+            <h1 className="text-[28px] font-bold text-ink tracking-tight">班级管理</h1>
+            <p className="text-sm text-ink-2 mt-1">管理班级信息、班主任分配与容量设置</p>
           </div>
         </div>
         {!readOnly && (
           <Button
             size="sm"
-            className="h-11 lg:h-10 px-4 bg-primary-500 hover:bg-primary-600 text-white"
+            className="h-11 lg:h-10 px-4 bg-primary-500 hover:bg-primary-600 text-ink-on-dark"
             onClick={handleAdd}
           >
             <Plus className="w-4 h-4 mr-1.5" />
@@ -211,24 +211,24 @@ export default function ClassManagement({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: idx * 0.06 }}
-            className="bg-white rounded-lg border border-[#E2E8F0] p-6 transition-all duration-150 hover:border-primary-300 hover:shadow-md hover:-translate-y-0.5"
+            className="bg-surface rounded-lg border border-line p-6 transition-all duration-150 hover:border-primary-300 hover:shadow-md hover:-translate-y-0.5"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-[#1E293B]">{cls.name}</h3>
-                <span className="text-xs text-[#94A3B8] mt-0.5 inline-block">{cls.grade}</span>
+                <h3 className="text-lg font-semibold text-ink">{cls.name}</h3>
+                <span className="text-xs text-ink-3 mt-0.5 inline-block">{cls.grade}</span>
               </div>
               {!readOnly && (
                 <div className="flex items-center gap-1">
                   <button
-                    className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] hover:text-primary-500 transition-colors"
+                    className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-ink-2 hover:bg-canvas hover:text-primary-500 transition-colors"
                     title="编辑"
                     onClick={() => handleEdit(cls)}
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-[#64748B] hover:bg-danger-50 hover:text-danger-500 transition-colors"
+                    className="w-11 h-11 lg:w-7 lg:h-7 rounded-md flex items-center justify-center text-ink-2 hover:bg-danger-50 hover:text-danger-500 transition-colors"
                     title="删除"
                     onClick={() => handleDeleteClick(cls)}
                   >
@@ -239,36 +239,36 @@ export default function ClassManagement({
             </div>
 
             <div className="mb-4">
-              <span className="text-3xl font-bold text-[#1E293B]">{cls.student_count}</span>
-              <span className="text-sm text-[#64748B] ml-1">名学生</span>
-              <span className="text-xs text-[#94A3B8] ml-2">/ 容量 {cls.capacity}人</span>
+              <span className="text-3xl font-bold text-ink">{cls.student_count}</span>
+              <span className="text-sm text-ink-2 ml-1">名学生</span>
+              <span className="text-xs text-ink-3 ml-2">/ 容量 {cls.capacity}人</span>
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-[#64748B]">
-                <User className="w-3.5 h-3.5 text-[#94A3B8]" />
+              <div className="flex items-center gap-2 text-sm text-ink-2">
+                <User className="w-3.5 h-3.5 text-ink-3" />
                 <span>班主任：{cls.teacher || '未分配'}</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-[#64748B]">
-                <MapPin className="w-3.5 h-3.5 text-[#94A3B8]" />
+              <div className="flex items-center gap-2 text-sm text-ink-2">
+                <MapPin className="w-3.5 h-3.5 text-ink-3" />
                 <span>{cls.room || '未分配教室'}</span>
               </div>
             </div>
 
             {cls.description && (
-              <p className="text-xs text-[#94A3B8] mt-3 pt-3 border-t border-[#E2E8F0] line-clamp-2">
+              <p className="text-xs text-ink-3 mt-3 pt-3 border-t border-line line-clamp-2">
                 {cls.description}
               </p>
             )}
 
-            <div className="mt-4 pt-3 border-t border-[#E2E8F0]">
-              <div className="w-full bg-[#F0F2F5] rounded-full h-2">
+            <div className="mt-4 pt-3 border-t border-line">
+              <div className="w-full bg-surface-2 rounded-full h-2">
                 <div
                   className="bg-primary-400 h-2 rounded-full transition-all"
                   style={{ width: `${Math.min(100, (cls.student_count / cls.capacity) * 100)}%` }}
                 />
               </div>
-              <p className="text-xs text-[#94A3B8] mt-1">
+              <p className="text-xs text-ink-3 mt-1">
                 已使用 {cls.student_count}/{cls.capacity} 容量
               </p>
             </div>
@@ -279,15 +279,15 @@ export default function ClassManagement({
       {/* Empty state */}
       {classes.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20">
-          <GraduationCap className="w-16 h-16 text-[#CBD5E1] mb-4" />
-          <p className="text-[#64748B] font-medium mb-1">
+          <GraduationCap className="w-16 h-16 text-ink-4 mb-4" />
+          <p className="text-ink-2 font-medium mb-1">
             {readOnly ? '暂无可见班级' : '暂无班级'}
           </p>
-          <p className="text-[#94A3B8] text-sm mb-4">
+          <p className="text-ink-3 text-sm mb-4">
             {readOnly ? '您没有查看班级的权限' : '点击上方按钮添加第一个班级'}
           </p>
           {!readOnly && (
-            <Button className="bg-primary-500 hover:bg-primary-600 text-white" onClick={handleAdd}>
+            <Button className="bg-primary-500 hover:bg-primary-600 text-ink-on-dark" onClick={handleAdd}>
               <Plus className="w-4 h-4 mr-1.5" />
               新增班级
             </Button>
@@ -305,7 +305,7 @@ export default function ClassManagement({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="fixed inset-0 z-50 bg-black/50"
+                className="fixed inset-0 z-50 bg-overlay/50"
                 onClick={() => setFormOpen(false)}
               />
               <motion.div
@@ -313,24 +313,24 @@ export default function ClassManagement({
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-                className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-[#F7F6F4] z-50 flex flex-col"
+                className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-canvas z-50 flex flex-col"
               >
-                <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E2E8F0] flex-shrink-0">
-                  <h2 className="text-lg font-semibold text-[#1E293B]">
+                <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-line flex-shrink-0">
+                  <h2 className="text-lg font-semibold text-ink">
                     {editingClass ? '编辑班级' : '新增班级'}
                   </h2>
                   <button
                     onClick={() => setFormOpen(false)}
-                    className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
+                    className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-ink-3 hover:bg-canvas hover:text-ink transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 py-6">
-                  <div className="bg-white rounded-lg border border-[#E2E8F0] p-5 space-y-4">
+                  <div className="bg-surface rounded-lg border border-line p-5 space-y-4">
                     <div>
-                      <Label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                      <Label className="text-sm font-medium text-ink mb-1.5 block">
                         班级名称<span className="text-danger-500 ml-0.5">*</span>
                       </Label>
                       <Input
@@ -342,7 +342,7 @@ export default function ClassManagement({
                       {errors.name && <p className="text-danger-500 text-xs mt-1">{errors.name}</p>}
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-[#1E293B] mb-1.5 block">所在年级</Label>
+                      <Label className="text-sm font-medium text-ink mb-1.5 block">所在年级</Label>
                       <Select
                         value={form.grade || '一年级'}
                         onValueChange={(v) => setForm((p) => ({ ...p, grade: v }))}
@@ -358,7 +358,7 @@ export default function ClassManagement({
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                      <Label className="text-sm font-medium text-ink mb-1.5 block">
                         班主任<span className="text-danger-500 ml-0.5">*</span>
                       </Label>
                       <Select
@@ -381,7 +381,7 @@ export default function ClassManagement({
                       {errors.teacher && <p className="text-danger-500 text-xs mt-1">{errors.teacher}</p>}
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-[#1E293B] mb-1.5 block">教室位置</Label>
+                      <Label className="text-sm font-medium text-ink mb-1.5 block">教室位置</Label>
                       <Input
                         value={form.room || ''}
                         onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))}
@@ -390,7 +390,7 @@ export default function ClassManagement({
                       />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-[#1E293B] mb-1.5 block">
+                      <Label className="text-sm font-medium text-ink mb-1.5 block">
                         容量上限<span className="text-danger-500 ml-0.5">*</span>
                       </Label>
                       <Input
@@ -405,25 +405,25 @@ export default function ClassManagement({
                       {errors.capacity && <p className="text-danger-500 text-xs mt-1">{errors.capacity}</p>}
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-[#1E293B] mb-1.5 block">班级描述</Label>
+                      <Label className="text-sm font-medium text-ink mb-1.5 block">班级描述</Label>
                       <Textarea
                         value={form.description || ''}
                         onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                         placeholder="请输入班级描述"
                         rows={3}
-                        className="bg-[#F7F6F4] border-[#E2E8F0] focus:border-[#3B82F6] focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
+                        className="bg-canvas border-line focus:border-line-focus focus:ring-[3px] focus:ring-[rgba(59,130,246,0.15)]"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-[#E2E8F0] flex-shrink-0">
-                  <Button variant="ghost" onClick={() => setFormOpen(false)} className="text-[#64748B]">
+                <div className="flex items-center justify-between px-6 py-4 bg-surface border-t border-line flex-shrink-0">
+                  <Button variant="ghost" onClick={() => setFormOpen(false)} className="text-ink-2">
                     取消
                   </Button>
                   <Button
                     onClick={handleSubmit}
-                    className="bg-primary-500 hover:bg-primary-600 text-white"
+                    className="bg-primary-500 hover:bg-primary-600 text-ink-on-dark"
                   >
                     {editingClass ? '保存' : '创建'}
                   </Button>
@@ -442,16 +442,16 @@ export default function ClassManagement({
               <div className="mx-auto w-12 h-12 rounded-full bg-danger-50 flex items-center justify-center mb-3">
                 <Trash2 className="w-6 h-6 text-danger-500" />
               </div>
-              <DialogTitle className="text-lg font-semibold text-[#1E293B]">确认删除</DialogTitle>
-              <DialogDescription className="text-[#64748B]">
-                确定要删除班级 <strong className="text-[#1E293B]">{deleteTarget?.name}</strong> 吗？该操作不可撤销。
+              <DialogTitle className="text-lg font-semibold text-ink">确认删除</DialogTitle>
+              <DialogDescription className="text-ink-2">
+                确定要删除班级 <strong className="text-ink">{deleteTarget?.name}</strong> 吗？该操作不可撤销。
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-end gap-2 mt-4">
               <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
                 取消
               </Button>
-              <Button className="bg-danger-500 hover:bg-danger-600 text-white" onClick={confirmDelete}>
+              <Button className="bg-danger-500 hover:bg-danger-600 text-ink-on-dark" onClick={confirmDelete}>
                 确认删除
               </Button>
             </div>

@@ -81,14 +81,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
             title={collapsed ? item.label : undefined}
             className={`relative flex items-center w-full min-tap-h px-3 gap-3 rounded-md press cursor-pointer ${
               isActive
-                ? 'bg-[#334155] text-white'
-                : 'text-[#94A3B8] hover:bg-[#334155] hover:text-white'
+                ? 'bg-surface-inverse-2 text-ink-on-dark'
+                : 'text-ink-3 hover:bg-surface-inverse-2 hover:text-ink-on-dark'
             }`}
           >
             {isActive && (
               <motion.span
                 layoutId="sidebar-active"
-                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#3B82F6] rounded-r-full"
+                className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-info rounded-r-full"
                 transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               />
             )}
@@ -113,10 +113,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
   );
 
   const userBlock = (
-    <div className="px-3 py-4 border-t border-[#334155]">
+    <div className="px-3 py-4 border-t border-surface-inverse-2">
       <div className="flex items-center gap-3">
         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center">
-          <span className="text-xs font-bold text-white">{user?.name?.[0] || '用'}</span>
+          <span className="text-xs font-bold text-ink-on-dark">{user?.name?.[0] || '用'}</span>
         </div>
         <AnimatePresence>
           {!collapsed && (
@@ -127,8 +127,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
               transition={{ duration: 0.2 }}
               className="flex-1 min-w-0 overflow-hidden"
             >
-              <p className="text-sm text-white truncate">{user?.name || '当前用户'}</p>
-              <p className="text-xs text-[#94A3B8] truncate">
+              <p className="text-sm text-ink-on-dark truncate">{user?.name || '当前用户'}</p>
+              <p className="text-xs text-ink-3 truncate">
                 {user?.permission_group_name || '用户'}
               </p>
             </motion.div>
@@ -144,7 +144,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
               onClick={handleLogout}
               aria-label="退出登录"
               title="退出登录"
-              className="flex-shrink-0 p-2 rounded-md text-[#94A3B8] hover:text-white hover:bg-[#334155] press cursor-pointer"
+              className="flex-shrink-0 p-2 rounded-md text-ink-3 hover:text-ink-on-dark hover:bg-surface-inverse-2 press cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </motion.button>
@@ -155,10 +155,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
   );
 
   const logoBlock = (
-    <div className="flex items-center justify-between h-16 px-4 border-b border-[#334155]">
+    <div className="flex items-center justify-between h-16 px-4 border-b border-surface-inverse-2">
       <div className="flex items-center gap-3 overflow-hidden">
         <div className="flex-shrink-0 w-9 h-9 rounded-full bg-primary-500 flex items-center justify-center">
-          <Brain className="w-5 h-5 text-white" />
+          <Brain className="w-5 h-5 text-ink-on-dark" />
         </div>
         <AnimatePresence>
           {!collapsed && (
@@ -169,7 +169,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
               transition={{ duration: 0.2 }}
               className="overflow-hidden whitespace-nowrap"
             >
-              <span className="text-lg font-bold text-white">特教 IEP</span>
+              <span className="text-lg font-bold text-ink-on-dark">特教 IEP</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -179,7 +179,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
         type="button"
         onClick={onCloseMobile}
         aria-label="关闭主导航"
-        className="lg:hidden min-tap flex items-center justify-center -mr-2 rounded-lg text-[#94A3B8] hover:text-white press cursor-pointer"
+        className="lg:hidden min-tap flex items-center justify-center -mr-2 rounded-lg text-ink-3 hover:text-ink-on-dark press cursor-pointer"
       >
         <X className="w-5 h-5" />
       </button>
@@ -197,7 +197,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onCloseMobile}
-            className="fixed inset-0 z-40 bg-[#0F172A]/40 backdrop-blur-[2px] lg:hidden"
+            className="fixed inset-0 z-40 bg-surface-inverse/40 backdrop-blur-[2px] lg:hidden"
           />
         )}
       </AnimatePresence>
@@ -206,7 +206,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
       <motion.aside
         animate={{ width: collapsed ? 68 : 240 }}
         transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-[#1E293B] z-30 overflow-hidden"
+        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-surface-inverse z-30 overflow-hidden"
       >
         {logoBlock}
         {navList}
@@ -218,7 +218,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
           onClick={onToggle}
           aria-label={collapsed ? '展开侧栏' : '收起侧栏'}
           title={collapsed ? '展开侧栏' : '收起侧栏'}
-          className="hidden lg:flex min-tap-h items-center justify-center gap-1.5 border-t border-[#334155] text-xs text-[#94A3B8] hover:text-white hover:bg-[#334155] press cursor-pointer"
+          className="hidden lg:flex min-tap-h items-center justify-center gap-1.5 border-t border-surface-inverse-2 text-xs text-ink-3 hover:text-ink-on-dark hover:bg-surface-inverse-2 press cursor-pointer"
         >
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d={collapsed ? 'M6 3.5 L10.5 8 L6 12.5' : 'M10 3.5 L5.5 8 L10 12.5'}
@@ -240,8 +240,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed lg:hidden left-0 top-0 w-[min(84vw,300px)] h-[100dvh] bg-[#1E293B] z-50 flex flex-col"
-            style={{ paddingTop: 'var(--safe-top)' }}
+            className="fixed lg:hidden left-0 top-0 w-[min(84vw,300px)] h-[100dvh] bg-surface-inverse z-50 flex flex-col"
+            style={{ paddingTop: 'rgb(var(--safe-top))' }}
           >
             {logoBlock}
             {navList}

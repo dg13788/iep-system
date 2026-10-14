@@ -50,7 +50,7 @@ export default function Layout() {
       {/* 键盘/读屏用户直达内容：跳过整条导航 */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:m-3 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:shadow-float"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:m-3 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:shadow-float"
       >
         跳到主要内容
       </a>
@@ -69,13 +69,13 @@ export default function Layout() {
         <Topbar onOpenNav={() => setNavOpen(true)} />
         <main
           id="main-content"
-          className="flex-1 px-4 py-5 sm:px-6 sm:py-6 min-w-0 overflow-y-auto bg-[#F7F6F4]"
+          className="flex-1 px-4 py-5 sm:px-6 sm:py-6 min-w-0 overflow-y-auto bg-canvas"
         >
           <Outlet />
           {/* 底部标签栏占位：避免最后一条内容被标签栏压住 */}
           <div
             className="lg:hidden"
-            style={{ height: 'calc(60px + var(--safe-bottom))' }}
+            style={{ height: 'calc(60px + rgb(var(--safe-bottom)))' }}
             aria-hidden="true"
           />
         </main>

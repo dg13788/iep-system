@@ -51,15 +51,15 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (!error) return this.props.children;
 
     return (
-      <div className="min-h-[100dvh] bg-[#F7F6F4] flex items-center justify-center p-4">
-        <div className="w-full max-w-[520px] bg-white rounded-2xl shadow-card border border-[#E2E8F0] p-6 text-center">
-          <div className="mx-auto w-12 h-12 rounded-full bg-[#FEF2F2] flex items-center justify-center">
-            <AlertTriangle className="w-6 h-6 text-[#DC2626]" />
+      <div className="min-h-[100dvh] bg-canvas flex items-center justify-center p-4">
+        <div className="w-full max-w-[520px] bg-surface rounded-2xl shadow-card border border-line p-6 text-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-danger-soft flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-danger-strong" />
           </div>
-          <h1 className="mt-4 text-base font-semibold text-[#1E293B]">
+          <h1 className="mt-4 text-base font-semibold text-ink">
             这个页面出了点问题
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[#64748B]">
+          <p className="mt-2 text-sm leading-relaxed text-ink-2">
             已经保存的数据不受影响，仍在系统里。可以先重试，若反复出现请把下面的信息发给系统管理员。
           </p>
 
@@ -67,7 +67,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               onClick={this.retry}
-              className="min-tap-h inline-flex items-center gap-1.5 rounded-lg bg-[#1E293B] px-4 text-sm font-medium text-white hover:bg-[#334155] press cursor-pointer"
+              className="min-tap-h inline-flex items-center gap-1.5 rounded-lg bg-surface-inverse px-4 text-sm font-medium text-ink-on-dark hover:bg-surface-inverse-2 press cursor-pointer"
             >
               <RotateCw className="w-4 h-4" />
               重试
@@ -75,17 +75,17 @@ export default class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               onClick={this.goHome}
-              className="min-tap-h inline-flex items-center rounded-lg border border-[#E2E8F0] px-4 text-sm text-[#475569] hover:bg-[#F7F6F4] press cursor-pointer"
+              className="min-tap-h inline-flex items-center rounded-lg border border-line px-4 text-sm text-ink-2 hover:bg-canvas press cursor-pointer"
             >
               返回首页
             </button>
           </div>
 
           <details className="mt-5 text-left">
-            <summary className="cursor-pointer select-none text-xs text-[#94A3B8] hover:text-[#64748B]">
+            <summary className="cursor-pointer select-none text-xs text-ink-3 hover:text-ink-2">
               技术细节（报障时请附上）
             </summary>
-            <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-[#F8FAFC] p-3 text-[11px] leading-relaxed text-[#64748B] whitespace-pre-wrap break-all">
+            <pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-surface-3 p-3 text-[11px] leading-relaxed text-ink-2 whitespace-pre-wrap break-all">
               {error.message}
               {stack ? `\n\n${stack}` : ''}
             </pre>

@@ -67,7 +67,7 @@ const quickActions = [
   { label: '查看待办', icon: ListChecks, color: 'bg-warning-500', action: 'todos' },
 ];
 
-const DISABILITY_PALETTE = ['#977653', '#405680', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#0EA5E9', '#EC4899'];
+const DISABILITY_PALETTE = ['rgb(var(--brand))', 'rgb(var(--surface-inverse-2))', 'rgb(var(--success))', 'rgb(var(--warning))', 'rgb(var(--danger))', 'rgb(var(--violet))', 'rgb(var(--info))', 'rgb(var(--danger))'];
 
 const statusBorderColors: Record<string, string> = {
   urgent: 'border-l-danger-500',
@@ -93,13 +93,13 @@ const activityTypeColors: Record<string, string> = {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
   if (!active || !payload) return null;
   return (
-    <div className="bg-white rounded-lg shadow-lg border border-[#E2E8F0] p-3">
-      {label && <p className="text-sm font-medium text-[#1E293B] mb-1.5">{label}</p>}
+    <div className="bg-surface rounded-lg shadow-lg border border-line p-3">
+      {label && <p className="text-sm font-medium text-ink mb-1.5">{label}</p>}
       {payload.map((entry, index) => (
         <p key={index} className="text-sm flex items-center gap-2">
           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-[#64748B]">{entry.name}：</span>
-          <span className="font-medium text-[#1E293B]">{entry.value}</span>
+          <span className="text-ink-2">{entry.name}：</span>
+          <span className="font-medium text-ink">{entry.value}</span>
         </p>
       ))}
     </div>
@@ -297,9 +297,9 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* 数据披露横幅：本页统计均来自真实业务数据；雷达图与目标进度图暂无后端聚合接口，显示为空态而非编造数字 */}
-      <div className="rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-2.5 text-xs text-[#64748B] flex items-center gap-2">
+      <div className="rounded-lg border border-line bg-surface-3 px-4 py-2.5 text-xs text-ink-2 flex items-center gap-2">
         <CheckCircle2 className="w-4 h-4 text-success-500 flex-shrink-0" />
-        <span>本页统计均取自真实业务数据（按当前账号数据权限范围）。其中「学生发展侧面图」「IEP目标达成进度」两项暂无后端聚合接口，显示为真实空态，待对接 <code className="px-1 rounded bg-[#EEF2F6]">/api/stats</code> 后补全。</span>
+        <span>本页统计均取自真实业务数据（按当前账号数据权限范围）。其中「学生发展侧面图」「IEP目标达成进度」两项暂无后端聚合接口，显示为真实空态，待对接 <code className="px-1 rounded bg-surface-2">/api/stats</code> 后补全。</span>
       </div>
 
       {/* Section 1: Welcome Banner */}
@@ -308,14 +308,14 @@ export default function Dashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
         className="relative overflow-hidden rounded-xl border border-primary-200 px-6 py-4"
-        style={{ background: 'linear-gradient(135deg, #F5F0EB 0%, #F0EDE8 100%)' }}
+        style={{ background: 'linear-gradient(135deg, rgb(var(--brand-soft)) 0%, rgb(var(--brand-soft)) 100%)' }}
       >
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-[#1E293B]">
+            <h2 className="text-lg font-semibold text-ink">
               欢迎回来，{user?.name || '老师'}！
             </h2>
-            <p className="text-sm text-[#64748B] mt-1">
+            <p className="text-sm text-ink-2 mt-1">
               今天是 {currentDate}
             </p>
           </div>
@@ -336,15 +336,15 @@ export default function Dashboard() {
               key={index}
               variants={staggerItem}
               whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-              className="bg-white rounded-xl p-5 cursor-pointer transition-shadow duration-150"
+              className="bg-surface rounded-xl p-5 cursor-pointer transition-shadow duration-150"
             >
               <div className="flex items-start justify-between mb-3">
-                <span className="text-[13px] text-[#64748B]">{card.title}</span>
+                <span className="text-[13px] text-ink-2">{card.title}</span>
                 <div className={`w-10 h-10 rounded-full ${card.bgColor} flex items-center justify-center`}>
                   <Icon className={`w-5 h-5 ${card.iconColor}`} />
                 </div>
               </div>
-              <div className="text-[28px] font-bold text-[#1E293B] leading-tight">
+              <div className="text-[28px] font-bold text-ink leading-tight">
                 {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
               </div>
               {card.trend && (
@@ -356,7 +356,7 @@ export default function Dashboard() {
                     {card.trend}
                   </span>
                   {card.title !== '本月目标达成' && (
-                    <span className="text-[#94A3B8]">较上月</span>
+                    <span className="text-ink-3">较上月</span>
                   )}
                 </div>
               )}
@@ -371,7 +371,7 @@ export default function Dashboard() {
           variants={staggerContainer}
           initial="initial"
           animate="animate"
-          className="bg-white rounded-xl p-4"
+          className="bg-surface rounded-xl p-4"
         >
           <div className="flex flex-wrap gap-3">
             {quickActions.map((action, index) => {
@@ -383,7 +383,7 @@ export default function Dashboard() {
                   whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleQuickAction(action.label)}
-                  className={`${action.color} text-white flex items-center gap-2 px-5 h-11 lg:h-10 rounded-lg text-sm font-medium transition-all cursor-pointer hover:opacity-90`}
+                  className={`${action.color} text-ink-on-dark flex items-center gap-2 px-5 h-11 lg:h-10 rounded-lg text-sm font-medium transition-all cursor-pointer hover:opacity-90`}
                 >
                   <Icon className="w-4 h-4" />
                   {action.label}
@@ -401,15 +401,15 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-5"
+          className="bg-surface rounded-xl p-5"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#1E293B]">学生障碍类型分布</h3>
+            <h3 className="text-base font-semibold text-ink">学生障碍类型分布</h3>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700">真实数据</span>
           </div>
           <div className="h-[260px]">
             {disabilityData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-sm text-[#94A3B8]">暂无学生数据</div>
+              <div className="h-full flex items-center justify-center text-sm text-ink-3">暂无学生数据</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -429,10 +429,10 @@ export default function Dashboard() {
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
-                  <text x="50%" y="48%" textAnchor="middle" dominantBaseline="central" className="text-2xl font-bold fill-[#1E293B]">
+                  <text x="50%" y="48%" textAnchor="middle" dominantBaseline="central" className="text-2xl font-bold fill-ink">
                     {studentCount}
                   </text>
-                  <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="text-xs fill-[#94A3B8]">
+                  <text x="50%" y="58%" textAnchor="middle" dominantBaseline="central" className="text-xs fill-ink-3">
                     总人数
                   </text>
                 </PieChart>
@@ -443,8 +443,8 @@ export default function Dashboard() {
             {disabilityData.map((item, index) => (
               <div key={index} className="flex items-center gap-1.5 text-xs">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-[#64748B]">{item.name}</span>
-                <span className="text-[#1E293B] font-medium">{item.value}</span>
+                <span className="text-ink-2">{item.name}</span>
+                <span className="text-ink font-medium">{item.value}</span>
               </div>
             ))}
           </div>
@@ -455,10 +455,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-5"
+          className="bg-surface rounded-xl p-5"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#1E293B]">近6个月IEP完成趋势</h3>
+            <h3 className="text-base font-semibold text-ink">近6个月IEP完成趋势</h3>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700">真实数据</span>
           </div>
           <div className="h-[260px]">
@@ -466,20 +466,20 @@ export default function Dashboard() {
               <AreaChart data={iepTrendData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorCreated" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#C1AC96" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#C1AC96" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="rgb(var(--brand-line))" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="rgb(var(--brand-line))" stopOpacity={0}/>
                   </linearGradient>
                   <linearGradient id="colorCompleted" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="rgb(var(--success))" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="rgb(var(--success))" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--line))" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'rgb(var(--ink-3))' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: 'rgb(var(--ink-3))' }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="created" name="制定数" stroke="#977653" strokeWidth={2} fill="url(#colorCreated)" dot={{ r: 4, fill: '#977653' }} activeDot={{ r: 6 }} />
-                <Area type="monotone" dataKey="completed" name="完成数" stroke="#10B981" strokeWidth={2} fill="url(#colorCompleted)" dot={{ r: 4, fill: '#10B981' }} activeDot={{ r: 6 }} />
+                <Area type="monotone" dataKey="created" name="制定数" stroke="rgb(var(--brand))" strokeWidth={2} fill="url(#colorCreated)" dot={{ r: 4, fill: 'rgb(var(--brand))' }} activeDot={{ r: 6 }} />
+                <Area type="monotone" dataKey="completed" name="完成数" stroke="rgb(var(--success))" strokeWidth={2} fill="url(#colorCompleted)" dot={{ r: 4, fill: 'rgb(var(--success))' }} activeDot={{ r: 6 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -490,26 +490,26 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-5"
+          className="bg-surface rounded-xl p-5"
         >
-          <h3 className="text-base font-semibold text-[#1E293B] mb-4">各班级IEP完成情况</h3>
+          <h3 className="text-base font-semibold text-ink mb-4">各班级IEP完成情况</h3>
           <div className="h-[260px]">
             {classIepData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-sm text-[#94A3B8]">暂无IEP数据</div>
+              <div className="h-full flex items-center justify-center text-sm text-ink-3">暂无IEP数据</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classIepData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                  <XAxis dataKey="class" tick={{ fontSize: 11, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--line))" vertical={false} />
+                  <XAxis dataKey="class" tick={{ fontSize: 11, fill: 'rgb(var(--ink-3))' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: 'rgb(var(--ink-3))' }} axisLine={false} tickLine={false} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend
                     wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
                     iconType="circle"
                     iconSize={8}
                   />
-                  <Bar dataKey="completed" name="已完成" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="inProgress" name="进行中" fill="#977653" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="completed" name="已完成" fill="rgb(var(--success))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="inProgress" name="进行中" fill="rgb(var(--brand))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -524,16 +524,16 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-5"
+          className="bg-surface rounded-xl p-5"
         >
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-[#1E293B]">学生发展侧面图</h3>
-            <p className="text-xs text-[#94A3B8] mt-1">认知/沟通/社交/自理/运动/情绪/学业 — 7大领域能力评估</p>
+            <h3 className="text-base font-semibold text-ink">学生发展侧面图</h3>
+            <p className="text-xs text-ink-3 mt-1">认知/沟通/社交/自理/运动/情绪/学业 — 7大领域能力评估</p>
           </div>
           <div className="h-[280px] flex flex-col items-center justify-center text-center">
-            <AlertCircle className="w-10 h-10 text-[#CBD5E1] mb-3" />
-            <p className="text-sm text-[#64748B] font-medium">暂无聚合数据</p>
-            <p className="text-xs text-[#94A3B8] mt-1">需后端 /api/stats 提供各领域均值，<br />当前不展示编造数值</p>
+            <AlertCircle className="w-10 h-10 text-ink-4 mb-3" />
+            <p className="text-sm text-ink-2 font-medium">暂无聚合数据</p>
+            <p className="text-xs text-ink-3 mt-1">需后端 /api/stats 提供各领域均值，<br />当前不展示编造数值</p>
           </div>
         </motion.div>
 
@@ -542,16 +542,16 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-5 lg:col-span-2"
+          className="bg-surface rounded-xl p-5 lg:col-span-2"
         >
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-[#1E293B]">IEP目标达成进度</h3>
-            <p className="text-xs text-[#94A3B8] mt-1">各目标领域得分变化趋势（%）</p>
+            <h3 className="text-base font-semibold text-ink">IEP目标达成进度</h3>
+            <p className="text-xs text-ink-3 mt-1">各目标领域得分变化趋势（%）</p>
           </div>
           <div className="h-[280px] flex flex-col items-center justify-center text-center">
-            <AlertCircle className="w-10 h-10 text-[#CBD5E1] mb-3" />
-            <p className="text-sm text-[#64748B] font-medium">暂无聚合数据</p>
-            <p className="text-xs text-[#94A3B8] mt-1">需后端 /api/stats 按目标领域聚合，<br />当前不展示编造数值</p>
+            <AlertCircle className="w-10 h-10 text-ink-4 mb-3" />
+            <p className="text-sm text-ink-2 font-medium">暂无聚合数据</p>
+            <p className="text-xs text-ink-3 mt-1">需后端 /api/stats 按目标领域聚合，<br />当前不展示编造数值</p>
           </div>
         </motion.div>
       </div>
@@ -563,14 +563,14 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-6"
+          className="bg-surface rounded-xl p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#1E293B]">IEP定期检视提醒</h3>
+            <h3 className="text-base font-semibold text-ink">IEP定期检视提醒</h3>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-danger-50 text-danger-600">需关注</span>
           </div>
           {reviewReminders.length === 0 ? (
-            <p className="text-sm text-[#94A3B8] py-6 text-center">当前没有待审批的 IEP 计划 🎉</p>
+            <p className="text-sm text-ink-3 py-6 text-center">当前没有待审批的 IEP 计划 🎉</p>
           ) : (
             <motion.div
               variants={staggerContainer}
@@ -583,7 +583,7 @@ export default function Dashboard() {
                   key={index}
                   variants={staggerItem}
                   whileHover={{ x: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}
-                  className={`border border-[#E2E8F0] rounded-lg p-3.5 border-l-4 ${statusBorderColors[item.status]} bg-white transition-all cursor-pointer`}
+                  className={`border border-line rounded-lg p-3.5 border-l-4 ${statusBorderColors[item.status]} bg-surface transition-all cursor-pointer`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -593,8 +593,8 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-[#1E293B]">{item.student}</div>
-                        <div className="text-xs text-[#94A3B8]">{item.message}</div>
+                        <div className="text-sm font-medium text-ink">{item.student}</div>
+                        <div className="text-xs text-ink-3">{item.message}</div>
                       </div>
                     </div>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${statusBadgeColors[item.status]}`}>
@@ -612,10 +612,10 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="bg-white rounded-xl p-6"
+          className="bg-surface rounded-xl p-6"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[#1E293B]">最近活动</h3>
+            <h3 className="text-base font-semibold text-ink">最近活动</h3>
             <button
               type="button"
               onClick={() => navigate('/system')}
@@ -626,7 +626,7 @@ export default function Dashboard() {
             </button>
           </div>
           {recentActivity.length === 0 ? (
-            <p className="text-sm text-[#94A3B8] py-6 text-center">暂无活动记录</p>
+            <p className="text-sm text-ink-3 py-6 text-center">暂无活动记录</p>
           ) : (
             <motion.div
               variants={staggerContainer}
@@ -641,15 +641,15 @@ export default function Dashboard() {
                   className="flex items-start gap-3"
                 >
                   <div className="relative flex flex-col items-center">
-                    <div className={`w-2.5 h-2.5 rounded-full ${activityTypeColors[activity.type] || 'bg-[#94A3B8]'} flex-shrink-0 mt-1.5`} />
+                    <div className={`w-2.5 h-2.5 rounded-full ${activityTypeColors[activity.type] || 'bg-surface-inverse-2'} flex-shrink-0 mt-1.5`} />
                     {index < recentActivity.length - 1 && (
-                      <div className="w-px h-6 bg-[#E2E8F0] mt-1" />
+                      <div className="w-px h-6 bg-surface-2 mt-1" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-[#1E293B]">
+                    <p className="text-sm text-ink">
                       <span className="font-medium">{activity.user}</span>
-                      <span className="text-[#64748B]">{activity.action}</span>
+                      <span className="text-ink-2">{activity.action}</span>
                       <span
                         className="text-primary-600 cursor-pointer hover:underline"
                         onClick={() => handleActivityClick(activity)}
@@ -662,7 +662,7 @@ export default function Dashboard() {
                         {activity.object}
                       </span>
                     </p>
-                    <p className="text-xs text-[#94A3B8] mt-0.5">{activity.time}</p>
+                    <p className="text-xs text-ink-3 mt-0.5">{activity.time}</p>
                   </div>
                 </motion.div>
               ))}
@@ -676,10 +676,10 @@ export default function Dashboard() {
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="bg-white rounded-xl p-6"
+        className="bg-surface rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[#1E293B]">待处理事项</h3>
+          <h3 className="text-base font-semibold text-ink">待处理事项</h3>
           <button
             type="button"
             onClick={() => navigate('/iep')}
@@ -697,15 +697,15 @@ export default function Dashboard() {
                 key={index}
                 variants={staggerItem}
                 whileHover={{ y: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
-                className="border border-[#E2E8F0] rounded-lg p-4 cursor-pointer hover:border-primary-200 transition-all duration-150"
+                className="border border-line rounded-lg p-4 cursor-pointer hover:border-primary-200 transition-all duration-150"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-lg ${task.bgColor} flex items-center justify-center flex-shrink-0`}>
                     <Icon className={`w-5 h-5 ${task.iconColor}`} />
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-[#1E293B]">{task.count}</div>
-                    <div className="text-sm text-[#64748B]">{task.label}</div>
+                    <div className="text-2xl font-bold text-ink">{task.count}</div>
+                    <div className="text-sm text-ink-2">{task.label}</div>
                   </div>
                 </div>
               </motion.div>
@@ -719,10 +719,10 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.8, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-        className="bg-white rounded-xl p-6"
+        className="bg-surface rounded-xl p-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[#1E293B]">最近更新的学生档案</h3>
+          <h3 className="text-base font-semibold text-ink">最近更新的学生档案</h3>
           <button
             type="button"
             onClick={() => navigate('/students')}
@@ -735,12 +735,12 @@ export default function Dashboard() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-[#E2E8F0]">
-                <th className="text-left py-3 px-4 text-[13px] font-semibold text-[#94A3B8]">头像</th>
-                <th className="text-left py-3 px-4 text-[13px] font-semibold text-[#94A3B8]">姓名</th>
-                <th className="text-left py-3 px-4 text-[13px] font-semibold text-[#94A3B8]">班级</th>
-                <th className="text-left py-3 px-4 text-[13px] font-semibold text-[#94A3B8]">最近更新</th>
-                <th className="text-left py-3 px-4 text-[13px] font-semibold text-[#94A3B8]">状态</th>
+              <tr className="border-b border-line">
+                <th className="text-left py-3 px-4 text-[13px] font-semibold text-ink-3">头像</th>
+                <th className="text-left py-3 px-4 text-[13px] font-semibold text-ink-3">姓名</th>
+                <th className="text-left py-3 px-4 text-[13px] font-semibold text-ink-3">班级</th>
+                <th className="text-left py-3 px-4 text-[13px] font-semibold text-ink-3">最近更新</th>
+                <th className="text-left py-3 px-4 text-[13px] font-semibold text-ink-3">状态</th>
               </tr>
             </thead>
             <motion.tbody
@@ -750,15 +750,15 @@ export default function Dashboard() {
             >
               {recentStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-sm text-[#94A3B8]">暂无学生档案</td>
+                  <td colSpan={5} className="py-8 text-center text-sm text-ink-3">暂无学生档案</td>
                 </tr>
               ) : (
                 recentStudents.map((student, index) => (
                   <motion.tr
                     key={index}
                     variants={staggerItem}
-                    whileHover={{ backgroundColor: '#F7F6F4' }}
-                    className="border-b border-[#E2E8F0] transition-colors cursor-pointer"
+                    whileHover={{ backgroundColor: 'rgb(var(--canvas))' }}
+                    className="border-b border-line transition-colors cursor-pointer"
                   >
                     <td className="py-3.5 px-4">
                       <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
@@ -769,8 +769,8 @@ export default function Dashboard() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div>
-                        <div className="text-sm font-medium text-[#1E293B]">{student.name}</div>
-                        <div className="text-xs text-[#94A3B8]">{student.id}</div>
+                        <div className="text-sm font-medium text-ink">{student.name}</div>
+                        <div className="text-xs text-ink-3">{student.id}</div>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
@@ -779,9 +779,9 @@ export default function Dashboard() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5 text-sm text-[#1E293B]">
+                      <div className="flex items-center gap-1.5 text-sm text-ink">
                         <span>{student.updateTime}</span>
-                        <span className="text-[#94A3B8]">·</span>
+                        <span className="text-ink-3">·</span>
                         <span>{student.updateAction}</span>
                       </div>
                     </td>

@@ -12,50 +12,407 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+ * 设计 Token 体系（换肤的唯一真源）
+ * ============================================================================
+ *
+ * 【为什么全部改成 rgb 三元组】
+ * 原来是 hsl(30 31% 46%)。rgb 三元组（92 118 83）的好处是 Tailwind 能直接
+ * 拼透明度修饰符：bg-surface/50、text-ink-3/70 全部可用——这在深色主题里
+ * 是刚需（半透明叠加是深色界面做出层次的关键手法），hsl 格式做不到。
+ * ui/ 组件只写语义类名（bg-primary），hsl() 只存在于 tailwind.config.js，
+ * 所以这次换格式不需要动任何组件代码。
+ *
+ * 【命名规则：按「用途」命名，不按「颜色」命名】
+ *   ink / line / surface / brand / success…
+ * 若写成 --slate-800，换肤时就得在四套色板里重新挑颜色，语义也丢。
+ * 同理 #1E293B 在明亮主题是「主文字色」，在夜间主题是「卡片底色」——
+ * 硬编码时代这是两处各自为政的写法，token 化后它们是同一个语义的两个取值。
+ *
+ * 【三处对齐铁律（ADR-048）】
+ *   新增 token 必须同轮改三处，缺一处则该 token 等于不存在：
+ *     ① 本文件 :root / [data-theme] 的变量定义
+ *     ② tailwind.config.js 的 theme.extend.colors
+ *     ③ 组件里 cva 变体（button.tsx 等）
+ *   且构建后必须 grep 产物确认类真被生成，探针必须断言计算样式。
+ * ========================================================================= */
+
+@layer base {
+  /* ------------------------------------------------------------------
+   * 明亮（默认）——沿用 2026-10 之前的既有配色，视觉零变化
+   * ------------------------------------------------------------------ */
+  :root,
+  [data-theme='light'] {
+    /* 表面：画布 → 卡片 → 次级块 → 三级/悬停 */
+    --canvas: 247 246 244;          /* #F7F6F4 页面底，暖白 */
+    --surface: 255 255 255;         /* #FFFFFF 卡片面 */
+    --surface-2: 241 245 249;       /* #F1F5F9 次级块 */
+    --surface-3: 248 250 252;       /* #F8FAFC 悬停/条纹 */
+    --surface-inverse: 30 41 59;    /* #1E293B 侧栏深面 */
+    --surface-inverse-2: 51 65 85;  /* #334155 侧栏悬停 */
+    --surface-inverse-3: 59 130 246;/* #3B82F6 侧栏选中 */
+
+    /* 文字：主 → 次 → 弱 → 极弱 */
+    --ink: 30 41 59;                /* #1E293B 主文字 */
+    --ink-2: 100 116 139;           /* #64748B 次要文字 */
+    --ink-3: 148 163 184;           /* #94A3B8 弱文字/图标 */
+    --ink-4: 203 213 225;           /* #CBD5E1 占位符 */
+    --ink-on-dark: 255 255 255;     /* 深面上的文字 */
+    --ink-on-dark-2: 203 213 225;   /* 深面上的次要文字 */
+    --ink-on-dark-3: 148 163 184;   /* 深面上的弱文字 */
+
+    /* 线：常规边框 / 强分隔 */
+    --line: 226 232 240;            /* #E2E8F0 */
+    --line-2: 203 213 225;          /* #CBD5E1 */
+    --line-focus: 59 130 246;       /* #3B82F6 焦点环 */
+
+    /* 品牌（棕，取自既有 primary 家族） */
+    --brand: 151 118 83;            /* #977653 */
+    --brand-strong: 122 95 66;      /* #7A5F42 */
+    --brand-deep: 92 72 50;         /* #5C4832 */
+    --brand-soft: 245 240 235;      /* #F5F0EB 品牌浅底 */
+    --brand-line: 235 227 218;      /* #EBE3DA */
+    --brand-ink: 122 95 66;         /* 品牌文字（保证 ≥4.5:1） */
+
+    /* 状态色：base 实心 / soft 浅底 / strong 深字 */
+    --success: 16 185 129;          /* #10B981 */
+    --success-soft: 236 253 245;    /* #ECFDF5 */
+    --success-strong: 5 150 105;    /* #059669 */
+    --warning: 245 158 11;          /* #F59E0B */
+    --warning-soft: 255 251 235;    /* #FFFBEB */
+    --warning-strong: 217 119 6;    /* #D97706 */
+    --danger: 239 68 68;            /* #EF4444 */
+    --danger-soft: 254 242 242;     /* #FEF2F2 */
+    --danger-strong: 220 38 38;     /* #DC2626 */
+    --danger-line: 254 202 202;     /* #FECACA */
+    --info: 59 130 246;             /* #3B82F6 */
+    --info-soft: 239 246 255;       /* #EFF6FF */
+    --info-strong: 37 99 235;       /* #2563EB */
+    --violet: 139 92 246;           /* #8B5CF6 */
+    --violet-soft: 245 243 255;     /* #F5F3FF */
+
+    /* 阴影（深色主题下换用更深的 alpha，浅色主题下用中性灰） */
+    --overlay: 15 23 42;             /* 抽屉/对话框遮罩基色，配 /50 /30 使用 */
+    --shadow-tint: 15 23 42;
+    --shadow-alpha: 0.06;
+    --shadow-alpha-strong: 0.12;
+
+    color-scheme: light;
+  }
+
+  /* ------------------------------------------------------------------
+   * 夜间 —— 课后备课、家长视频沟通、夜间补记录
+   * 注意：#1E293B 从「主文字色」变成「卡片底色」，同一语义换皮不改代码。
+   * ------------------------------------------------------------------ */
+  [data-theme='dark'] {
+    --canvas: 12 18 30;             /* #0C121E 近黑蓝，减少纯黑刺眼 */
+    --surface: 30 41 59;            /* #1E293B 卡片 */
+    --surface-2: 39 52 74;          /* #27344A 次级块 */
+    --surface-3: 30 41 59;          /* 悬停回到卡片色（深色下要用亮度差而非阴影表达悬停） */
+    --surface-inverse: 2 6 17;      /* #020611 侧栏（比画布更深，形成分区） */
+    --surface-inverse-2: 39 52 74;
+    --surface-inverse-3: 96 165 250;
+
+    --ink: 241 245 249;             /* #F1F5F9 */
+    --ink-2: 203 213 225;           /* #CBD5E1 */
+    --ink-3: 148 163 184;           /* #94A3B8 */
+    --ink-4: 100 116 139;
+    --ink-on-dark: 248 250 252;
+    --ink-on-dark-2: 203 213 225;
+    --ink-on-dark-3: 148 163 184;
+
+    --line: 51 65 85;               /* #334155 */
+    --line-2: 71 85 105;            /* #475569 */
+    --line-focus: 96 165 250;
+
+    /* 品牌棕在深底上原色对比度不足（#977653 on #0C121E ≈ 3.4:1），
+       提亮到 #C4A47C（≈ 7.6:1），否则深色主题下品牌字会糊成一团。 */
+    --brand: 196 164 124;           /* #C4A47C */
+    --brand-strong: 214 185 149;    /* #D6B995 */
+    --brand-deep: 151 118 83;       /* 保留原色，供需要低亮度场景使用 */
+    --brand-soft: 45 40 33;         /* #2D2821 深棕底 */
+    --brand-line: 62 55 45;
+    --brand-ink: 214 185 149;
+
+    --success: 52 211 153;
+    --success-soft: 6 46 35;        /* #062E23 深绿底 */
+    --success-strong: 52 211 153;
+    --warning: 251 191 36;
+    --warning-soft: 56 42 8;        /* #382A08 */
+    --warning-strong: 251 191 36;
+    --danger: 248 113 113;
+    --danger-soft: 61 24 24;        /* #3D1818 */
+    --danger-strong: 252 165 165;
+    --danger-line: 90 35 35;
+    --info: 96 165 250;
+    --info-soft: 22 40 74;          /* #16284A */
+    --info-strong: 147 197 253;
+    --violet: 167 139 250;
+    --violet-soft: 42 33 74;        /* #2A214A */
+
+    --overlay: 0 0 0;               /* 深色主题下遮罩用纯黑，压得住底层内容 */
+    --shadow-tint: 0 0 0;
+    --shadow-alpha: 0.34;
+    --shadow-alpha-strong: 0.5;
+
+    color-scheme: dark;
+  }
+
+  /* ------------------------------------------------------------------
+   * 暖阳（护眼）—— 连续看评估报告、IEP 文本时降低蓝光刺激
+   * 教师填一整节课时长连续阅读评估记录，纯白底 + 高对比黑字最累眼。
+   * ------------------------------------------------------------------ */
+  [data-theme='warm'] {
+    --canvas: 245 240 230;          /* #F5F0E6 米纸 */
+    --surface: 255 252 245;         /* #FFFCF5 */
+    --surface-2: 240 233 219;       /* #F0E9DB */
+    --surface-3: 246 240 228;
+    --surface-inverse: 44 38 32;    /* #2C2620 暖黑 */
+    --surface-inverse-2: 62 54 45;
+    --surface-inverse-3: 138 98 57; /* #8A6239 */
+
+    --ink: 44 38 32;                /* #2C2620 */
+    --ink-2: 107 95 78;             /* #6B5F4E */
+    --ink-3: 151 136 111;           /* #97886F */
+    --ink-4: 195 182 158;
+    --ink-on-dark: 250 247 240;
+    --ink-on-dark-2: 210 200 182;
+    --ink-on-dark-3: 168 156 136;
+
+    --line: 227 217 197;            /* #E3D9C5 */
+    --line-2: 205 193 170;
+    --line-focus: 138 98 57;
+
+    --brand: 138 98 57;             /* #8A6239 */
+    --brand-strong: 110 76 42;
+    --brand-deep: 78 55 30;
+    --brand-soft: 243 235 220;      /* #F3EBDC */
+    --brand-line: 227 214 190;
+    --brand-ink: 110 76 42;
+
+    --success: 22 138 90;
+    --success-soft: 232 244 236;
+    --success-strong: 15 105 68;
+    --warning: 191 122 15;
+    --warning-soft: 250 240 219;
+    --warning-strong: 156 98 10;
+    --danger: 199 60 50;
+    --danger-soft: 250 234 230;
+    --danger-strong: 168 46 38;
+    --danger-line: 240 205 199;
+    --info: 47 105 178;
+    --info-soft: 231 238 248;
+    --info-strong: 33 84 148;
+    --violet: 116 88 196;
+    --violet-soft: 238 234 249;
+
+    --overlay: 44 38 32;
+    --shadow-tint: 87 68 41;
+    --shadow-alpha: 0.07;
+    --shadow-alpha-strong: 0.13;
+
+    color-scheme: light;
+  }
+
+  /* ------------------------------------------------------------------
+   * 高对比 —— 投影仪、老花镜、视觉障碍
+   * 纯黑字纯白底，边框改用真黑（不透明度 100%）以便在投影时看清结构。
+   * ------------------------------------------------------------------ */
+  [data-theme='contrast'] {
+    --canvas: 255 255 255;
+    --surface: 255 255 255;
+    --surface-2: 245 245 245;
+    --surface-3: 232 232 232;
+    --surface-inverse: 0 0 0;
+    --surface-inverse-2: 32 32 32;
+    --surface-inverse-3: 0 90 158;
+
+    --ink: 0 0 0;
+    --ink-2: 26 26 26;
+    --ink-3: 51 51 51;
+    --ink-4: 82 82 82;
+    --ink-on-dark: 255 255 255;
+    --ink-on-dark-2: 255 255 255;
+    --ink-on-dark-3: 224 224 224;
+
+    --line: 0 0 0;
+    --line-2: 0 0 0;
+    --line-focus: 0 90 158;
+
+    --brand: 122 75 0;              /* #7A4B00 深棕，白底对比 ≈ 8.6:1 */
+    --brand-strong: 90 56 0;
+    --brand-deep: 60 37 0;
+    --brand-soft: 255 244 224;
+    --brand-line: 122 75 0;
+    --brand-ink: 90 56 0;
+
+    --success: 0 97 0;
+    --success-soft: 226 246 226;
+    --success-strong: 0 78 0;
+    --warning: 130 78 0;
+    --warning-soft: 255 243 224;
+    --warning-strong: 104 62 0;
+    --danger: 153 0 0;
+    --danger-soft: 255 232 232;
+    --danger-strong: 122 0 0;
+    --danger-line: 153 0 0;
+    --info: 0 79 158;
+    --info-soft: 226 240 255;
+    --info-strong: 0 63 126;
+    --violet: 84 40 160;
+    --violet-soft: 240 234 255;
+
+    --overlay: 0 0 0;
+    --shadow-tint: 0 0 0;
+    --shadow-alpha: 0.16;
+    --shadow-alpha-strong: 0.28;
+
+    color-scheme: light;
+  }
+}
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 16%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 16%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 16%;
-    --primary: 30 31% 46%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 216 20% 38%;
-    --secondary-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --muted: 30 20% 95%;
-    --muted-foreground: 215 16% 57%;
-    --accent: 30 20% 95%;
-    --accent-foreground: 222 47% 16%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    /* shadcn 语义层（由 rgb 三元组驱动，格式与上方 token 一致） */
+    --background: 247 246 244;
+    --foreground: 30 41 59;
+    --card: 255 255 255;
+    --card-foreground: 30 41 59;
+    --popover: 255 255 255;
+    --popover-foreground: 30 41 59;
+    --primary: 151 118 83;
+    --primary-foreground: 255 255 255;
+    --secondary: 64 86 128;
+    --secondary-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --muted: 240 233 219;
+    --muted-foreground: 107 95 78;
+    --accent: 241 245 249;
+    --accent-foreground: 30 41 59;
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 59 130 246;
     --radius: 0.625rem;
-    --sidebar-background: 222 47% 16%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 216 20% 38%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 216 20% 25%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-background: 30 41 59;
+    --sidebar-foreground: 255 255 255;
+    --sidebar-primary: 59 130 246;
+    --sidebar-primary-foreground: 255 255 255;
+    --sidebar-accent: 64 86 128;
+    --sidebar-accent-foreground: 255 255 255;
+    --sidebar-border: 64 86 128;
+    --sidebar-ring: 59 130 246;
+  }
 
-    /* Custom Design Tokens */
-    --bg-main: #F7F6F4;
-    --bg-card: #FFFFFF;
-    --bg-sidebar: #1E293B;
-    --bg-sidebar-hover: #334155;
-    --bg-sidebar-active: #3B82F6;
-    --text-primary: #1E293B;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-    --text-inverse: #FFFFFF;
-    --border-light: #E2E8F0;
-    --border-medium: #CBD5E1;
-    --border-focus: #3B82F6;
+  /* shadcn 语义层随主题联动：只覆盖会变的那几项，
+     其余（radius / sidebar-* 等固定值）保持 :root 不动。 */
+  [data-theme='dark'] {
+    --background: 12 18 30;
+    --foreground: 241 245 249;
+    --card: 30 41 59;
+    --card-foreground: 241 245 249;
+    --popover: 30 41 59;
+    --popover-foreground: 241 245 249;
+    --primary: 196 164 124;
+    --primary-foreground: 12 18 30;
+    --secondary: 148 163 184;
+    --secondary-foreground: 12 18 30;
+    --destructive: 248 113 113;
+    --destructive-foreground: 12 18 30;
+    --muted: 39 52 74;
+    --muted-foreground: 203 213 225;
+    --accent: 39 52 74;
+    --accent-foreground: 241 245 249;
+    --border: 51 65 85;
+    --input: 51 65 85;
+    --ring: 96 165 250;
+    --sidebar-background: 2 6 17;
+    --sidebar-foreground: 248 250 252;
+    --sidebar-primary: 96 165 250;
+    --sidebar-primary-foreground: 2 6 17;
+    --sidebar-accent: 39 52 74;
+    --sidebar-accent-foreground: 241 245 249;
+    --sidebar-border: 51 65 85;
+    --sidebar-ring: 96 165 250;
+  }
+
+  [data-theme='warm'] {
+    --background: 245 240 230;
+    --foreground: 44 38 32;
+    --card: 255 252 245;
+    --card-foreground: 44 38 32;
+    --popover: 255 252 245;
+    --popover-foreground: 44 38 32;
+    --primary: 138 98 57;
+    --primary-foreground: 255 252 245;
+    --secondary: 107 95 78;
+    --secondary-foreground: 255 252 245;
+    --destructive: 199 60 50;
+    --destructive-foreground: 255 252 245;
+    --muted: 240 233 219;
+    --muted-foreground: 107 95 78;
+    --accent: 240 233 219;
+    --accent-foreground: 44 38 32;
+    --border: 227 217 197;
+    --input: 227 217 197;
+    --ring: 138 98 57;
+    --sidebar-background: 44 38 32;
+    --sidebar-foreground: 250 247 240;
+    --sidebar-primary: 168 122 66;
+    --sidebar-primary-foreground: 44 38 32;
+    --sidebar-accent: 62 54 45;
+    --sidebar-accent-foreground: 250 247 240;
+    --sidebar-border: 62 54 45;
+    --sidebar-ring: 168 122 66;
+  }
+
+  [data-theme='contrast'] {
+    --background: 255 255 255;
+    --foreground: 0 0 0;
+    --card: 255 255 255;
+    --card-foreground: 0 0 0;
+    --popover: 255 255 255;
+    --popover-foreground: 0 0 0;
+    --primary: 122 75 0;
+    --primary-foreground: 255 255 255;
+    --secondary: 26 26 26;
+    --secondary-foreground: 255 255 255;
+    --destructive: 153 0 0;
+    --destructive-foreground: 255 255 255;
+    --muted: 232 232 232;
+    --muted-foreground: 0 0 0;
+    --accent: 232 232 232;
+    --accent-foreground: 0 0 0;
+    --border: 0 0 0;
+    --input: 0 0 0;
+    --ring: 0 90 158;
+    --sidebar-background: 0 0 0;
+    --sidebar-foreground: 255 255 255;
+    --sidebar-primary: 255 255 255;
+    --sidebar-primary-foreground: 0 0 0;
+    --sidebar-accent: 32 32 32;
+    --sidebar-accent-foreground: 255 255 255;
+    --sidebar-border: 32 32 32;
+    --sidebar-ring: 255 255 255;
+  }
+}
+
+@layer base {
+  /* 兼容旧类名：这些名字在 token 化前被大量使用，保留为 token 的别名，
+     避免一次性改动触面过大。新代码一律用 ink/line/surface 语义名。 */
+  :root {
+    --bg-main: var(--canvas);
+    --bg-card: var(--surface);
+    --bg-sidebar: var(--surface-inverse);
+    --bg-sidebar-hover: var(--surface-inverse-2);
+    --bg-sidebar-active: var(--surface-inverse-3);
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-2);
+    --text-muted: var(--ink-3);
+    --text-inverse: var(--ink-on-dark);
+    --border-light: var(--line);
+    --border-medium: var(--line-2);
+    --border-focus: var(--line-focus);
 
     /* 字体栈：全站唯一真源。
        修复说明：此前 tailwind.config.js 的 fontFamily.sans 与本文件 body 的
@@ -74,10 +431,14 @@
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
     /* 层次阴影：苹果的做法是用极轻的阴影 + 留白表达层级，
-       而不是靠一圈圈边框把界面切成表格。边框越重，内容越弱。 */
-    --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04);
-    --shadow-raised: 0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 28px rgba(15, 23, 42, 0.08);
-    --shadow-float: 0 8px 20px rgba(15, 23, 42, 0.10), 0 28px 64px rgba(15, 23, 42, 0.14);
+       而不是靠一圈圈边框把界面切成表格。边框越重，内容越弱。
+       阴影色随主题走（--shadow-tint），深色主题下用纯黑 alpha 才有层次。 */
+    --shadow-card: 0 1px 2px rgb(var(--shadow-tint) / var(--shadow-alpha)),
+                   0 4px 12px rgb(var(--shadow-tint) / var(--shadow-alpha));
+    --shadow-raised: 0 2px 4px rgb(var(--shadow-tint) / var(--shadow-alpha)),
+                      0 12px 28px rgb(var(--shadow-tint) / var(--shadow-alpha-strong));
+    --shadow-float: 0 8px 20px rgb(var(--shadow-tint) / var(--shadow-alpha-strong)),
+                    0 28px 64px rgb(var(--shadow-tint) / var(--shadow-alpha-strong));
 
     /* iOS 全面屏安全区：教师用 iPhone / iPad 在教室里竖屏操作，
        底部 home indicator 会压住按钮，必须留出来。 */
@@ -88,7 +449,7 @@
   }
 
   * {
-    @apply border-border-light;
+    @apply border-line;
   }
 
   html {
@@ -99,19 +460,21 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: var(--bg-main);
-    color: var(--text-primary);
+    background-color: rgb(var(--canvas));
+    color: rgb(var(--ink));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* 教师在教室走动时单手持平板，文字选中不应触发系统长按放大镜干扰点按 */
     -webkit-tap-highlight-color: transparent;
+    /* 换肤时背景/文字色是过渡出来的，不做硬切反而更耐看 */
+    transition: background-color 200ms var(--ease-out, ease), color 200ms var(--ease-out, ease);
   }
 
   /* 键盘焦点环：只在键盘导航时出现，鼠标点击不出现。
      此前自研布局（侧栏/顶栏/21 个自研抽屉）完全没有焦点样式，
      键盘用户看不到自己在哪——这是纯键盘操作下的"失明"。 */
   :focus-visible {
-    outline: 2px solid var(--border-focus);
+    outline: 2px solid rgb(var(--line-focus));
     outline-offset: 2px;
   }
   /* 鼠标点击不画环，避免视觉噪音 */
@@ -160,9 +523,9 @@
   .shimmer {
     background-image: linear-gradient(
       90deg,
-      rgba(148, 163, 184, 0) 0%,
-      rgba(148, 163, 184, 0.18) 50%,
-      rgba(148, 163, 184, 0) 100%
+      rgb(var(--ink-3) / 0) 0%,
+      rgb(var(--ink-3) / 0.18) 50%,
+      rgb(var(--ink-3) / 0) 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.4s var(--ease-in-out) infinite;
@@ -177,7 +540,7 @@
 /* 细滚动条：内容区滚动条不该抢内容的注意力 */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 transparent;
+  scrollbar-color: rgb(var(--line-2)) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
@@ -187,17 +550,17 @@
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: #CBD5E1;
+  background-color: rgb(var(--line-2));
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: #94A3B8;
+  background-color: rgb(var(--ink-4));
 }
 
 ::selection {
-  background-color: rgba(59, 130, 246, 0.18);
+  background-color: rgb(var(--info) / 0.18);
   color: inherit;
 }
 
@@ -240,19 +603,21 @@
     position: sticky;
     left: 0;
     z-index: 2;
-    /* 吸附列必须有背景，否则下层内容会透上来 */
-    background-color: #fff;
-    box-shadow: 1px 0 0 0 rgba(15, 23, 42, 0.07);
+    /* 吸附列必须有背景，否则下层内容会透上来。
+       这里必须用 token 而非 #fff：深色主题下写死白色会变成
+       「一块白贴在深色行上」的贴纸（与 shiki 广告卡同族问题）。 */
+    background-color: rgb(var(--surface));
+    box-shadow: 1px 0 0 0 rgb(var(--shadow-tint) / 0.07);
   }
   /* 表头首列要压在普通单元格之上 */
   [data-slot='table-container'] > table thead :is(th, td):first-child,
   .overflow-x-auto:has(> table) > table thead :is(th, td):first-child {
     z-index: 3;
   }
-  /* 行悬停时吸附列跟随变色，避免出现「一块白贴在灰行上」 */
+  /* 行悬停时吸附列跟随变色，避免出现「一块异色贴在灰行上」 */
   [data-slot='table-container'] > table tbody tr:hover > td:first-child,
   .overflow-x-auto:has(> table) > table tbody tr:hover > td:first-child {
-    background-color: #f8fafc;
+    background-color: rgb(var(--surface-3));
   }
 }
 

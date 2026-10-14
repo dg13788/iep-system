@@ -75,14 +75,14 @@ const actionIcons: Record<string, React.ReactNode> = {
 };
 
 const actionColors: Record<string, string> = {
-  '提交草稿': '#3B82F6',
-  '提交审核': '#F59E0B',
-  '审批通过': '#10B981',
-  '审批驳回': '#EF4444',
-  '退回修改': '#8B5CF6',
-  '家长签名': '#405680',
-  '开始执行': '#8B5CF6',
-  '执行完成': '#7A5F42',
+  '提交草稿': 'rgb(var(--info))',
+  '提交审核': 'rgb(var(--warning))',
+  '审批通过': 'rgb(var(--success))',
+  '审批驳回': 'rgb(var(--danger))',
+  '退回修改': 'rgb(var(--violet))',
+  '家长签名': 'rgb(var(--surface-inverse-2))',
+  '开始执行': 'rgb(var(--violet))',
+  '执行完成': 'rgb(var(--brand-strong))',
 };
 
 interface IEPDetailProps {
@@ -330,7 +330,7 @@ export default function IEPDetail({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          className="absolute inset-0 bg-overlay/50 backdrop-blur-sm"
           onClick={onClose}
         />
         <motion.div
@@ -338,14 +338,14 @@ export default function IEPDetail({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-          className="relative w-full max-w-[900px] h-full bg-white shadow-xl flex flex-col items-center justify-center"
+          className="relative w-full max-w-[900px] h-full bg-surface shadow-xl flex flex-col items-center justify-center"
         >
-          <AlertCircle className="w-12 h-12 text-[#CBD5E1] mb-3" />
-          <p className="text-base font-semibold text-[#1E293B] mb-1">暂无权限</p>
-          <p className="text-sm text-[#64748B]">您没有查看 IEP 详情的权限</p>
+          <AlertCircle className="w-12 h-12 text-ink-4 mb-3" />
+          <p className="text-base font-semibold text-ink mb-1">暂无权限</p>
+          <p className="text-sm text-ink-2">您没有查看 IEP 详情的权限</p>
           <button
             onClick={onClose}
-            className="mt-4 h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+            className="mt-4 h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
           >
             返回
           </button>
@@ -360,7 +360,7 @@ export default function IEPDetail({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-overlay/50 backdrop-blur-sm"
         onClick={onClose}
       />
 
@@ -369,17 +369,17 @@ export default function IEPDetail({
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-        className="relative w-full max-w-[900px] h-full bg-white shadow-xl flex flex-col"
+        className="relative w-full max-w-[900px] h-full bg-surface shadow-xl flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={onClose} className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer">
+            <button onClick={onClose} className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-ink-2 hover:bg-canvas transition-colors cursor-pointer">
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-lg font-semibold text-[#1E293B]">IEP 详情 - {currentPlan.student_name}</h2>
+            <h2 className="text-lg font-semibold text-ink">IEP 详情 - {currentPlan.student_name}</h2>
             {isView && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#F5F3FF] text-[#8B5CF6]">
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-soft text-violet">
                 只读
               </span>
             )}
@@ -388,7 +388,7 @@ export default function IEPDetail({
             {isFull && (
               <button
                 onClick={() => onEdit(plan)}
-                className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-line-2 text-sm text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
               >
                 <Pencil className="w-4 h-4" />
                 编辑
@@ -396,19 +396,19 @@ export default function IEPDetail({
             )}
             <button
               onClick={() => exportIEPDetailToPDF(currentPlan, allGoals, `IEP详情_${currentPlan.student_name}_${currentPlan.title}`)}
-              className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-line-2 text-sm text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
             >
               <FileText className="w-4 h-4" />
               导出PDF
             </button>
             <button
               onClick={() => exportIEPDetailToWord(currentPlan, allGoals, `IEP详情_${currentPlan.student_name}_${currentPlan.title}`)}
-              className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-line-2 text-sm text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
             >
               <Download className="w-4 h-4" />
               导出Word
             </button>
-            <button className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-[#CBD5E1] text-sm text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer">
+            <button className="flex items-center gap-1.5 h-9 px-3 rounded-md border border-line-2 text-sm text-ink-2 hover:bg-canvas transition-colors cursor-pointer">
               <Printer className="w-4 h-4" />
               打印
             </button>
@@ -416,29 +416,29 @@ export default function IEPDetail({
         </div>
 
         {/* Info Card */}
-        <div className="px-6 py-4 border-b border-[#E2E8F0] flex-shrink-0">
+        <div className="px-6 py-4 border-b border-line flex-shrink-0">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-[#EBE3DA] flex items-center justify-center">
-                  <User className="w-5 h-5 text-[#977653]" />
+                <div className="w-10 h-10 rounded-full bg-brand-soft flex items-center justify-center">
+                  <User className="w-5 h-5 text-brand-ink" />
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-[#1E293B]">{currentPlan.student_name}</div>
-                  <div className="text-xs text-[#64748B]">
+                  <div className="text-sm font-semibold text-ink">{currentPlan.student_name}</div>
+                  <div className="text-xs text-ink-2">
                     {currentPlan.student_number || '—'} · {currentPlan.student_class || '—'}
                   </div>
                 </div>
               </div>
-              <div className="h-8 w-px bg-[#E2E8F0]" />
+              <div className="h-8 w-px bg-surface-2" />
               <div>
-                <div className="text-xs text-[#94A3B8]">IEP 期间</div>
-                <div className="text-sm text-[#1E293B]">{currentPlan.start_date} ~ {currentPlan.end_date}</div>
+                <div className="text-xs text-ink-3">IEP 期间</div>
+                <div className="text-sm text-ink">{currentPlan.start_date} ~ {currentPlan.end_date}</div>
               </div>
-              <div className="h-8 w-px bg-[#E2E8F0]" />
+              <div className="h-8 w-px bg-surface-2" />
               <div>
-                <div className="text-xs text-[#94A3B8]">制定人</div>
-                <div className="text-sm text-[#1E293B]">{currentPlan.primary_teacher || '—'}</div>
+                <div className="text-xs text-ink-3">制定人</div>
+                <div className="text-sm text-ink">{currentPlan.primary_teacher || '—'}</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -454,8 +454,8 @@ export default function IEPDetail({
 
           {/* Progress Bar */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-[#64748B]">总进度</span>
-            <div className="flex-1 h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
+            <span className="text-xs text-ink-2">总进度</span>
+            <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${planProgress}%` }}
@@ -463,12 +463,12 @@ export default function IEPDetail({
                 className="h-full rounded-full"
                 style={{
                   background: planProgress > 0
-                    ? 'linear-gradient(90deg, #AC9174, #977653)'
+                    ? 'linear-gradient(90deg, rgb(var(--brand)), rgb(var(--brand)))'
                     : 'transparent',
                 }}
               />
             </div>
-            <span className="text-sm font-semibold text-[#977653]">
+            <span className="text-sm font-semibold text-brand-ink">
               {currentPlan.progress_percent === undefined ? '—' : `${planProgress}%`}
             </span>
           </div>
@@ -483,23 +483,23 @@ export default function IEPDetail({
                   <div className="flex flex-col items-center">
                     <div className={cn(
                       'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-colors',
-                      isCurrent ? 'bg-[#977653] text-white ring-2 ring-[#977653] ring-offset-2' :
-                      isActive ? 'bg-[#10B981] text-white' :
-                      'bg-[#F1F5F9] text-[#94A3B8]'
+                      isCurrent ? 'bg-brand text-ink-on-dark ring-2 ring-brand ring-offset-2' :
+                      isActive ? 'bg-success text-ink-on-dark' :
+                      'bg-surface-2 text-ink-3'
                     )}>
                       {isActive && !isCurrent ? <CheckCircle className="w-3.5 h-3.5" /> : index + 1}
                     </div>
                     <span className={cn(
                       'text-xs mt-1',
-                      isCurrent ? 'text-[#977653] font-medium' :
-                      isActive ? 'text-[#10B981]' :
-                      'text-[#94A3B8]'
+                      isCurrent ? 'text-brand-ink font-medium' :
+                      isActive ? 'text-success' :
+                      'text-ink-3'
                     )}>{step}</span>
                   </div>
                   {index < workflowSteps.length - 1 && (
                     <div className={cn(
                       'flex-1 h-0.5 mx-1 mb-4',
-                      index < currentWorkflowIndex ? 'bg-[#10B981]' : 'bg-[#E2E8F0]'
+                      index < currentWorkflowIndex ? 'bg-success' : 'bg-surface-2'
                     )} />
                   )}
                 </div>
@@ -509,7 +509,7 @@ export default function IEPDetail({
         </div>
 
         {/* Tabs */}
-        <div className="px-6 border-b border-[#E2E8F0] flex-shrink-0">
+        <div className="px-6 border-b border-line flex-shrink-0">
           <div className="flex gap-0">
             {tabs.map((tab) => (
               <button
@@ -517,14 +517,14 @@ export default function IEPDetail({
                 onClick={() => setActiveTab(tab)}
                 className={cn(
                   'relative px-4 py-3 text-sm font-medium transition-colors cursor-pointer',
-                  activeTab === tab ? 'text-[#977653]' : 'text-[#64748B] hover:text-[#1E293B]'
+                  activeTab === tab ? 'text-brand-ink' : 'text-ink-2 hover:text-ink'
                 )}
               >
                 {tab}
                 {activeTab === tab && (
                   <motion.div
                     layoutId="detail-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#977653]"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand"
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
                   />
                 )}
@@ -545,8 +545,8 @@ export default function IEPDetail({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col items-center justify-center gap-3 py-24"
               >
-                <Loader2 className="w-8 h-8 text-[#977653] animate-spin" />
-                <p className="text-sm text-[#64748B]">正在加载 IEP 详情...</p>
+                <Loader2 className="w-8 h-8 text-brand-ink animate-spin" />
+                <p className="text-sm text-ink-2">正在加载 IEP 详情...</p>
               </motion.div>
             ) : loadError ? (
               <motion.div
@@ -557,12 +557,12 @@ export default function IEPDetail({
                 transition={{ duration: 0.2 }}
                 className="flex flex-col items-center justify-center gap-3 py-24"
               >
-                <AlertCircle className="w-12 h-12 text-[#CBD5E1]" />
-                <p className="text-base font-semibold text-[#1E293B]">IEP 详情加载失败</p>
-                <p className="text-sm text-[#64748B]">{loadError}</p>
+                <AlertCircle className="w-12 h-12 text-ink-4" />
+                <p className="text-base font-semibold text-ink">IEP 详情加载失败</p>
+                <p className="text-sm text-ink-2">{loadError}</p>
                 <button
                   onClick={() => void loadDetail()}
-                  className="mt-2 h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                  className="mt-2 h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
                 >
                   点击重试
                 </button>
@@ -602,15 +602,15 @@ export default function IEPDetail({
 
                 {/* Current Levels Preview */}
                 <div>
-                  <h4 className="text-sm font-semibold text-[#1E293B] mb-3">学生现况描述</h4>
+                  <h4 className="text-sm font-semibold text-ink mb-3">学生现况描述</h4>
                   {Object.keys(currentPlan.current_levels).length === 0 && (
-                    <p className="text-sm text-[#94A3B8]">暂无现况描述</p>
+                    <p className="text-sm text-ink-3">暂无现况描述</p>
                   )}
                   <div className="space-y-3">
                     {Object.entries(currentPlan.current_levels).map(([key, value]) => (
-                      <div key={key} className="border border-[#E2E8F0] rounded-lg p-4">
-                        <div className="text-xs font-medium text-[#94A3B8] mb-1">{key}</div>
-                        <div className="text-sm text-[#1E293B]">{value || '—'}</div>
+                      <div key={key} className="border border-line rounded-lg p-4">
+                        <div className="text-xs font-medium text-ink-3 mb-1">{key}</div>
+                        <div className="text-sm text-ink">{value || '—'}</div>
                       </div>
                     ))}
                   </div>
@@ -629,8 +629,8 @@ export default function IEPDetail({
               >
                 {/* Permission hint for participate users */}
                 {isParticipate && (
-                  <div className="bg-[#F5F3FF] rounded-lg p-3 border border-[#8B5CF6]/20 mb-4">
-                    <p className="text-xs text-[#8B5CF6]">
+                  <div className="bg-violet-soft rounded-lg p-3 border border-violet/20 mb-4">
+                    <p className="text-xs text-violet">
                       您只能编辑自己负责的目标，其他目标仅可查看。
                     </p>
                   </div>
@@ -638,16 +638,16 @@ export default function IEPDetail({
                 {/* Step 3：从评估起草目标。目标是 IEP 的心脏，但"目标源自哪次评估"此前只存在
                     于教师脑中；这里把它变成系统里可校验的事实（写 source_assessment_id）。 */}
                 {!readOnly && (
-                  <div className="flex items-center justify-between gap-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-3">
+                  <div className="flex items-center justify-between gap-3 bg-surface-3 border border-line rounded-lg p-3">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-[#1E293B]">还没有目标或想补充目标？</p>
-                      <p className="text-[11px] text-[#64748B]">
+                      <p className="text-xs font-medium text-ink">还没有目标或想补充目标？</p>
+                      <p className="text-[11px] text-ink-2">
                         可从该生最近一次评估归纳需求领域，生成带溯源的目标草案，由您逐条确认后采纳。
                       </p>
                     </div>
                     <button
                       onClick={() => setDraftOpen(true)}
-                      className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-md bg-[#4F46E5] text-white text-xs font-medium hover:bg-[#4338CA] cursor-pointer"
+                      className="shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-md bg-info-strong text-ink-on-dark text-xs font-medium hover:bg-info-strong cursor-pointer"
                     >
                       <Wand2 className="w-3.5 h-3.5" />
                       从评估起草
@@ -656,8 +656,8 @@ export default function IEPDetail({
                 )}
                 {displayGoals.length === 0 ? (
                   <div className="text-center py-12">
-                    <Target className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
-                    <p className="text-sm text-[#64748B]">暂无目标数据</p>
+                    <Target className="w-10 h-10 text-ink-4 mx-auto mb-3" />
+                    <p className="text-sm text-ink-2">暂无目标数据</p>
                   </div>
                 ) : (
                   displayGoals.map((goal, index) => {
@@ -670,22 +670,22 @@ export default function IEPDetail({
                         transition={{ delay: index * 0.08 }}
                         className={cn(
                           "border rounded-lg p-5",
-                          editableGoal ? "border-[#E2E8F0]" : "border-[#E2E8F0] bg-[#FAFBFC]"
+                          editableGoal ? "border-line" : "border-line bg-surface"
                         )}
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-[#94A3B8]">目标 {index + 1}</span>
-                            <span className="text-sm font-semibold text-[#1E293B]">{goal.title}</span>
+                            <span className="text-xs text-ink-3">目标 {index + 1}</span>
+                            <span className="text-sm font-semibold text-ink">{goal.title}</span>
                             <span
-                              className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                              style={{ backgroundColor: GOAL_AREA_COLORS[goal.area] || '#64748B' }}
+                              className="px-2 py-0.5 rounded-full text-xs font-medium text-ink-on-dark"
+                              style={{ backgroundColor: GOAL_AREA_COLORS[goal.area] || 'rgb(var(--ink-2))' }}
                             >
                               {goal.area}
                             </span>
                             <span className={cn(
                               'px-2 py-0.5 rounded-full text-xs font-medium',
-                              goal.goal_type === '长期目标' ? 'bg-[#F5F0EB] text-[#7A5F42]' : 'bg-[#EFF6FF] text-[#2563EB]'
+                              goal.goal_type === '长期目标' ? 'bg-brand-soft text-brand-ink' : 'bg-info-soft text-info-strong'
                             )}>
                               {goal.goal_type}
                             </span>
@@ -697,7 +697,7 @@ export default function IEPDetail({
                               {goal.status}
                             </span>
                             {!editableGoal && (isParticipate || isView) && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#F0F2F5] text-[#94A3B8]">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-surface-2 text-ink-3">
                                 <Eye className="w-3 h-3 inline mr-0.5" />
                                 只读
                               </span>
@@ -709,7 +709,7 @@ export default function IEPDetail({
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               onClick={() => openProgressSheet(goal)}
-                              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer flex-shrink-0"
+                              className="flex items-center gap-1.5 h-7 px-2.5 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong transition-colors cursor-pointer flex-shrink-0"
                             >
                               <BarChart3 className="w-3 h-3" />
                               更新进度
@@ -718,28 +718,28 @@ export default function IEPDetail({
                         </div>
 
                         <div className="space-y-2 mb-4">
-                          <p className="text-sm text-[#1E293B]">{goal.description}</p>
-                          <p className="text-xs text-[#64748B]"><span className="font-medium">成功标准:</span> {goal.criteria}</p>
-                          <p className="text-xs text-[#64748B]"><span className="font-medium">教学策略:</span> {goal.teaching_strategies}</p>
-                          <p className="text-xs text-[#64748B]"><span className="font-medium">基线:</span> {goal.baseline}</p>
+                          <p className="text-sm text-ink">{goal.description}</p>
+                          <p className="text-xs text-ink-2"><span className="font-medium">成功标准:</span> {goal.criteria}</p>
+                          <p className="text-xs text-ink-2"><span className="font-medium">教学策略:</span> {goal.teaching_strategies}</p>
+                          <p className="text-xs text-ink-2"><span className="font-medium">基线:</span> {goal.baseline}</p>
                           {/* Responsible Teacher */}
-                          <p className="text-xs text-[#64748B]">
+                          <p className="text-xs text-ink-2">
                             <span className="font-medium">责任人:</span>
-                            <span className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-full bg-[#F5F0EB] text-[#7A5F42] font-medium">
+                            <span className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-full bg-brand-soft text-brand-ink font-medium">
                               <User className="w-3 h-3" />
                               {goal.responsible_teacher_name || goal.responsible_teacher}
-                              {editableGoal && <span className="text-[10px] text-[#977653]">(我)</span>}
+                              {editableGoal && <span className="text-[10px] text-brand-ink">(我)</span>}
                             </span>
                           </p>
                           {goal.progress_notes && (
-                            <p className="text-xs text-[#977653]"><span className="font-medium">进展备注:</span> {goal.progress_notes}</p>
+                            <p className="text-xs text-brand-ink"><span className="font-medium">进展备注:</span> {goal.progress_notes}</p>
                           )}
                         </div>
 
                         {/* Progress */}
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-[#64748B]">进度</span>
-                          <div className="flex-1 h-2 bg-[#F1F5F9] rounded-full overflow-hidden">
+                          <span className="text-xs text-ink-2">进度</span>
+                          <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${goal.progress_percent}%` }}
@@ -747,13 +747,13 @@ export default function IEPDetail({
                               className="h-full rounded-full"
                               style={{
                                 background: goal.progress_percent >= 100
-                                  ? '#10B981'
-                                  : `linear-gradient(90deg, ${GOAL_AREA_COLORS[goal.area] || '#977653'}, ${GOAL_AREA_COLORS[goal.area] || '#977653'}aa)`,
+                                  ? 'rgb(var(--success))'
+                                  : `linear-gradient(90deg, ${GOAL_AREA_COLORS[goal.area] || 'rgb(var(--brand))'}, ${GOAL_AREA_COLORS[goal.area] || 'rgb(var(--brand))'}aa)`,
                               }}
                             />
                           </div>
-                          <span className="text-xs font-semibold text-[#1E293B] w-8">{goal.progress_percent}%</span>
-                          <span className="text-xs text-[#94A3B8]">
+                          <span className="text-xs font-semibold text-ink w-8">{goal.progress_percent}%</span>
+                          <span className="text-xs text-ink-3">
                             {goal.current_score}/{goal.target_score}
                           </span>
                         </div>
@@ -815,12 +815,12 @@ export default function IEPDetail({
               >
                 {analysisLoadingAny && (
                   <div className="h-24 flex items-center justify-center">
-                    <Loader2 className="w-5 h-5 animate-spin text-[#94A3B8]" />
+                    <Loader2 className="w-5 h-5 animate-spin text-ink-3" />
                   </div>
                 )}
 
                 {!analysisLoading && analysisError && (
-                  <div className="rounded-md border border-[#FECACA] bg-[#FEF2F2] p-3 text-xs text-[#B91C1C]">
+                  <div className="rounded-md border border-danger-line bg-danger-soft p-3 text-xs text-danger-strong">
                     {analysisError}
                   </div>
                 )}
@@ -832,8 +832,8 @@ export default function IEPDetail({
 
                     {planAnalysis.goals.length === 0 ? (
                       <div className="text-center py-12">
-                        <TrendingUp className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
-                        <p className="text-sm text-[#64748B]">该计划还没有长期目标，暂无进度数据</p>
+                        <TrendingUp className="w-10 h-10 text-ink-4 mx-auto mb-3" />
+                        <p className="text-sm text-ink-2">该计划还没有长期目标，暂无进度数据</p>
                       </div>
                     ) : (
                       planAnalysis.goals.map((g) => {
@@ -857,8 +857,8 @@ export default function IEPDetail({
                 )}
 
                 {isParticipate && (
-                  <div className="bg-[#F5F3FF] rounded-lg p-3 border border-[#8B5CF6]/20">
-                    <p className="text-xs text-[#8B5CF6]">
+                  <div className="bg-violet-soft rounded-lg p-3 border border-violet/20">
+                    <p className="text-xs text-violet">
                       您只能为自己负责的目标记录干预调整，其他目标仅可查看。
                     </p>
                   </div>
@@ -880,9 +880,9 @@ export default function IEPDetail({
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="border border-[#E2E8F0] rounded-lg p-4 mb-6"
+                    className="border border-line rounded-lg p-4 mb-6"
                   >
-                    <h4 className="text-sm font-semibold text-[#1E293B] mb-2">审批意见</h4>
+                    <h4 className="text-sm font-semibold text-ink mb-2">审批意见</h4>
                     <Textarea
                       value={approveComment}
                       onChange={(e) => setApproveComment(e.target.value)}
@@ -895,14 +895,14 @@ export default function IEPDetail({
                       <button
                         onClick={() => void handleApprove('reject')}
                         disabled={approving}
-                        className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#DC2626] hover:bg-[#FEF2F2] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-danger-strong hover:bg-danger-soft transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         驳回
                       </button>
                       <button
                         onClick={() => void handleApprove('approve')}
                         disabled={approving}
-                        className="h-11 lg:h-10 px-4 rounded-md bg-[#10B981] text-white text-sm font-medium hover:bg-[#059669] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="h-11 lg:h-10 px-4 rounded-md bg-success text-ink-on-dark text-sm font-medium hover:bg-success-strong transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         {approving ? '提交中...' : '通过'}
                       </button>
@@ -911,16 +911,16 @@ export default function IEPDetail({
                 )}
                 {approvalLogs.length === 0 ? (
                   <div className="text-center py-12">
-                    <Clock className="w-10 h-10 text-[#CBD5E1] mx-auto mb-3" />
-                    <p className="text-sm text-[#64748B]">暂无审批记录</p>
+                    <Clock className="w-10 h-10 text-ink-4 mx-auto mb-3" />
+                    <p className="text-sm text-ink-2">暂无审批记录</p>
                   </div>
                 ) : (
                   <div className="relative pl-6">
                     {/* Timeline line */}
-                    <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-[#E2E8F0]" />
+                    <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-surface-2" />
 
                     {approvalLogs.map((log, index) => {
-                      const color = actionColors[log.action] || '#64748B';
+                      const color = actionColors[log.action] || 'rgb(var(--ink-2))';
                       return (
                         <motion.div
                           key={log.id}
@@ -931,27 +931,27 @@ export default function IEPDetail({
                         >
                           {/* Timeline dot */}
                           <div
-                            className="absolute -left-6 top-0 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center"
+                            className="absolute -left-6 top-0 w-4 h-4 rounded-full border-2 bg-surface flex items-center justify-center"
                             style={{ borderColor: color }}
                           >
                             <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
                           </div>
 
-                          <div className="border border-[#E2E8F0] rounded-lg p-4 ml-2">
+                          <div className="border border-line rounded-lg p-4 ml-2">
                             <div className="flex items-center gap-2 mb-1">
                               <span style={{ color }}>{actionIcons[log.action]}</span>
-                              <span className="text-sm font-semibold text-[#1E293B]">{log.action}</span>
-                              <span className="text-xs text-[#94A3B8] ml-auto">{log.created_at}</span>
+                              <span className="text-sm font-semibold text-ink">{log.action}</span>
+                              <span className="text-xs text-ink-3 ml-auto">{log.created_at}</span>
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-[#64748B] mb-1">
+                            <div className="flex items-center gap-1 text-xs text-ink-2 mb-1">
                               <UserCheck className="w-3 h-3" />
                               {log.operator} ({log.operator_role})
                             </div>
                             {log.comment && (
-                              <p className="text-sm text-[#64748B] mt-1 bg-[#F7F6F4] p-2 rounded">{log.comment}</p>
+                              <p className="text-sm text-ink-2 mt-1 bg-canvas p-2 rounded">{log.comment}</p>
                             )}
                             {log.from_status && (
-                              <div className="flex items-center gap-1 mt-1 text-xs text-[#94A3B8]">
+                              <div className="flex items-center gap-1 mt-1 text-xs text-ink-3">
                                 <span>{log.from_status}</span>
                                 <ChevronRight className="w-3 h-3" />
                                 <span>{log.to_status}</span>
@@ -976,38 +976,38 @@ export default function IEPDetail({
                 className="max-w-lg mx-auto"
               >
                 <div className="text-center mb-6">
-                  <h3 className="text-lg font-semibold text-[#1E293B]">特教特殊教育学校</h3>
-                  <p className="text-sm text-[#64748B] mt-1">IEP 计划签名确认</p>
+                  <h3 className="text-lg font-semibold text-ink">特教特殊教育学校</h3>
+                  <p className="text-sm text-ink-2 mt-1">IEP 计划签名确认</p>
                 </div>
 
-                <div className="bg-[#F7F6F4] rounded-lg p-5 mb-6 space-y-3">
+                <div className="bg-canvas rounded-lg p-5 mb-6 space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#64748B]">学生</span>
-                    <span className="text-sm font-medium text-[#1E293B]">{currentPlan.student_name}</span>
+                    <span className="text-sm text-ink-2">学生</span>
+                    <span className="text-sm font-medium text-ink">{currentPlan.student_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#64748B]">IEP 期间</span>
-                    <span className="text-sm font-medium text-[#1E293B]">{currentPlan.start_date} ~ {currentPlan.end_date}</span>
+                    <span className="text-sm text-ink-2">IEP 期间</span>
+                    <span className="text-sm font-medium text-ink">{currentPlan.start_date} ~ {currentPlan.end_date}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#64748B]">制定人</span>
-                    <span className="text-sm font-medium text-[#1E293B]">{currentPlan.primary_teacher || '—'}</span>
+                    <span className="text-sm text-ink-2">制定人</span>
+                    <span className="text-sm font-medium text-ink">{currentPlan.primary_teacher || '—'}</span>
                   </div>
                 </div>
 
-                <div className="border border-[#E2E8F0] rounded-lg p-5 mb-6">
-                  <p className="text-sm text-[#1E293B] mb-4">
+                <div className="border border-line rounded-lg p-5 mb-6">
+                  <p className="text-sm text-ink mb-4">
                     我已阅读并确认以上 IEP 计划内容，同意按照计划执行。
                   </p>
 
                   {currentPlan.status === '已通过' || currentPlan.status === '已签名' || currentPlan.status === '执行中' || currentPlan.status === '已完成' ? (
                     <div className="space-y-3">
                       {signature?.status === '已签名' ? (
-                        <div className="flex items-center gap-2 p-4 bg-[#ECFDF5] rounded-lg">
-                          <CheckCircle className="w-5 h-5 text-[#10B981]" />
+                        <div className="flex items-center gap-2 p-4 bg-success-soft rounded-lg">
+                          <CheckCircle className="w-5 h-5 text-success" />
                           <div>
-                            <p className="text-sm font-medium text-[#059669]">家长已签名确认</p>
-                            <p className="text-xs text-[#10B981]">
+                            <p className="text-sm font-medium text-success-strong">家长已签名确认</p>
+                            <p className="text-xs text-success">
                               签名时间: {signature.signed_at || '—'}
                             </p>
                           </div>
@@ -1025,36 +1025,36 @@ export default function IEPDetail({
                                 <motion.div
                                   initial={{ opacity: 0, y: 5 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  className="flex items-center gap-2 p-3 bg-[#F7F6F4] rounded-lg"
+                                  className="flex items-center gap-2 p-3 bg-canvas rounded-lg"
                                 >
-                                  <Loader2 className="w-4 h-4 text-[#977653] animate-spin" />
-                                  <span className="text-sm text-[#64748B]">签名提交中...</span>
+                                  <Loader2 className="w-4 h-4 text-brand-ink animate-spin" />
+                                  <span className="text-sm text-ink-2">签名提交中...</span>
                                 </motion.div>
                               )}
                             </>
                           ) : (
-                            <div className="flex items-center gap-2 p-4 bg-[#FFFBEB] rounded-lg">
-                              <Clock className="w-5 h-5 text-[#D97706]" />
-                              <p className="text-sm text-[#D97706]">等待家长签名</p>
+                            <div className="flex items-center gap-2 p-4 bg-warning-soft rounded-lg">
+                              <Clock className="w-5 h-5 text-warning-strong" />
+                              <p className="text-sm text-warning-strong">等待家长签名</p>
                             </div>
                           )}
                           {signatureSaved && (
                             <motion.div
                               initial={{ opacity: 0, y: 5 }}
                               animate={{ opacity: 1, y: 0 }}
-                              className="flex items-center gap-2 p-3 bg-[#ECFDF5] rounded-lg"
+                              className="flex items-center gap-2 p-3 bg-success-soft rounded-lg"
                             >
-                              <CheckCircle className="w-4 h-4 text-[#10B981]" />
-                              <span className="text-sm text-[#059669]">签名已保存</span>
+                              <CheckCircle className="w-4 h-4 text-success" />
+                              <span className="text-sm text-success-strong">签名已保存</span>
                             </motion.div>
                           )}
                         </>
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 p-4 bg-[#FEF2F2] rounded-lg">
-                      <AlertCircle className="w-5 h-5 text-[#EF4444]" />
-                      <p className="text-sm text-[#DC2626]">
+                    <div className="flex items-center gap-2 p-4 bg-danger-soft rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-danger" />
+                      <p className="text-sm text-danger-strong">
                         IEP 状态为「{currentPlan.status}」，暂不可签名
                       </p>
                     </div>
@@ -1078,7 +1078,7 @@ export default function IEPDetail({
             >
               {/* Backdrop */}
               <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-overlay/50 backdrop-blur-sm"
                 onClick={() => setProgressSheetOpen(false)}
               />
 
@@ -1088,21 +1088,21 @@ export default function IEPDetail({
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-                className="relative w-full max-w-[480px] h-full bg-white shadow-xl flex flex-col z-10"
+                className="relative w-full max-w-[480px] h-full bg-surface shadow-xl flex flex-col z-10"
                 role="dialog"
                 aria-modal="true"
                 aria-label="更新目标进度"
                 data-state="open"
               >
                 {/* Sheet Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0]">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-line">
                   <div>
-                    <h3 className="text-lg font-semibold text-[#1E293B]">更新目标进度</h3>
-                    <p className="text-xs text-[#64748B] mt-0.5">{selectedGoal.title}</p>
+                    <h3 className="text-lg font-semibold text-ink">更新目标进度</h3>
+                    <p className="text-xs text-ink-2 mt-0.5">{selectedGoal.title}</p>
                   </div>
                   <button
                     onClick={() => setProgressSheetOpen(false)}
-                    className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer"
+                    className="p-3 lg:p-1.5 rounded-md min-h-11 min-w-11 lg:min-h-7 lg:min-w-7 flex items-center justify-center text-ink-2 hover:bg-canvas transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1111,26 +1111,26 @@ export default function IEPDetail({
                 {/* Sheet Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
                   {/* Current Info Card */}
-                  <div className="bg-[#F7F6F4] rounded-lg p-4 space-y-2">
+                  <div className="bg-canvas rounded-lg p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#64748B]">目标领域</span>
+                      <span className="text-xs text-ink-2">目标领域</span>
                       <span
-                        className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                        style={{ backgroundColor: GOAL_AREA_COLORS[selectedGoal.area] || '#64748B' }}
+                        className="px-2 py-0.5 rounded-full text-xs font-medium text-ink-on-dark"
+                        style={{ backgroundColor: GOAL_AREA_COLORS[selectedGoal.area] || 'rgb(var(--ink-2))' }}
                       >
                         {selectedGoal.area}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#64748B]">目标类型</span>
-                      <span className="text-xs font-medium text-[#1E293B]">{selectedGoal.goal_type}</span>
+                      <span className="text-xs text-ink-2">目标类型</span>
+                      <span className="text-xs font-medium text-ink">{selectedGoal.goal_type}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#64748B]">当前完成率</span>
-                      <span className="text-sm font-semibold text-[#977653]">{selectedGoal.progress_percent}%</span>
+                      <span className="text-xs text-ink-2">当前完成率</span>
+                      <span className="text-sm font-semibold text-brand-ink">{selectedGoal.progress_percent}%</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#64748B]">当前状态</span>
+                      <span className="text-xs text-ink-2">当前状态</span>
                       <span className={cn(
                         'px-2 py-0.5 rounded-full text-xs font-medium',
                         GOAL_STATUS_COLORS[selectedGoal.status]?.bg,
@@ -1143,8 +1143,8 @@ export default function IEPDetail({
 
                   {/* Completion Rate Slider */}
                   <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-3">
-                      完成率 <span className="text-[#977653]">{progressRate[0]}%</span>
+                    <label className="block text-sm font-semibold text-ink mb-3">
+                      完成率 <span className="text-brand-ink">{progressRate[0]}%</span>
                     </label>
                     <div className="px-1">
                       <Slider
@@ -1157,17 +1157,17 @@ export default function IEPDetail({
                       />
                     </div>
                     <div className="flex justify-between mt-2">
-                      <span className="text-xs text-[#94A3B8]">0%</span>
-                      <span className="text-xs text-[#94A3B8]">25%</span>
-                      <span className="text-xs text-[#94A3B8]">50%</span>
-                      <span className="text-xs text-[#94A3B8]">75%</span>
-                      <span className="text-xs text-[#94A3B8]">100%</span>
+                      <span className="text-xs text-ink-3">0%</span>
+                      <span className="text-xs text-ink-3">25%</span>
+                      <span className="text-xs text-ink-3">50%</span>
+                      <span className="text-xs text-ink-3">75%</span>
+                      <span className="text-xs text-ink-3">100%</span>
                     </div>
                   </div>
 
                   {/* Status Selection */}
                   <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-2">目标状态</label>
+                    <label className="block text-sm font-semibold text-ink mb-2">目标状态</label>
                     <div className="grid grid-cols-3 gap-2">
                       {(['进行中', '已完成', '暂停'] as GoalStatus[]).map((s) => (
                         <button
@@ -1177,12 +1177,12 @@ export default function IEPDetail({
                             'h-10 rounded-md text-sm font-medium border transition-all cursor-pointer',
                             progressStatus === s
                               ? cn(
-                                  'border-transparent text-white',
-                                  s === '进行中' ? 'bg-[#8B5CF6]' :
-                                  s === '已完成' ? 'bg-[#10B981]' :
-                                  'bg-[#F59E0B]'
+                                  'border-transparent text-ink-on-dark',
+                                  s === '进行中' ? 'bg-violet' :
+                                  s === '已完成' ? 'bg-success' :
+                                  'bg-warning'
                                 )
-                              : 'border-[#E2E8F0] text-[#64748B] hover:border-[#CBD5E1]'
+                              : 'border-line text-ink-2 hover:border-line-2'
                           )}
                         >
                           {s}
@@ -1193,7 +1193,7 @@ export default function IEPDetail({
 
                   {/* Progress Notes */}
                   <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-2">进展备注</label>
+                    <label className="block text-sm font-semibold text-ink mb-2">进展备注</label>
                     <Textarea
                       value={progressNotes}
                       onChange={(e) => setProgressNotes(e.target.value)}
@@ -1205,31 +1205,31 @@ export default function IEPDetail({
 
                   {/* Preview of new progress */}
                   <div>
-                    <label className="block text-sm font-semibold text-[#1E293B] mb-2">预览</label>
-                    <div className="flex items-center gap-3 p-3 bg-[#F1F5F9] rounded-lg">
-                      <span className="text-xs text-[#64748B]">更新后进度</span>
-                      <div className="flex-1 h-2 bg-white rounded-full overflow-hidden">
+                    <label className="block text-sm font-semibold text-ink mb-2">预览</label>
+                    <div className="flex items-center gap-3 p-3 bg-surface-2 rounded-lg">
+                      <span className="text-xs text-ink-2">更新后进度</span>
+                      <div className="flex-1 h-2 bg-surface rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-300"
                           style={{
                             width: `${progressRate[0]}%`,
                             background: progressRate[0] >= 100
-                              ? '#10B981'
-                              : 'linear-gradient(90deg, #AC9174, #977653)',
+                              ? 'rgb(var(--success))'
+                              : 'linear-gradient(90deg, rgb(var(--brand)), rgb(var(--brand)))',
                           }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-[#977653]">{progressRate[0]}%</span>
+                      <span className="text-sm font-semibold text-brand-ink">{progressRate[0]}%</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Sheet Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E2E8F0]">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-line">
                   <button
                     onClick={() => setProgressSheetOpen(false)}
                     disabled={savingProgress}
-                    className="h-11 lg:h-10 px-4 rounded-md border border-[#CBD5E1] text-sm font-medium text-[#64748B] hover:bg-[#F7F6F4] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="h-11 lg:h-10 px-4 rounded-md border border-line-2 text-sm font-medium text-ink-2 hover:bg-canvas transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     取消
                   </button>
@@ -1238,7 +1238,7 @@ export default function IEPDetail({
                     whileTap={{ scale: 0.98 }}
                     onClick={() => void handleSaveProgress()}
                     disabled={savingProgress}
-                    className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-[#977653] text-white text-sm font-medium hover:bg-[#7A5F42] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex items-center gap-1.5 h-11 lg:h-10 px-4 rounded-md bg-brand text-ink-on-dark text-sm font-medium hover:bg-brand-strong transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <CheckCircle className="w-4 h-4" />
                     {savingProgress ? '保存中...' : '保存更新'}
@@ -1272,8 +1272,8 @@ export default function IEPDetail({
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs text-[#94A3B8] mb-0.5">{label}</div>
-      <div className="text-sm text-[#1E293B] font-medium">{value}</div>
+      <div className="text-xs text-ink-3 mb-0.5">{label}</div>
+      <div className="text-sm text-ink font-medium">{value}</div>
     </div>
   );
 }
@@ -1344,13 +1344,13 @@ function PlacementMeetingCard({
   };
 
   return (
-    <div className="border border-[#E2E8F0] rounded-lg p-5">
+    <div className="border border-line rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-[#1E293B]">教育安置与 IEP 会议</h4>
+        <h4 className="text-sm font-semibold text-ink">教育安置与 IEP 会议</h4>
         {canEdit && !editing && (
           <button
             onClick={() => setEditing(true)}
-            className="text-xs text-[#977653] hover:underline cursor-pointer"
+            className="text-xs text-brand-ink hover:underline cursor-pointer"
           >
             编辑
           </button>
@@ -1372,7 +1372,7 @@ function PlacementMeetingCard({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">教育安置形式 *</label>
+              <label className="block text-xs font-semibold text-ink mb-1.5">教育安置形式 *</label>
               {placementTypes.length > 0 ? (
                 <Select value={placementType} onValueChange={setPlacementType}>
                   <SelectTrigger className="h-9"><SelectValue placeholder="请选择" /></SelectTrigger>
@@ -1386,58 +1386,58 @@ function PlacementMeetingCard({
                 <input
                   value={placementType}
                   onChange={(e) => setPlacementType(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                  className="w-full h-9 px-3 rounded-md border border-line text-sm"
                 />
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">IEP 会议日期</label>
+              <label className="block text-xs font-semibold text-ink mb-1.5">IEP 会议日期</label>
               <input
                 type="date"
                 value={meetingDate}
                 onChange={(e) => setMeetingDate(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-9 px-3 rounded-md border border-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">会议地点</label>
+              <label className="block text-xs font-semibold text-ink mb-1.5">会议地点</label>
               <input
                 value={meetingPlace}
                 onChange={(e) => setMeetingPlace(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-9 px-3 rounded-md border border-line text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">下次评估日期</label>
+              <label className="block text-xs font-semibold text-ink mb-1.5">下次评估日期</label>
               <input
                 type="date"
                 value={nextReviewDate}
                 onChange={(e) => setNextReviewDate(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+                className="w-full h-9 px-3 rounded-md border border-line text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-[#1E293B] mb-1.5">安置说明</label>
+            <label className="block text-xs font-semibold text-ink mb-1.5">安置说明</label>
             <input
               value={placementNotes}
               onChange={(e) => setPlacementNotes(e.target.value)}
               placeholder="如：每周二/四下午在资源教室接受补救教学"
-              className="w-full h-9 px-3 rounded-md border border-[#E2E8F0] text-sm"
+              className="w-full h-9 px-3 rounded-md border border-line text-sm"
             />
           </div>
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={() => setEditing(false)}
               disabled={saving}
-              className="h-8 px-3 rounded-md border border-[#CBD5E1] text-xs font-medium text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer disabled:opacity-60"
+              className="h-8 px-3 rounded-md border border-line-2 text-xs font-medium text-ink-2 hover:bg-canvas cursor-pointer disabled:opacity-60"
             >
               取消
             </button>
             <button
               onClick={() => void handleSave()}
               disabled={saving}
-              className="flex items-center gap-1 h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] cursor-pointer disabled:opacity-60"
+              className="flex items-center gap-1 h-8 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong cursor-pointer disabled:opacity-60"
             >
               {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
               {saving ? '保存中...' : '保存'}

@@ -206,17 +206,17 @@ export default function GoalProgressPanel({
   );
 
   return (
-    <div className="border border-[#E2E8F0] rounded-lg p-4 space-y-3">
+    <div className="border border-line rounded-lg p-4 space-y-3">
       {/* 头部：决策结论 */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-[#1E293B] truncate">{analysis.title}</span>
+            <span className="text-sm font-semibold text-ink truncate">{analysis.title}</span>
             <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', meta.bg, meta.text)}>
               {meta.label}
             </span>
           </div>
-          <p className="mt-0.5 text-[11px] text-[#94A3B8]">
+          <p className="mt-0.5 text-[11px] text-ink-3">
             数据来源：{sourceLabel}　共 {analysis.points?.length ?? 0} 个数据点
             {judgedLevelLabel && `　判定层级：${judgedLevelLabel}`}
             {isDecrease && '　本目标越低越好（如发生率）'}
@@ -228,7 +228,7 @@ export default function GoalProgressPanel({
               <button
                 onClick={onRecordProgress}
                 title="首选路径：在「短期目标」页记录离散试次（成功数/试次数）。此处为无短期目标时的备用录入，0-5 主观评级，精度较低"
-                className="shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-md border border-[#CBD5E1] text-xs text-[#64748B] hover:bg-[#F7F6F4] cursor-pointer"
+                className="shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-2 text-xs text-ink-2 hover:bg-canvas cursor-pointer"
               >
                 <Edit3 className="w-3 h-3" />
                 录入评级（备用）
@@ -236,7 +236,7 @@ export default function GoalProgressPanel({
             )}
             <button
               onClick={() => setOpen((v) => !v)}
-              className="shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-md border border-[#CBD5E1] text-xs text-[#475569] hover:bg-[#F7F6F4] cursor-pointer"
+              className="shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-2 text-xs text-ink-2 hover:bg-canvas cursor-pointer"
             >
               <Plus className="w-3 h-3" />
               记录干预调整
@@ -248,15 +248,15 @@ export default function GoalProgressPanel({
 
       {/* 目标线不可用：明确告知原因，而不是画一条假线 */}
       {!analysis.aim?.valid ? (
-        <div className="flex items-start gap-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-md p-3">
-          <Info className="w-4 h-4 text-[#B45309] mt-0.5 shrink-0" />
-          <p className="text-xs text-[#92400E]">{analysis.aim?.reason ?? '暂无法计算目标线'}</p>
+        <div className="flex items-start gap-2 bg-warning-soft border border-warning-soft rounded-md p-3">
+          <Info className="w-4 h-4 text-warning-strong mt-0.5 shrink-0" />
+          <p className="text-xs text-warning-strong">{analysis.aim?.reason ?? '暂无法计算目标线'}</p>
         </div>
       ) : (
-        <p className="text-[11px] text-[#64748B]">
+        <p className="text-[11px] text-ink-2">
           目标线：{analysis.aim.start_value}% ({analysis.aim.start_date}) → {analysis.aim.end_value}% (
           {analysis.aim.end_date})
-          <span className="ml-1 text-[#94A3B8]">
+          <span className="ml-1 text-ink-3">
             · 目标值取自{analysis.aim.source?.target_scale === 'objectives_mastery_avg' ? '短期目标掌握阈值' : '目标设定'}
           </span>
         </p>
@@ -265,46 +265,46 @@ export default function GoalProgressPanel({
       {/* 图表 */}
       {rows.length === 0 ? (
         <div className="h-[200px] flex flex-col items-center justify-center gap-2">
-          <TrendingUp className="w-8 h-8 text-[#CBD5E1]" />
-          <p className="text-xs text-[#64748B]">暂无进度数据</p>
+          <TrendingUp className="w-8 h-8 text-ink-4" />
+          <p className="text-xs text-ink-2">暂无进度数据</p>
         </div>
       ) : (
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={rows} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgb(var(--surface-2))" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fill: '#94A3B8' }}
+                tick={{ fontSize: 10, fill: 'rgb(var(--ink-3))' }}
                 tickLine={false}
-                axisLine={{ stroke: '#E2E8F0' }}
+                axisLine={{ stroke: 'rgb(var(--line))' }}
                 tickFormatter={(v: string) => (v ? v.slice(5) : '')}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fontSize: 10, fill: '#94A3B8' }}
+                tick={{ fontSize: 10, fill: 'rgb(var(--ink-3))' }}
                 tickLine={false}
-                axisLine={{ stroke: '#E2E8F0' }}
+                axisLine={{ stroke: 'rgb(var(--line))' }}
               />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const row = payload[0].payload as Row;
                   return (
-                    <div className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 shadow-sm text-xs">
-                      <p className="text-[#94A3B8]">{label}</p>
+                    <div className="bg-surface border border-line rounded-lg px-3 py-2 shadow-sm text-xs">
+                      <p className="text-ink-3">{label}</p>
                       {row.value !== null && (
-                        <p className="font-semibold text-[#977653]">
+                        <p className="font-semibold text-brand-ink">
                           实测 {Math.round(row.value)}%{row.raw ? `（${row.raw}）` : ''}
                         </p>
                       )}
                       {row.aim !== null && (
-                        <p className="text-[#059669]">目标线 {Math.round(row.aim)}%</p>
+                        <p className="text-success-strong">目标线 {Math.round(row.aim)}%</p>
                       )}
                       {row.trend !== null && (
-                        <p className="text-[#7C3AED]">趋势线 {Math.round(row.trend)}%</p>
+                        <p className="text-violet">趋势线 {Math.round(row.trend)}%</p>
                       )}
-                      {row.prompt && <p className="text-[#64748B]">辅助：{row.prompt}</p>}
+                      {row.prompt && <p className="text-ink-2">辅助：{row.prompt}</p>}
                     </div>
                   );
                 }}
@@ -313,7 +313,7 @@ export default function GoalProgressPanel({
                 <Line
                   type="linear"
                   dataKey="aim"
-                  stroke="#059669"
+                  stroke="rgb(var(--success-strong))"
                   strokeWidth={2}
                   strokeDasharray="6 4"
                   dot={false}
@@ -325,7 +325,7 @@ export default function GoalProgressPanel({
                 <Line
                   type="linear"
                   dataKey="trend"
-                  stroke="#8B5CF6"
+                  stroke="rgb(var(--violet))"
                   strokeWidth={1.5}
                   strokeDasharray="2 3"
                   dot={false}
@@ -336,9 +336,9 @@ export default function GoalProgressPanel({
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#977653"
+                stroke="rgb(var(--brand))"
                 strokeWidth={2.5}
-                dot={{ r: 3, fill: '#977653', stroke: '#fff', strokeWidth: 1.5 }}
+                dot={{ r: 3, fill: 'rgb(var(--brand))', stroke: '#fff', strokeWidth: 1.5 }}
                 connectNulls
                 isAnimationActive={false}
               />
@@ -346,10 +346,10 @@ export default function GoalProgressPanel({
                 <ReferenceLine
                   key={a.id}
                   x={a.date}
-                  stroke="#F59E0B"
+                  stroke="rgb(var(--warning))"
                   strokeDasharray="3 3"
                   strokeWidth={1.5}
-                  label={i === 0 ? { value: '干预调整', position: 'insideTopRight', fill: '#B45309', fontSize: 10 } : undefined}
+                  label={i === 0 ? { value: '干预调整', position: 'insideTopRight', fill: 'rgb(var(--warning-strong))', fontSize: 10 } : undefined}
                 />
               ))}
             </ComposedChart>
@@ -358,21 +358,21 @@ export default function GoalProgressPanel({
       )}
 
       {/* 图例 */}
-      <div className="flex items-center gap-4 text-[11px] text-[#64748B]">
+      <div className="flex items-center gap-4 text-[11px] text-ink-2">
         <span className="flex items-center gap-1">
-          <span className="w-4 h-0.5 bg-[#977653]" />实测
+          <span className="w-4 h-0.5 bg-brand" />实测
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-4 h-0.5 bg-[#059669]" />目标线（aim line）
+          <span className="w-4 h-0.5 bg-success-strong" />目标线（aim line）
         </span>
         {analysis.trend && (
           <span className="flex items-center gap-1">
-            <span className="w-4 h-0.5 bg-[#8B5CF6]" />趋势线
+            <span className="w-4 h-0.5 bg-violet" />趋势线
           </span>
         )}
         {(analysis.adjustments ?? []).length > 0 && (
           <span className="flex items-center gap-1">
-            <span className="w-4 h-0.5 bg-[#F59E0B]" />干预调整
+            <span className="w-4 h-0.5 bg-warning" />干预调整
           </span>
         )}
       </div>
@@ -385,38 +385,38 @@ export default function GoalProgressPanel({
         className={cn(
           'rounded-md p-3 border',
           analysis.decision.level === 'adjust'
-            ? 'bg-[#FEF2F2] border-[#FECACA]'
+            ? 'bg-danger-soft border-danger-line'
             : analysis.decision.level === 'watch'
-              ? 'bg-[#FFFBEB] border-[#FDE68A]'
-              : 'bg-[#F8FAFC] border-[#E2E8F0]',
+              ? 'bg-warning-soft border-warning-soft'
+              : 'bg-surface-3 border-line',
         )}
       >
         <div className="flex items-center gap-1.5 mb-1">
           {analysis.decision.level === 'adjust' ? (
-            <AlertTriangle className="w-3.5 h-3.5 text-[#B91C1C]" />
+            <AlertTriangle className="w-3.5 h-3.5 text-danger-strong" />
           ) : (
-            <CheckCircle2 className="w-3.5 h-3.5 text-[#475569]" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-ink-2" />
           )}
-          <span className="text-xs font-semibold text-[#1E293B]">判断依据</span>
+          <span className="text-xs font-semibold text-ink">判断依据</span>
         </div>
         <ul className="space-y-0.5">
           {analysis.decision.reasons.map((r, i) => (
-            <li key={i} className="text-xs text-[#475569] flex gap-1.5">
-              <span className="text-[#94A3B8]">·</span>
+            <li key={i} className="text-xs text-ink-2 flex gap-1.5">
+              <span className="text-ink-3">·</span>
               <span>{r}</span>
             </li>
           ))}
         </ul>
         {analysis.decision.suggestions?.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-black/5">
+          <div className="mt-2 pt-2 border-t border-line/5">
             <div className="flex items-center gap-1.5 mb-1">
-              <Lightbulb className="w-3.5 h-3.5 text-[#B45309]" />
-              <span className="text-xs font-semibold text-[#1E293B]">可考虑的调整方向（由 IEP 团队判断）</span>
+              <Lightbulb className="w-3.5 h-3.5 text-warning-strong" />
+              <span className="text-xs font-semibold text-ink">可考虑的调整方向（由 IEP 团队判断）</span>
             </div>
             <ul className="space-y-0.5">
               {analysis.decision.suggestions.map((s, i) => (
-                <li key={i} className="text-xs text-[#64748B] flex gap-1.5">
-                  <span className="text-[#94A3B8]">·</span>
+                <li key={i} className="text-xs text-ink-2 flex gap-1.5">
+                  <span className="text-ink-3">·</span>
                   <span>{s.text}</span>
                 </li>
               ))}
@@ -428,26 +428,26 @@ export default function GoalProgressPanel({
       {/* 干预调整记录 */}
       {(analysis.adjustments ?? []).length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-[#1E293B]">干预调整留痕</p>
+          <p className="text-xs font-semibold text-ink">干预调整留痕</p>
           {analysis.adjustments.map((a) => (
-            <div key={a.id} className="flex items-start justify-between gap-2 bg-[#FFFBF5] rounded-md p-2.5 border border-[#FDE9D0]">
+            <div key={a.id} className="flex items-start justify-between gap-2 bg-brand-soft rounded-md p-2.5 border border-brand-line">
               <div className="min-w-0">
-                <p className="text-[11px] text-[#94A3B8]">
+                <p className="text-[11px] text-ink-3">
                   {a.date}　{CHANGE_TYPE_LABEL[a.change_type] ?? a.change_type}
-                  <span className="ml-1 px-1.5 py-0.5 rounded bg-white border border-[#E2E8F0]">
+                  <span className="ml-1 px-1.5 py-0.5 rounded bg-surface border border-line">
                     {OUTCOME_LABEL[a.outcome] ?? a.outcome}
                   </span>
                   {a.review_due_date && <span className="ml-1">· 再监控 {a.review_due_date}</span>}
                 </p>
-                <p className="text-xs text-[#334155] mt-0.5">{a.change_detail}</p>
+                <p className="text-xs text-ink-2 mt-0.5">{a.change_detail}</p>
                 {a.hypothesis && (
-                  <p className="text-[11px] text-[#64748B] mt-0.5">假设：{a.hypothesis}</p>
+                  <p className="text-[11px] text-ink-2 mt-0.5">假设：{a.hypothesis}</p>
                 )}
               </div>
               {editable && (
                 <button
                   onClick={() => remove(a.id)}
-                  className="shrink-0 p-1 text-[#94A3B8] hover:text-[#DC2626] cursor-pointer"
+                  className="shrink-0 p-1 text-ink-3 hover:text-danger-strong cursor-pointer"
                   aria-label="删除"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -460,19 +460,19 @@ export default function GoalProgressPanel({
 
       {/* 录入表单 */}
       {open && editable && (
-        <div className="space-y-2 bg-[#FAFBFC] border border-[#E2E8F0] rounded-md p-3">
+        <div className="space-y-2 bg-surface border border-line rounded-md p-3">
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="text-[11px] text-[#64748B]">调整日期</label>
+              <label className="text-[11px] text-ink-2">调整日期</label>
               <input
                 type="date"
                 value={form.adjusted_at}
                 onChange={(e) => setForm((f) => ({ ...f, adjusted_at: e.target.value }))}
-                className="w-full h-8 mt-0.5 px-2 rounded-md border border-[#CBD5E1] text-xs"
+                className="w-full h-8 mt-0.5 px-2 rounded-md border border-line-2 text-xs"
               />
             </div>
             <div>
-              <label className="text-[11px] text-[#64748B]">触发原因</label>
+              <label className="text-[11px] text-ink-2">触发原因</label>
               <Select
                 value={form.trigger_type}
                 onValueChange={(v) => setForm((f) => ({ ...f, trigger_type: v }))}
@@ -490,7 +490,7 @@ export default function GoalProgressPanel({
               </Select>
             </div>
             <div>
-              <label className="text-[11px] text-[#64748B]">调整维度</label>
+              <label className="text-[11px] text-ink-2">调整维度</label>
               <Select
                 value={form.change_type}
                 onValueChange={(v) => setForm((f) => ({ ...f, change_type: v }))}
@@ -510,9 +510,9 @@ export default function GoalProgressPanel({
           </div>
 
           <div>
-            <label className="text-[11px] text-[#64748B]">
-              具体改了什么 <span className="text-[#DC2626]">*</span>
-              <span className="text-[#94A3B8]">（建议一次只改少量变量，便于判断哪一项起了作用）</span>
+            <label className="text-[11px] text-ink-2">
+              具体改了什么 <span className="text-danger-strong">*</span>
+              <span className="text-ink-3">（建议一次只改少量变量，便于判断哪一项起了作用）</span>
             </label>
             <Textarea
               value={form.change_detail}
@@ -525,7 +525,7 @@ export default function GoalProgressPanel({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[11px] text-[#64748B]">对「为何无效」的假设（选填）</label>
+              <label className="text-[11px] text-ink-2">对「为何无效」的假设（选填）</label>
               <Textarea
                 value={form.hypothesis}
                 onChange={(e) => setForm((f) => ({ ...f, hypothesis: e.target.value }))}
@@ -535,14 +535,14 @@ export default function GoalProgressPanel({
               />
             </div>
             <div>
-              <label className="text-[11px] text-[#64748B]">再监控到期日（选填）</label>
+              <label className="text-[11px] text-ink-2">再监控到期日（选填）</label>
               <input
                 type="date"
                 value={form.review_due_date}
                 onChange={(e) => setForm((f) => ({ ...f, review_due_date: e.target.value }))}
-                className="w-full h-8 mt-0.5 px-2 rounded-md border border-[#CBD5E1] text-xs"
+                className="w-full h-8 mt-0.5 px-2 rounded-md border border-line-2 text-xs"
               />
-              <p className="mt-1 text-[10px] text-[#94A3B8]">
+              <p className="mt-1 text-[10px] text-ink-3">
                 建议在调整后再采集至少 4 个数据点再下结论
               </p>
             </div>
@@ -551,14 +551,14 @@ export default function GoalProgressPanel({
           <div className="flex justify-end gap-2">
             <button
               onClick={() => setOpen(false)}
-              className="h-8 px-3 rounded-md border border-[#CBD5E1] text-xs text-[#64748B] hover:bg-white cursor-pointer"
+              className="h-8 px-3 rounded-md border border-line-2 text-xs text-ink-2 hover:bg-surface cursor-pointer"
             >
               取消
             </button>
             <button
               onClick={submit}
               disabled={saving}
-              className="h-8 px-3 rounded-md bg-[#977653] text-white text-xs font-medium hover:bg-[#7A5F42] disabled:opacity-60 cursor-pointer"
+              className="h-8 px-3 rounded-md bg-brand text-ink-on-dark text-xs font-medium hover:bg-brand-strong disabled:opacity-60 cursor-pointer"
             >
               {saving ? '保存中…' : '保存'}
             </button>
@@ -611,10 +611,10 @@ export function PromptFadePanel({ analysis }: { analysis: GoalAnalysis }) {
   const effective = fewer ? delta <= 0.5 : delta >= -0.5;
 
   return (
-    <div className="rounded-md p-3 border border-[#E2E8F0] bg-[#F8FAFC] space-y-2">
+    <div className="rounded-md p-3 border border-line bg-surface-3 space-y-2">
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-semibold text-[#1E293B]">撤提示进展</span>
-        <span className="text-[11px] text-[#94A3B8]">
+        <span className="text-xs font-semibold text-ink">撤提示进展</span>
+        <span className="text-[11px] text-ink-3">
           辅助由多到少，达成率{ fewer ? '下降' : '不降' }即为撤提示有效
         </span>
       </div>
@@ -628,25 +628,25 @@ export function PromptFadePanel({ analysis }: { analysis: GoalAnalysis }) {
               <span
                 className={cn(
                   'w-16 shrink-0 text-[11px]',
-                  isJudged ? 'font-semibold text-[#1E293B]' : 'text-[#64748B]',
+                  isJudged ? 'font-semibold text-ink' : 'text-ink-2',
                 )}
               >
                 {PROMPT_LEVEL_LABEL[lv] ?? lv}
               </span>
-              <div className="flex-1 h-4 bg-[#EEF2F7] rounded overflow-hidden">
+              <div className="flex-1 h-4 bg-surface-2 rounded overflow-hidden">
                 <div
-                  className={cn('h-full rounded', isJudged ? 'bg-[#977653]' : 'bg-[#CBD5E1]')}
+                  className={cn('h-full rounded', isJudged ? 'bg-brand' : 'bg-surface-2')}
                   style={{ width: `${Math.max(2, Math.min(100, s.avg))}%` }}
                 />
               </div>
-              <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-[#475569]">
+              <span className="w-11 shrink-0 text-right text-[11px] tabular-nums text-ink-2">
                 {Math.round(s.avg)}%
               </span>
-              <span className="w-24 shrink-0 text-right text-[10px] text-[#94A3B8] tabular-nums">
+              <span className="w-24 shrink-0 text-right text-[10px] text-ink-3 tabular-nums">
                 {s.first.slice(5)}~{s.last.slice(5)}
               </span>
               {isJudged && (
-                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-[#977653]/10 text-[#977653]">
+                <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-brand/10 text-brand-ink">
                   判定依据
                 </span>
               )}
@@ -655,7 +655,7 @@ export function PromptFadePanel({ analysis }: { analysis: GoalAnalysis }) {
         })}
       </div>
 
-      <p className="text-[11px] text-[#64748B]">
+      <p className="text-[11px] text-ink-2">
         {ordered[0] === ordered[ordered.length - 1]
           ? null
           : `${PROMPT_LEVEL_LABEL[ordered[0]] ?? ordered[0]} ${Math.round(head.avg)}% → ${
@@ -671,9 +671,9 @@ export function PromptFadePanel({ analysis }: { analysis: GoalAnalysis }) {
       </p>
 
       {faded && (
-        <div className="flex items-start gap-2 bg-[#FFFBEB] border border-[#FDE68A] rounded-md p-2">
-          <Info className="w-3.5 h-3.5 text-[#B45309] mt-0.5 shrink-0" />
-          <p className="text-[11px] text-[#92400E]">
+        <div className="flex items-start gap-2 bg-warning-soft border border-warning-soft rounded-md p-2">
+          <Info className="w-3.5 h-3.5 text-warning-strong mt-0.5 shrink-0" />
+          <p className="text-[11px] text-warning-strong">
             判定层级（{PROMPT_LEVEL_LABEL[target ?? ''] ?? target ?? '未指定'}）暂无足够数据，
             已回退到「{PROMPT_LEVEL_LABEL[judged ?? ''] ?? judged ?? '—'}」层级判定，结论需谨慎。
           </p>
@@ -689,8 +689,8 @@ export function DecisionSummary({ summary }: { summary: Partial<Record<DecisionL
   if (total === 0) return null;
 
   return (
-    <div className="border border-[#E2E8F0] rounded-lg p-4">
-      <p className="text-sm font-semibold text-[#1E293B] mb-3">本计划目标进展概览</p>
+    <div className="border border-line rounded-lg p-4">
+      <p className="text-sm font-semibold text-ink mb-3">本计划目标进展概览</p>
       <div className="flex flex-wrap gap-2">
         {order.map((k) => {
           const n = summary[k] ?? 0;
@@ -709,7 +709,7 @@ export function DecisionSummary({ summary }: { summary: Partial<Record<DecisionL
         })}
       </div>
       {(summary.adjust ?? 0) > 0 && (
-        <p className="mt-3 text-xs text-[#B91C1C]">
+        <p className="mt-3 text-xs text-danger-strong">
           有 {summary.adjust} 个目标的数据提示当前教学方案效果不足，建议按下方判断依据组织团队讨论并调整干预，
           调整后再采集至少 4 个数据点验证效果。
         </p>
@@ -729,10 +729,10 @@ export function ConsistencyPanel({ check, loading }: { check: ConsistencyCheck |
 
   const clean = check.error_count === 0 && check.warn_count === 0;
   const tone = check.error_count > 0
-    ? 'border-[#FECACA] bg-[#FEF2F2]'
+    ? 'border-danger-line bg-danger-soft'
     : check.warn_count > 0
-      ? 'border-[#FDE68A] bg-[#FFFBEB]'
-      : 'border-[#BBF7D0] bg-[#F0FDF4]';
+      ? 'border-warning-soft bg-warning-soft'
+      : 'border-success-soft bg-success-soft';
   const warnText = check.warn_count > 0 ? '　' + String(check.warn_count) + ' 项建议完善' : '';
 
   return (
@@ -740,21 +740,21 @@ export function ConsistencyPanel({ check, loading }: { check: ConsistencyCheck |
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           {clean ? (
-            <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-success-strong shrink-0" />
           ) : (
             <AlertTriangle
-              className={cn('w-4 h-4 shrink-0', check.error_count > 0 ? 'text-[#B91C1C]' : 'text-[#B45309]')}
+              className={cn('w-4 h-4 shrink-0', check.error_count > 0 ? 'text-danger-strong' : 'text-warning-strong')}
             />
           )}
-          <span className="text-sm font-semibold text-[#1E293B]">提交前自检</span>
-          <span className="text-xs text-[#64748B]">
+          <span className="text-sm font-semibold text-ink">提交前自检</span>
+          <span className="text-xs text-ink-2">
             {clean ? '未发现问题' : String(check.error_count) + ' 项必须处理' + warnText}
           </span>
         </div>
         {!clean && (
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-md border border-[#CBD5E1] text-xs text-[#475569] hover:bg-white cursor-pointer"
+            className="shrink-0 flex items-center gap-1 h-7 px-2.5 rounded-md border border-line-2 text-xs text-ink-2 hover:bg-surface cursor-pointer"
           >
             {expanded ? '收起' : '查看详情'}
             <ChevronDown className={cn('w-3 h-3 transition-transform', expanded && 'rotate-180')} />
@@ -765,22 +765,22 @@ export function ConsistencyPanel({ check, loading }: { check: ConsistencyCheck |
       {expanded && (
         <ul className="mt-3 space-y-2">
           {check.issues.map((i, idx) => (
-            <li key={i.code + '-' + String(idx)} className="bg-white/70 rounded-md p-2.5">
+            <li key={i.code + '-' + String(idx)} className="bg-surface/70 rounded-md p-2.5">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
                   className={cn(
                     'px-1.5 py-0.5 rounded text-[10px] font-medium',
-                    i.level === 'error' ? 'bg-[#FEE2E2] text-[#B91C1C]' : 'bg-[#FEF3C7] text-[#B45309]',
+                    i.level === 'error' ? 'bg-danger-soft text-danger-strong' : 'bg-warning-soft text-warning-strong',
                   )}
                 >
                   {i.level === 'error' ? '必须处理' : '建议完善'}
                 </span>
-                <span className="text-xs font-semibold text-[#1E293B]">{i.title}</span>
-                <span className="text-[10px] text-[#94A3B8]">{i.code}</span>
+                <span className="text-xs font-semibold text-ink">{i.title}</span>
+                <span className="text-[10px] text-ink-3">{i.code}</span>
               </div>
-              <p className="mt-1 text-xs text-[#475569]">{i.detail}</p>
+              <p className="mt-1 text-xs text-ink-2">{i.detail}</p>
               {i.ref?.samples && i.ref.samples.length > 0 && (
-                <p className="mt-1 text-[11px] text-[#94A3B8]">
+                <p className="mt-1 text-[11px] text-ink-3">
                   涉及目标：{i.ref.samples.join('、')}
                   {i.ref.count && i.ref.count > i.ref.samples.length ? ' 等 ' + String(i.ref.count) + ' 个' : ''}
                 </p>

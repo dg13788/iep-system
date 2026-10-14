@@ -45,8 +45,8 @@ export default function StudentDetailDrawer({
 
   const InfoItem = ({ label, value }: { label: string; value: string }) => (
     <div className="py-2">
-      <p className="text-xs text-[#94A3B8] mb-0.5">{label}</p>
-      <p className="text-sm text-[#1E293B] font-medium">{value || '-'}</p>
+      <p className="text-xs text-ink-3 mb-0.5">{label}</p>
+      <p className="text-sm text-ink font-medium">{value || '-'}</p>
     </div>
   );
 
@@ -66,7 +66,7 @@ export default function StudentDetailDrawer({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="fixed inset-0 z-50 bg-black/50"
+              className="fixed inset-0 z-50 bg-overlay/50"
               onClick={onClose}
             />
             {/* Drawer */}
@@ -75,17 +75,17 @@ export default function StudentDetailDrawer({
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }}
-              className="fixed right-0 top-0 h-full w-full sm:w-[720px] bg-[#F7F6F4] z-50 flex flex-col overflow-hidden"
+              className="fixed right-0 top-0 h-full w-full sm:w-[720px] bg-canvas z-50 flex flex-col overflow-hidden"
               role="dialog"
               aria-modal="true"
               aria-label={`学生详情 - ${student?.name ?? ''}`}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-[#E2E8F0] flex-shrink-0">
-                <h2 className="text-lg font-semibold text-[#1E293B]">学生详情</h2>
+              <div className="flex items-center justify-between px-6 py-4 bg-surface border-b border-line flex-shrink-0">
+                <h2 className="text-lg font-semibold text-ink">学生详情</h2>
                 <button
                   onClick={onClose}
-                  className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-[#94A3B8] hover:bg-[#F7F6F4] hover:text-[#1E293B] transition-colors"
+                  className="w-11 h-11 lg:w-8 lg:h-8 rounded-md flex items-center justify-center text-ink-3 hover:bg-canvas hover:text-ink transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -94,31 +94,31 @@ export default function StudentDetailDrawer({
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
                 {/* Profile Header */}
-                <div className="bg-white px-6 py-5 border-b border-[#E2E8F0]">
+                <div className="bg-surface px-6 py-5 border-b border-line">
                   <div className="flex items-start gap-4">
                     <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-2xl font-bold text-primary-600 flex-shrink-0">
                       {student.name[0]}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <h3 className="text-xl font-bold text-[#1E293B]">{student.name}</h3>
+                        <h3 className="text-xl font-bold text-ink">{student.name}</h3>
                         <Badge className={`${statusBadgeClass[student.status]} text-xs font-medium`}>
                           {student.status}
                         </Badge>
                       </div>
-                      <p className="text-sm text-[#64748B] mt-1">
+                      <p className="text-sm text-ink-2 mt-1">
                         {student.student_no} · {student.gender} · {student.age === null ? '年龄未填写' : `${student.age}岁`}
                       </p>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#F0F2F5] text-[#405680]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-surface-2 text-ink-on-dark-2">
                           {student.class_name}
                         </span>
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                          disabilityBadgeColors[student.disability_type] || 'bg-[#F0F2F5] text-[#64748B]'
+                          disabilityBadgeColors[student.disability_type] || 'bg-surface-2 text-ink-2'
                         }`}>
                           {student.disability_type}
                         </span>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-[#F5F0EB] text-[#5C4832]">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap bg-brand-soft text-brand-ink">
                           {student.disability_level}
                         </span>
                       </div>
@@ -127,7 +127,7 @@ export default function StudentDetailDrawer({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-9 px-3 text-[#64748B] border-[#E2E8F0] hover:bg-[#F7F6F4]"
+                        className="h-9 px-3 text-ink-2 border-line hover:bg-canvas"
                         onClick={() => onEdit(student)}
                       >
                         <Pencil className="w-3.5 h-3.5 mr-1.5" />
@@ -149,16 +149,16 @@ export default function StudentDetailDrawer({
                 {/* Tabs */}
                 <div className="px-6 py-4">
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="bg-white border border-[#E2E8F0] mb-4">
-                      <TabsTrigger value="basic" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">基本信息</TabsTrigger>
-                      <TabsTrigger value="disability" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">障碍信息</TabsTrigger>
-                      <TabsTrigger value="guardian" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">监护人信息</TabsTrigger>
-                      <TabsTrigger value="other" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">其他信息</TabsTrigger>
-                      <TabsTrigger value="attachments" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">附件管理</TabsTrigger>
-                      <TabsTrigger value="parents" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">关联家长</TabsTrigger>
-                      <TabsTrigger value="safety" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">安全档案</TabsTrigger>
-                      <TabsTrigger value="communication" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">沟通方式</TabsTrigger>
-                      <TabsTrigger value="intervention" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-white">行为干预</TabsTrigger>
+                    <TabsList className="bg-surface border border-line mb-4">
+                      <TabsTrigger value="basic" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">基本信息</TabsTrigger>
+                      <TabsTrigger value="disability" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">障碍信息</TabsTrigger>
+                      <TabsTrigger value="guardian" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">监护人信息</TabsTrigger>
+                      <TabsTrigger value="other" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">其他信息</TabsTrigger>
+                      <TabsTrigger value="attachments" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">附件管理</TabsTrigger>
+                      <TabsTrigger value="parents" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">关联家长</TabsTrigger>
+                      <TabsTrigger value="safety" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">安全档案</TabsTrigger>
+                      <TabsTrigger value="communication" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">沟通方式</TabsTrigger>
+                      <TabsTrigger value="intervention" className="text-sm data-[state=active]:bg-primary-500 data-[state=active]:text-ink-on-dark">行为干预</TabsTrigger>
                     </TabsList>
 
                     {/* Tab 1: Basic Info */}
@@ -172,8 +172,8 @@ export default function StudentDetailDrawer({
                           transition={{ duration: 0.15 }}
                           className={tabContentClass}
                         >
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <User className="w-4 h-4 text-primary-500" />
                               学籍信息
                             </h4>
@@ -201,8 +201,8 @@ export default function StudentDetailDrawer({
                           transition={{ duration: 0.15 }}
                           className={tabContentClass}
                         >
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <Stethoscope className="w-4 h-4 text-primary-500" />
                               障碍信息
                             </h4>
@@ -215,18 +215,18 @@ export default function StudentDetailDrawer({
                               <InfoItem label="诊断机构" value={student.diagnosis_org || '-'} />
                             </div>
                             {student.diagnosis_note && (
-                              <div className="mt-4 pt-4 border-t border-[#E2E8F0]">
-                                <p className="text-xs text-[#94A3B8] mb-1">诊断说明</p>
-                                <p className="text-sm text-[#1E293B]">{student.diagnosis_note}</p>
+                              <div className="mt-4 pt-4 border-t border-line">
+                                <p className="text-xs text-ink-3 mb-1">诊断说明</p>
+                                <p className="text-sm text-ink">{student.diagnosis_note}</p>
                               </div>
                             )}
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <FileText className="w-4 h-4 text-primary-500" />
                               特殊需求
                             </h4>
-                            <p className="text-sm text-[#1E293B]">{student.special_needs || '无特殊需求记录'}</p>
+                            <p className="text-sm text-ink">{student.special_needs || '无特殊需求记录'}</p>
                           </div>
                         </motion.div>
                       </TabsContent>
@@ -241,15 +241,15 @@ export default function StudentDetailDrawer({
                           transition={{ duration: 0.15 }}
                           className={tabContentClass}
                         >
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-primary-500" />
                               家庭住址
                             </h4>
-                            <p className="text-sm text-[#1E293B]">{student.address || '-'}</p>
+                            <p className="text-sm text-ink">{student.address || '-'}</p>
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <Users className="w-4 h-4 text-primary-500" />
                               监护人信息
                             </h4>
@@ -261,8 +261,8 @@ export default function StudentDetailDrawer({
                               <InfoItem label="监护人2电话" value={student.guardian2_phone || '-'} />
                             </div>
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <Phone className="w-4 h-4 text-primary-500" />
                               紧急联系
                             </h4>
@@ -284,34 +284,34 @@ export default function StudentDetailDrawer({
                           transition={{ duration: 0.15 }}
                           className={tabContentClass}
                         >
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <AlertTriangle className="w-4 h-4 text-warning-500" />
                               过敏史
                             </h4>
-                            <p className="text-sm text-[#1E293B]">{student.allergy_info || '无过敏史记录'}</p>
+                            <p className="text-sm text-ink">{student.allergy_info || '无过敏史记录'}</p>
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <Stethoscope className="w-4 h-4 text-primary-500" />
                               既往病史
                             </h4>
-                            <p className="text-sm text-[#1E293B]">{student.health_info || '无病史记录'}</p>
+                            <p className="text-sm text-ink">{student.health_info || '无病史记录'}</p>
                           </div>
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                               <Pill className="w-4 h-4 text-primary-500" />
                               用药信息
                             </h4>
-                            <p className="text-sm text-[#1E293B]">{student.medication_info || '无用药记录'}</p>
+                            <p className="text-sm text-ink">{student.medication_info || '无用药记录'}</p>
                           </div>
                           {student.remarks && (
-                            <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                              <h4 className="text-sm font-semibold text-[#1E293B] mb-3 flex items-center gap-2">
+                            <div className="bg-surface rounded-lg border border-line p-5">
+                              <h4 className="text-sm font-semibold text-ink mb-3 flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-primary-500" />
                                 备注
                               </h4>
-                              <p className="text-sm text-[#1E293B]">{student.remarks}</p>
+                              <p className="text-sm text-ink">{student.remarks}</p>
                             </div>
                           )}
                         </motion.div>
@@ -331,27 +331,27 @@ export default function StudentDetailDrawer({
                               且「上传附件」按钮没有 onClick —— 点击毫无反应，而后端也确实没有上传端点。
                               改为按真实数据渲染列表；空态不再放置无响应的按钮，并如实标注功能状态。 */}
                           {attachments.length > 0 ? (
-                            <div className="bg-white rounded-lg border border-[#E2E8F0] divide-y divide-[#E2E8F0]">
+                            <div className="bg-surface rounded-lg border border-line divide-y divide-line">
                               {attachments.map((att) => (
                                 <div key={att.id} className="flex items-center gap-3 px-4 py-3">
-                                  <FileText className="w-4 h-4 text-[#94A3B8] shrink-0" />
+                                  <FileText className="w-4 h-4 text-ink-3 shrink-0" />
                                   <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-[#1E293B] truncate">{att.file_name}</p>
-                                    <p className="text-xs text-[#94A3B8] mt-0.5">
+                                    <p className="text-sm text-ink truncate">{att.file_name}</p>
+                                    <p className="text-xs text-ink-3 mt-0.5">
                                       {[att.category, att.description, att.created_at].filter(Boolean).join(' · ')}
                                     </p>
                                   </div>
                                   {Number(att.is_confidential) === 1 && (
-                                    <Badge className="bg-[#FEF2F2] text-[#B91C1C] text-xs shrink-0">机密</Badge>
+                                    <Badge className="bg-danger-soft text-danger-strong text-xs shrink-0">机密</Badge>
                                   )}
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="bg-white rounded-lg border border-[#E2E8F0] p-8 text-center">
-                              <FileText className="w-12 h-12 text-[#CBD5E1] mx-auto mb-3" />
-                              <p className="text-[#64748B] font-medium mb-1">暂无附件</p>
-                              <p className="text-[#94A3B8] text-sm">该学生还没有上传任何附件。附件上传功能开发中，暂不可在本页提交。</p>
+                            <div className="bg-surface rounded-lg border border-line p-8 text-center">
+                              <FileText className="w-12 h-12 text-ink-4 mx-auto mb-3" />
+                              <p className="text-ink-2 font-medium mb-1">暂无附件</p>
+                              <p className="text-ink-3 text-sm">该学生还没有上传任何附件。附件上传功能开发中，暂不可在本页提交。</p>
                             </div>
                           )}
                         </motion.div>
@@ -367,41 +367,41 @@ export default function StudentDetailDrawer({
                           transition={{ duration: 0.15 }}
                           className={tabContentClass}
                         >
-                          <div className="bg-white rounded-lg border border-[#E2E8F0] p-5">
-                            <h4 className="text-sm font-semibold text-[#1E293B] mb-4 flex items-center gap-2">
+                          <div className="bg-surface rounded-lg border border-line p-5">
+                            <h4 className="text-sm font-semibold text-ink mb-4 flex items-center gap-2">
                               <Users className="w-4 h-4 text-primary-500" />
                               关联家长
                             </h4>
                             <div className="space-y-4">
-                              <div className="flex items-center gap-4 p-3 bg-[#F7F6F4] rounded-lg">
+                              <div className="flex items-center gap-4 p-3 bg-canvas rounded-lg">
                                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-sm font-bold text-primary-600">
                                   {student.guardian_name[0]}
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm font-medium text-[#1E293B]">{student.guardian_name}</p>
-                                  <p className="text-xs text-[#94A3B8]">{student.guardian_relation} · {student.guardian_phone}</p>
+                                  <p className="text-sm font-medium text-ink">{student.guardian_name}</p>
+                                  <p className="text-xs text-ink-3">{student.guardian_relation} · {student.guardian_phone}</p>
                                 </div>
                                 <Badge className="bg-success-50 text-success-600 border border-success-50 text-xs">主要监护人</Badge>
                               </div>
                               {student.guardian2_name && (
-                                <div className="flex items-center gap-4 p-3 bg-[#F7F6F4] rounded-lg">
+                                <div className="flex items-center gap-4 p-3 bg-canvas rounded-lg">
                                   <div className="w-10 h-10 rounded-full bg-secondary-100 flex items-center justify-center text-sm font-bold text-secondary-600">
                                     {student.guardian2_name[0]}
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-sm font-medium text-[#1E293B]">{student.guardian2_name}</p>
-                                    <p className="text-xs text-[#94A3B8]">第二监护人 · {student.guardian2_phone}</p>
+                                    <p className="text-sm font-medium text-ink">{student.guardian2_name}</p>
+                                    <p className="text-xs text-ink-3">第二监护人 · {student.guardian2_phone}</p>
                                   </div>
                                 </div>
                               )}
                               {student.emergency_contact && (
-                                <div className="flex items-center gap-4 p-3 bg-[#F7F6F4] rounded-lg">
+                                <div className="flex items-center gap-4 p-3 bg-canvas rounded-lg">
                                   <div className="w-10 h-10 rounded-full bg-warning-50 flex items-center justify-center text-sm font-bold text-warning-600">
                                     {student.emergency_contact[0]}
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-sm font-medium text-[#1E293B]">{student.emergency_contact}</p>
-                                    <p className="text-xs text-[#94A3B8]">紧急联系人 · {student.emergency_phone}</p>
+                                    <p className="text-sm font-medium text-ink">{student.emergency_contact}</p>
+                                    <p className="text-xs text-ink-3">紧急联系人 · {student.emergency_phone}</p>
                                   </div>
                                   <Badge className="bg-warning-50 text-warning-600 border border-warning-50 text-xs">紧急</Badge>
                                 </div>
@@ -468,9 +468,9 @@ export default function StudentDetailDrawer({
             <div className="mx-auto w-12 h-12 rounded-full bg-danger-50 flex items-center justify-center mb-3">
               <Trash2 className="w-6 h-6 text-danger-500" />
             </div>
-            <DialogTitle className="text-lg font-semibold text-[#1E293B]">确认删除</DialogTitle>
-            <DialogDescription className="text-[#64748B]">
-              确定要删除学生 <strong className="text-[#1E293B]">{student.name}</strong> 的档案吗？此操作不可撤销。
+            <DialogTitle className="text-lg font-semibold text-ink">确认删除</DialogTitle>
+            <DialogDescription className="text-ink-2">
+              确定要删除学生 <strong className="text-ink">{student.name}</strong> 的档案吗？此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 mt-4">
@@ -478,7 +478,7 @@ export default function StudentDetailDrawer({
               取消
             </Button>
             <Button
-              className="bg-danger-500 hover:bg-danger-600 text-white"
+              className="bg-danger-500 hover:bg-danger-600 text-ink-on-dark"
               onClick={() => { onDelete(student); setDeleteDialogOpen(false); onClose(); }}
             >
               确认删除

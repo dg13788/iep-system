@@ -51,10 +51,10 @@ interface GoalDraftDrawerProps {
 }
 
 const BAND_META: Record<string, { label: string; dot: string; bg: string; text: string }> = {
-  priority: { label: '优先需求', dot: '#DC2626', bg: 'bg-[#FEE2E2]', text: 'text-[#B91C1C]' },
-  emerging: { label: '发展中', dot: '#D97706', bg: 'bg-[#FEF3C7]', text: 'text-[#B45309]' },
-  mastered: { label: '已达掌握线', dot: '#059669', bg: 'bg-[#D1FAE5]', text: 'text-[#047857]' },
-  unknown: { label: '无法判断', dot: '#94A3B8', bg: 'bg-[#F1F5F9]', text: 'text-[#64748B]' },
+  priority: { label: '优先需求', dot: 'rgb(var(--danger-strong))', bg: 'bg-danger-soft', text: 'text-danger-strong' },
+  emerging: { label: '发展中', dot: 'rgb(var(--warning-strong))', bg: 'bg-warning-soft', text: 'text-warning-strong' },
+  mastered: { label: '已达掌握线', dot: 'rgb(var(--success-strong))', bg: 'bg-success-soft', text: 'text-success-strong' },
+  unknown: { label: '无法判断', dot: 'rgb(var(--ink-3))', bg: 'bg-surface-2', text: 'text-ink-2' },
 };
 
 export default function GoalDraftDrawer({
@@ -211,41 +211,41 @@ export default function GoalDraftDrawer({
 
   return (
     <div className="fixed inset-0 z-[60] flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative w-full max-w-[720px] h-full bg-white flex flex-col shadow-2xl">
+      <div className="absolute inset-0 bg-overlay/30" onClick={onClose} />
+      <div className="relative w-full max-w-[720px] h-full bg-surface flex flex-col shadow-2xl">
         {/* 头部 */}
-        <div className="flex items-center justify-between gap-3 px-5 h-14 border-b border-[#E2E8F0] shrink-0">
+        <div className="flex items-center justify-between gap-3 px-5 h-14 border-b border-line shrink-0">
           <div className="flex items-center gap-2 min-w-0">
-            <Wand2 className="w-4 h-4 text-[#4F46E5] shrink-0" />
-            <span className="text-sm font-semibold text-[#1E293B]">从评估起草</span>
+            <Wand2 className="w-4 h-4 text-info-strong shrink-0" />
+            <span className="text-sm font-semibold text-ink">从评估起草</span>
             {studentName && (
-              <span className="text-xs text-[#64748B] truncate">· {studentName}</span>
+              <span className="text-xs text-ink-2 truncate">· {studentName}</span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F1F5F9] cursor-pointer"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md hover:bg-surface-2 cursor-pointer"
           >
-            <X className="w-4 h-4 text-[#64748B]" />
+            <X className="w-4 h-4 text-ink-2" />
           </button>
         </div>
 
         {/* 内容 */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {loading && (
-            <div className="h-40 flex items-center justify-center text-sm text-[#94A3B8]">
+            <div className="h-40 flex items-center justify-center text-sm text-ink-3">
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
               正在归纳评估数据…
             </div>
           )}
 
           {!loading && profile && !profile.has_assessment && (
-            <div className="border border-[#FDE68A] bg-[#FFFBEB] rounded-lg p-4">
+            <div className="border border-warning-soft bg-warning-soft rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-[#B45309]" />
-                <span className="text-sm font-semibold text-[#1E293B]">没有可用的评估数据</span>
+                <AlertTriangle className="w-4 h-4 text-warning-strong" />
+                <span className="text-sm font-semibold text-ink">没有可用的评估数据</span>
               </div>
-              <p className="text-xs text-[#475569] leading-relaxed">
+              <p className="text-xs text-ink-2 leading-relaxed">
                 {profile.reason}
               </p>
             </div>
@@ -254,17 +254,17 @@ export default function GoalDraftDrawer({
           {!loading && profile?.has_assessment && (
             <div className="space-y-5">
               {/* 依据 */}
-              <div className="border border-[#E2E8F0] rounded-lg p-4">
+              <div className="border border-line rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <ClipboardList className="w-4 h-4 text-[#475569]" />
-                  <span className="text-sm font-semibold text-[#1E293B]">起草依据</span>
+                  <ClipboardList className="w-4 h-4 text-ink-2" />
+                  <span className="text-sm font-semibold text-ink">起草依据</span>
                 </div>
-                <p className="text-xs text-[#475569]">
+                <p className="text-xs text-ink-2">
                   {profile.assessment?.template_name || '评估'} ·{' '}
                   {profile.assessment?.date} · {profile.assessment?.item_count} 个条目
                   {profile.assessment?.assessor_name ? ` · 评估人 ${profile.assessment.assessor_name}` : ''}
                 </p>
-                <p className="mt-1.5 text-[11px] text-[#94A3B8]">
+                <p className="mt-1.5 text-[11px] text-ink-3">
                   画像限定在<b>本次评估</b>内计算。跨评估平均会把"前测 1 分 + 后测 5 分"平均成 3 分，
                   那既不是前测也不是后测。
                 </p>
@@ -273,9 +273,9 @@ export default function GoalDraftDrawer({
               {/* 维度画像 */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-4 h-4 text-[#475569]" />
-                  <span className="text-sm font-semibold text-[#1E293B]">维度画像</span>
-                  <span className="text-[11px] text-[#94A3B8]">
+                  <Sparkles className="w-4 h-4 text-ink-2" />
+                  <span className="text-sm font-semibold text-ink">维度画像</span>
+                  <span className="text-[11px] text-ink-3">
                     需求 {needsDims.length} · 已达掌握线 {strengthDims.length}
                   </span>
                 </div>
@@ -288,11 +288,11 @@ export default function GoalDraftDrawer({
 
               {/* PLAAFP */}
               {plaafp && (
-                <div className="border border-[#E2E8F0] rounded-lg p-4">
+                <div className="border border-line rounded-lg p-4">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="text-sm font-semibold text-[#1E293B]">PLAAFP 初稿</span>
+                    <span className="text-sm font-semibold text-ink">PLAAFP 初稿</span>
                     {savedPlaafp && (
-                      <span className="flex items-center gap-1 text-xs text-[#059669]">
+                      <span className="flex items-center gap-1 text-xs text-success-strong">
                         <CheckCircle2 className="w-3 h-3" />
                         已写入计划
                       </span>
@@ -302,15 +302,15 @@ export default function GoalDraftDrawer({
                   {plaafp.caveats.length > 0 && (
                     <div className="mb-3 space-y-1">
                       {plaafp.caveats.map((c, i) => (
-                        <div key={i} className="flex gap-2 bg-[#FFFBEB] rounded-md p-2">
-                          <AlertTriangle className="w-3.5 h-3.5 text-[#B45309] shrink-0 mt-0.5" />
-                          <p className="text-[11px] text-[#92400E] leading-relaxed">{c}</p>
+                        <div key={i} className="flex gap-2 bg-warning-soft rounded-md p-2">
+                          <AlertTriangle className="w-3.5 h-3.5 text-warning-strong shrink-0 mt-0.5" />
+                          <p className="text-[11px] text-warning-strong leading-relaxed">{c}</p>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <label className="text-xs text-[#475569]">优势与现有水平（可修改）</label>
+                  <label className="text-xs text-ink-2">优势与现有水平（可修改）</label>
                   <Textarea
                     value={strengths}
                     onChange={(e) => setStrengths(e.target.value)}
@@ -318,7 +318,7 @@ export default function GoalDraftDrawer({
                     disabled={!editable}
                     className="mt-1 text-xs"
                   />
-                  <label className="block mt-3 text-xs text-[#475569]">需求与差距（可修改）</label>
+                  <label className="block mt-3 text-xs text-ink-2">需求与差距（可修改）</label>
                   <Textarea
                     value={needs}
                     onChange={(e) => setNeeds(e.target.value)}
@@ -326,7 +326,7 @@ export default function GoalDraftDrawer({
                     disabled={!editable}
                     className="mt-1 text-xs"
                   />
-                  <p className="mt-1.5 text-[11px] text-[#94A3B8]">{plaafp.source_text}</p>
+                  <p className="mt-1.5 text-[11px] text-ink-3">{plaafp.source_text}</p>
                   {editable && (
                     <Button
                       className="mt-3 h-8"
@@ -343,11 +343,11 @@ export default function GoalDraftDrawer({
               {/* 目标草案 */}
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-sm font-semibold text-[#1E293B]">目标草案</span>
-                  {draftNote && <span className="text-[11px] text-[#B45309]">{draftNote}</span>}
+                  <span className="text-sm font-semibold text-ink">目标草案</span>
+                  {draftNote && <span className="text-[11px] text-warning-strong">{draftNote}</span>}
                 </div>
                 {drafts.length === 0 ? (
-                  <p className="text-xs text-[#94A3B8]">
+                  <p className="text-xs text-ink-3">
                     本次评估未发现低于掌握线的领域，无需新立年度目标。
                   </p>
                 ) : (
@@ -371,8 +371,8 @@ export default function GoalDraftDrawer({
 
         {/* 底部操作 */}
         {!loading && profile?.has_assessment && editable && drafts.length > 0 && (
-          <div className="shrink-0 flex items-center justify-between gap-3 px-5 h-14 border-t border-[#E2E8F0]">
-            <span className="text-xs text-[#64748B]">
+          <div className="shrink-0 flex items-center justify-between gap-3 px-5 h-14 border-t border-line">
+            <span className="text-xs text-ink-2">
               已选 {[...selected].filter((i) => !adoptedIds.has(i)).length} 条
               {adoptedIds.size > 0 ? ` · 已采纳 ${adoptedIds.size} 条` : ''}
             </span>
@@ -403,27 +403,27 @@ function DimCard({ dim }: { dim: DimensionProfile }) {
   const m = BAND_META[dim.band] ?? BAND_META.unknown;
 
   return (
-    <div className="border border-[#E2E8F0] rounded-lg">
+    <div className="border border-line rounded-lg">
       <div className="flex items-center gap-2 px-3 py-2.5">
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: m.dot }} />
-        <span className="text-sm font-medium text-[#1E293B]">{dim.dimension}</span>
+        <span className="text-sm font-medium text-ink">{dim.dimension}</span>
         <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', m.bg, m.text)}>
           {m.label}
         </span>
         {dim.avg_pct !== null ? (
-          <span className="text-xs text-[#475569]">{dim.avg_pct}%</span>
+          <span className="text-xs text-ink-2">{dim.avg_pct}%</span>
         ) : (
-          <span className="text-xs text-[#94A3B8]">无得分</span>
+          <span className="text-xs text-ink-3">无得分</span>
         )}
-        <span className="text-[10px] text-[#94A3B8]">{dim.item_count} 项</span>
+        <span className="text-[10px] text-ink-3">{dim.item_count} 项</span>
         {dim.uneven && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#FEF3C7] text-[#B45309]">
+          <span className="px-1.5 py-0.5 rounded text-[10px] bg-warning-soft text-warning-strong">
             内部差异大
           </span>
         )}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="ml-auto flex items-center gap-1 text-[11px] text-[#64748B] hover:text-[#334155] cursor-pointer"
+          className="ml-auto flex items-center gap-1 text-[11px] text-ink-2 hover:text-ink-2 cursor-pointer"
         >
           依据
           <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
@@ -431,12 +431,12 @@ function DimCard({ dim }: { dim: DimensionProfile }) {
       </div>
       {open && (
         <div className="px-3 pb-3 space-y-1.5">
-          <p className="text-[11px] text-[#475569] leading-relaxed">{dim.reason}</p>
+          <p className="text-[11px] text-ink-2 leading-relaxed">{dim.reason}</p>
           <div className="flex flex-wrap gap-1">
             {dim.items.map((it) => (
               <span
                 key={it.item_id}
-                className="px-1.5 py-0.5 rounded bg-[#F8FAFC] border border-[#E2E8F0] text-[10px] text-[#475569]"
+                className="px-1.5 py-0.5 rounded bg-surface-3 border border-line text-[10px] text-ink-2"
               >
                 {it.item_name}
                 {it.pct !== null ? ` ${it.pct}%` : ''}
@@ -472,7 +472,7 @@ function DraftCard({
     <div
       className={cn(
         'border rounded-lg',
-        adopted ? 'border-[#BBF7D0] bg-[#F0FDF4]' : checked ? 'border-[#818CF8] bg-[#EEF2FF]' : 'border-[#E2E8F0]',
+        adopted ? 'border-success-soft bg-success-soft' : checked ? 'border-info bg-info-soft' : 'border-line',
       )}
     >
       <div className="flex items-start gap-2.5 px-3 py-2.5">
@@ -485,31 +485,31 @@ function DraftCard({
           />
         ) : (
           <span className="mt-0.5 w-3.5 h-3.5 flex items-center justify-center">
-            {adopted && <CheckCircle2 className="w-3.5 h-3.5 text-[#059669]" />}
+            {adopted && <CheckCircle2 className="w-3.5 h-3.5 text-success-strong" />}
           </span>
         )}
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-[#1E293B]">{draft.title}</span>
-            <span className="text-[10px] text-[#94A3B8]">{draft.dimension}</span>
+            <span className="text-sm font-medium text-ink">{draft.title}</span>
+            <span className="text-[10px] text-ink-3">{draft.dimension}</span>
             {draft.priority === 'high' && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#FEE2E2] text-[#B91C1C]">
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-danger-soft text-danger-strong">
                 优先
               </span>
             )}
             {adopted && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#D1FAE5] text-[#047857]">
+              <span className="px-1.5 py-0.5 rounded text-[10px] bg-success-soft text-success-strong">
                 已采纳
               </span>
             )}
           </div>
-          <p className="mt-1 text-[11px] text-[#475569]">
+          <p className="mt-1 text-[11px] text-ink-2">
             基线 {draft.baseline_value ?? '—'}% → 目标 {draft.target_value ?? '—'}%
             {draft.target_date ? ` · 期限 ${draft.target_date}` : ' · 期限待定'}
           </p>
           {draft.needs_confirm.length > 0 && (
-            <p className="mt-1 flex items-start gap-1 text-[11px] text-[#B45309]">
+            <p className="mt-1 flex items-start gap-1 text-[11px] text-warning-strong">
               <Info className="w-3 h-3 shrink-0 mt-0.5" />
               待确认：{draft.needs_confirm.join('；')}
             </p>
@@ -518,7 +518,7 @@ function DraftCard({
 
         <button
           onClick={() => setOpen((v) => !v)}
-          className="shrink-0 flex items-center gap-1 text-[11px] text-[#64748B] hover:text-[#334155] cursor-pointer"
+          className="shrink-0 flex items-center gap-1 text-[11px] text-ink-2 hover:text-ink-2 cursor-pointer"
         >
           详情
           <ChevronDown className={cn('w-3 h-3 transition-transform', open && 'rotate-180')} />
@@ -526,7 +526,7 @@ function DraftCard({
       </div>
 
       {open && (
-        <div className="px-3 pb-3 space-y-2 border-t border-[#F1F5F9] pt-2">
+        <div className="px-3 pb-3 space-y-2 border-t border-line pt-2">
           <Row label="达成标准" value={draft.criteria} />
           <Row label="基线依据" value={draft.baseline} />
           <Row label="基线数值" value={draft.baseline_value !== null ? `${draft.baseline_value}%` : '—'} />
@@ -539,7 +539,7 @@ function DraftCard({
           <Row label="监控频率" value={`${draft.monitor_frequency}（${draft.monitor_frequency_note}）`} />
           <Row label="目标领域" value={draft.area ?? '未归类，需人工指定'} />
           <Row label="起草来源" value={draft.drafted_from === 'item' ? '按条目（该维度内部差异过大）' : '按维度'} />
-          <p className="text-[11px] text-[#64748B] leading-relaxed pt-1">{draft.reason}</p>
+          <p className="text-[11px] text-ink-2 leading-relaxed pt-1">{draft.reason}</p>
         </div>
       )}
     </div>
@@ -549,8 +549,8 @@ function DraftCard({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="shrink-0 w-16 text-[11px] text-[#94A3B8]">{label}</span>
-      <span className="text-[11px] text-[#475569] leading-relaxed">{value}</span>
+      <span className="shrink-0 w-16 text-[11px] text-ink-3">{label}</span>
+      <span className="text-[11px] text-ink-2 leading-relaxed">{value}</span>
     </div>
   );
 }

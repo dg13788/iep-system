@@ -83,7 +83,7 @@ export default function TransitionPanel({ planId, canEdit }: TransitionPanelProp
 
   if (loading) {
     return (
-      <div className="h-32 flex items-center justify-center text-sm text-[#94A3B8]">
+      <div className="h-32 flex items-center justify-center text-sm text-ink-3">
         <Loader2 className="w-4 h-4 animate-spin mr-2" />
         加载中…
       </div>
@@ -96,17 +96,17 @@ export default function TransitionPanel({ planId, canEdit }: TransitionPanelProp
       <div
         className={cn(
           'border rounded-lg p-3 flex items-start gap-2',
-          inputs.length > 0 ? 'border-[#BBF7D0] bg-[#F0FDF4]' : 'border-[#FDE68A] bg-[#FFFBEB]',
+          inputs.length > 0 ? 'border-success-soft bg-success-soft' : 'border-warning-soft bg-warning-soft',
         )}
       >
         {inputs.length > 0 ? (
-          <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
+          <CheckCircle2 className="w-4 h-4 text-success-strong shrink-0 mt-0.5" />
         ) : (
-          <AlertTriangle className="w-4 h-4 text-[#B45309] shrink-0 mt-0.5" />
+          <AlertTriangle className="w-4 h-4 text-warning-strong shrink-0 mt-0.5" />
         )}
         <div className="text-[11px] leading-relaxed">
-          <span className="font-medium text-[#1E293B]">家长参与证据：</span>
-          <span className="text-[#475569]">
+          <span className="font-medium text-ink">家长参与证据：</span>
+          <span className="text-ink-2">
             {inputs.length > 0
               ? `已记录 ${inputs.length} 条家长意见、${sigCount} 份签名。`
               : '尚未记录家长意见。仅有签名不足以证明"会前征求过家长意见"，' +
@@ -180,12 +180,12 @@ function ParentInputSection({
   };
 
   return (
-    <section className="border border-[#E2E8F0] rounded-lg">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#F1F5F9]">
+    <section className="border border-line rounded-lg">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-[#475569]" />
-          <span className="text-sm font-semibold text-[#1E293B]">家长意见征集</span>
-          <span className="text-[11px] text-[#94A3B8]">{inputs.length} 条</span>
+          <Users className="w-4 h-4 text-ink-2" />
+          <span className="text-sm font-semibold text-ink">家长意见征集</span>
+          <span className="text-[11px] text-ink-3">{inputs.length} 条</span>
         </div>
         {canEdit && (
           <Button variant="outline" className="h-7 text-xs" onClick={() => setOpen((v) => !v)}>
@@ -196,19 +196,19 @@ function ParentInputSection({
       </div>
 
       {open && (
-        <div className="px-4 py-3 border-b border-[#F1F5F9] space-y-2 bg-[#F8FAFC]">
+        <div className="px-4 py-3 border-b border-line space-y-2 bg-surface-3">
           <div className="grid grid-cols-2 gap-2">
             <input
               value={f.parent_name}
               onChange={(e) => setF({ ...f, parent_name: e.target.value })}
               placeholder="家长姓名"
-              className="h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+              className="h-8 px-2 rounded-md border border-line-2 text-xs"
             />
             <input
               value={f.relation}
               onChange={(e) => setF({ ...f, relation: e.target.value })}
               placeholder="与学生关系（如 母亲）"
-              className="h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+              className="h-8 px-2 rounded-md border border-line-2 text-xs"
             />
           </div>
           {[
@@ -218,7 +218,7 @@ function ParentInputSection({
             ['support_at_home', '家庭可提供的支持'],
           ].map(([k, label]) => (
             <div key={k}>
-              <label className="text-[11px] text-[#475569]">{label}</label>
+              <label className="text-[11px] text-ink-2">{label}</label>
               <Textarea
                 rows={2}
                 className="mt-1 text-xs"
@@ -228,7 +228,7 @@ function ParentInputSection({
             </div>
           ))}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] text-[#94A3B8]">
+            <span className="text-[11px] text-ink-3">
               代录时会如实标记为"教师代录"，不会伪装成家长自助提交
             </span>
             <Button className="h-7 text-xs" disabled={saving} onClick={() => void submit()}>
@@ -239,21 +239,21 @@ function ParentInputSection({
         </div>
       )}
 
-      <div className="divide-y divide-[#F1F5F9]">
+      <div className="divide-y divide-line">
         {inputs.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-[#94A3B8]">暂无家长意见记录</p>
+          <p className="px-4 py-4 text-xs text-ink-3">暂无家长意见记录</p>
         ) : (
           inputs.map((it) => (
             <div key={it.id} className="px-4 py-3">
               <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                <span className="text-xs font-medium text-[#1E293B]">
+                <span className="text-xs font-medium text-ink">
                   {it.parent_name || '未署名'}
                 </span>
-                {it.relation && <span className="text-[10px] text-[#94A3B8]">{it.relation}</span>}
-                <span className="px-1.5 py-0.5 rounded text-[10px] bg-[#F1F5F9] text-[#64748B]">
+                {it.relation && <span className="text-[10px] text-ink-3">{it.relation}</span>}
+                <span className="px-1.5 py-0.5 rounded text-[10px] bg-surface-2 text-ink-2">
                   {SOURCE_TEXT[it.source] ?? it.source}
                 </span>
-                <span className="text-[10px] text-[#94A3B8]">
+                <span className="text-[10px] text-ink-3">
                   {String(it.submitted_at).slice(0, 10)}
                 </span>
               </div>
@@ -264,8 +264,8 @@ function ParentInputSection({
                 ['家庭支持', it.support_at_home],
               ].map(([label, v]) =>
                 v ? (
-                  <p key={label as string} className="text-[11px] text-[#475569] leading-relaxed">
-                    <span className="text-[#94A3B8]">{label}：</span>
+                  <p key={label as string} className="text-[11px] text-ink-2 leading-relaxed">
+                    <span className="text-ink-3">{label}：</span>
                     {v}
                   </p>
                 ) : null,
@@ -310,12 +310,12 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
   const order: OnTrackLabel[] = ['achieved', 'on_track', 'watch', 'behind', 'unknown'];
 
   return (
-    <section className="border border-[#E2E8F0] rounded-lg">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#F1F5F9]">
+    <section className="border border-line rounded-lg">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-[#475569]" />
-          <span className="text-sm font-semibold text-[#1E293B]">季度进度报告</span>
-          <span className="text-[11px] text-[#94A3B8]">基线 / 当前 / 目标 / 是否按预期</span>
+          <Sparkles className="w-4 h-4 text-ink-2" />
+          <span className="text-sm font-semibold text-ink">季度进度报告</span>
+          <span className="text-[11px] text-ink-3">基线 / 当前 / 目标 / 是否按预期</span>
         </div>
         <Button variant="outline" className="h-7 text-xs" onClick={() => setOpen((v) => !v)}>
           {open ? '收起' : '生成'}
@@ -325,7 +325,7 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
       {open && (
         <div className="px-4 py-3">
           {loading && (
-            <div className="h-16 flex items-center justify-center text-xs text-[#94A3B8]">
+            <div className="h-16 flex items-center justify-center text-xs text-ink-3">
               <Loader2 className="w-3.5 h-3.5 animate-spin mr-2" />
               正在汇总…
             </div>
@@ -339,7 +339,7 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
                   return (
                     <span
                       key={k}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] bg-[#F8FAFC] border border-[#E2E8F0]"
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] bg-surface-3 border border-line"
                     >
                       <span
                         className="w-1.5 h-1.5 rounded-full"
@@ -355,7 +355,7 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="text-[#94A3B8] border-b border-[#F1F5F9]">
+                    <tr className="text-ink-3 border-b border-line">
                       <th className="text-left py-1.5 font-normal">目标</th>
                       <th className="text-right py-1.5 font-normal">基线</th>
                       <th className="text-right py-1.5 font-normal">当前</th>
@@ -365,15 +365,15 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
                   </thead>
                   <tbody>
                     {data.goals.map((g) => (
-                      <tr key={g.goal_id} className="border-b border-[#F8FAFC]">
-                        <td className="py-1.5 text-[#1E293B]">{g.title}</td>
-                        <td className="py-1.5 text-right text-[#64748B]">
+                      <tr key={g.goal_id} className="border-b border-line">
+                        <td className="py-1.5 text-ink">{g.title}</td>
+                        <td className="py-1.5 text-right text-ink-2">
                           {g.baseline_value ?? '—'}
                         </td>
-                        <td className="py-1.5 text-right text-[#64748B]">
+                        <td className="py-1.5 text-right text-ink-2">
                           {g.current_value ?? '—'}
                         </td>
-                        <td className="py-1.5 text-right text-[#64748B]">
+                        <td className="py-1.5 text-right text-ink-2">
                           {g.target_value ?? '—'}
                         </td>
                         <td className="py-1.5 pl-2">
@@ -382,9 +382,9 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
                               className="w-1.5 h-1.5 rounded-full shrink-0"
                               style={{ backgroundColor: ON_TRACK_DOT[g.on_track] }}
                             />
-                            <span className="text-[#475569]">{ON_TRACK_TEXT[g.on_track]}</span>
+                            <span className="text-ink-2">{ON_TRACK_TEXT[g.on_track]}</span>
                             {g.data_points === 0 && (
-                              <span className="text-[#94A3B8]">（无数据）</span>
+                              <span className="text-ink-3">（无数据）</span>
                             )}
                           </span>
                         </td>
@@ -393,7 +393,7 @@ function QuarterlyReportSection({ planId }: { planId: number | string }) {
                   </tbody>
                 </table>
               </div>
-              <p className="mt-2 text-[11px] text-[#94A3B8]">{data.note}</p>
+              <p className="mt-2 text-[11px] text-ink-3">{data.note}</p>
             </>
           )}
         </div>
@@ -453,12 +453,12 @@ function TransitionGoalSection({
   }, [goals]);
 
   return (
-    <section className="border border-[#E2E8F0] rounded-lg">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#F1F5F9]">
+    <section className="border border-line rounded-lg">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2">
-          <ClipboardList className="w-4 h-4 text-[#475569]" />
-          <span className="text-sm font-semibold text-[#1E293B]">转衔目标</span>
-          <span className="text-[11px] text-[#94A3B8]">须可测量（IDEA）</span>
+          <ClipboardList className="w-4 h-4 text-ink-2" />
+          <span className="text-sm font-semibold text-ink">转衔目标</span>
+          <span className="text-[11px] text-ink-3">须可测量（IDEA）</span>
         </div>
         {canEdit && (
           <Button
@@ -473,12 +473,12 @@ function TransitionGoalSection({
       </div>
 
       {editing && (
-        <div className="px-4 py-3 border-b border-[#F1F5F9] bg-[#F8FAFC] space-y-2">
+        <div className="px-4 py-3 border-b border-line bg-surface-3 space-y-2">
           <div className="grid grid-cols-3 gap-2">
             <select
               value={editing.category ?? '升学'}
               onChange={(e) => setEditing({ ...editing, category: e.target.value as TransitionGoal['category'] })}
-              className="h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+              className="h-8 px-2 rounded-md border border-line-2 text-xs"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
@@ -488,7 +488,7 @@ function TransitionGoalSection({
               value={editing.title ?? ''}
               onChange={(e) => setEditing({ ...editing, title: e.target.value })}
               placeholder="目标标题"
-              className="col-span-2 h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+              className="col-span-2 h-8 px-2 rounded-md border border-line-2 text-xs"
             />
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -499,12 +499,12 @@ function TransitionGoalSection({
               ['responsible_id', '责任人 ID'],
             ].map(([k, label]) => (
               <div key={k}>
-                <label className="text-[10px] text-[#94A3B8]">{label}</label>
+                <label className="text-[10px] text-ink-3">{label}</label>
                 <input
                   type={k === 'target_date' ? 'date' : 'number'}
                   value={String((editing as Record<string, unknown>)[k] ?? '')}
                   onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
-                  className="w-full h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+                  className="w-full h-8 px-2 rounded-md border border-line-2 text-xs"
                 />
               </div>
             ))}
@@ -528,9 +528,9 @@ function TransitionGoalSection({
         </div>
       )}
 
-      <div className="divide-y divide-[#F1F5F9]">
+      <div className="divide-y divide-line">
         {goals.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-[#94A3B8]">
+          <p className="px-4 py-4 text-xs text-ink-3">
             暂无转衔目标。升学 / 就业 / 独立生活三个领域应各有可测量目标。
           </p>
         ) : (
@@ -541,23 +541,23 @@ function TransitionGoalSection({
             return (
               <div key={c} className="px-4 py-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Icon className="w-3.5 h-3.5 text-[#64748B]" />
-                  <span className="text-xs font-medium text-[#475569]">{c}</span>
+                  <Icon className="w-3.5 h-3.5 text-ink-2" />
+                  <span className="text-xs font-medium text-ink-2">{c}</span>
                 </div>
                 <div className="space-y-1.5">
                   {list.map((g) => (
                     <div key={g.id} className="flex items-center gap-2">
-                      <span className="flex-1 text-xs text-[#1E293B] truncate">{g.title}</span>
-                      <span className="text-[10px] text-[#64748B]">
+                      <span className="flex-1 text-xs text-ink truncate">{g.title}</span>
+                      <span className="text-[10px] text-ink-2">
                         {g.baseline_value ?? '—'} → {g.target_value ?? '—'}
                         {g.target_date ? ` · ${g.target_date}` : ''}
                       </span>
                       {canEdit && (
                         <button
                           onClick={() => void remove(g.id)}
-                          className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-[#FEE2E2] cursor-pointer"
+                          className="shrink-0 w-6 h-6 flex items-center justify-center rounded hover:bg-danger-soft cursor-pointer"
                         >
-                          <Trash2 className="w-3 h-3 text-[#94A3B8]" />
+                          <Trash2 className="w-3 h-3 text-ink-3" />
                         </button>
                       )}
                     </div>
@@ -607,11 +607,11 @@ function TransitionServiceSection({
   };
 
   return (
-    <section className="border border-[#E2E8F0] rounded-lg">
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#F1F5F9]">
+    <section className="border border-line rounded-lg">
+      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line">
         <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-[#475569]" />
-          <span className="text-sm font-semibold text-[#1E293B]">转衔服务</span>
+          <Building2 className="w-4 h-4 text-ink-2" />
+          <span className="text-sm font-semibold text-ink">转衔服务</span>
         </div>
         {canEdit && (
           <Button variant="outline" className="h-7 text-xs" onClick={() => setEditing({})}>
@@ -622,31 +622,31 @@ function TransitionServiceSection({
       </div>
 
       {editing && (
-        <div className="px-4 py-3 border-b border-[#F1F5F9] bg-[#F8FAFC] space-y-2">
+        <div className="px-4 py-3 border-b border-line bg-surface-3 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <input
               value={editing.service_name ?? ''}
               onChange={(e) => setEditing({ ...editing, service_name: e.target.value })}
               placeholder="服务名称"
-              className="h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+              className="h-8 px-2 rounded-md border border-line-2 text-xs"
             />
             <input
               value={editing.provider ?? ''}
               onChange={(e) => setEditing({ ...editing, provider: e.target.value })}
               placeholder="提供方"
-              className="h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+              className="h-8 px-2 rounded-md border border-line-2 text-xs"
             />
           </div>
           <div className="grid grid-cols-3 gap-2">
             {[['start_date', '开始'], ['end_date', '结束'], ['frequency', '频次']].map(
               ([k, label]) => (
                 <div key={k}>
-                  <label className="text-[10px] text-[#94A3B8]">{label}</label>
+                  <label className="text-[10px] text-ink-3">{label}</label>
                   <input
                     type={k === 'frequency' ? 'text' : 'date'}
                     value={String((editing as Record<string, unknown>)[k] ?? '')}
                     onChange={(e) => setEditing({ ...editing, [k]: e.target.value })}
-                    className="w-full h-8 px-2 rounded-md border border-[#CBD5E1] text-xs"
+                    className="w-full h-8 px-2 rounded-md border border-line-2 text-xs"
                   />
                 </div>
               ),
@@ -664,14 +664,14 @@ function TransitionServiceSection({
         </div>
       )}
 
-      <div className="divide-y divide-[#F1F5F9]">
+      <div className="divide-y divide-line">
         {services.length === 0 ? (
-          <p className="px-4 py-4 text-xs text-[#94A3B8]">暂无转衔服务记录</p>
+          <p className="px-4 py-4 text-xs text-ink-3">暂无转衔服务记录</p>
         ) : (
           services.map((s) => (
             <div key={s.id} className="px-4 py-2.5 flex items-center gap-2">
-              <span className="flex-1 text-xs text-[#1E293B]">{s.service_name}</span>
-              <span className="text-[10px] text-[#64748B]">
+              <span className="flex-1 text-xs text-ink">{s.service_name}</span>
+              <span className="text-[10px] text-ink-2">
                 {s.provider ?? '—'}
                 {s.frequency ? ` · ${s.frequency}` : ''}
               </span>
