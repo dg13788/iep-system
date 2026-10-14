@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardPlus,
@@ -58,6 +58,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useIsReadOnly, useDataScopeConfig } from '@/utils/dataScope';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { ioExportDownload } from '@/utils/ioExport';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import {
@@ -300,6 +301,9 @@ export default function Evaluation() {
   // P3-1 修复：自研抽屉支持 Esc 关闭
   const closeDrawer = useCallback(() => setDrawerOpen(false), []);
   useDrawerA11y(drawerOpen, closeDrawer);
+  // 2026-10-14 焦点审计实测修复：评估抽屉补焦点三件套
+  const evalDrawerPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(drawerOpen, evalDrawerPanelRef);
 
   /* v14：评估模板改从后端真实模板库拉取。
    * 原实现用模块级 mock 模板（t1-t5「认知发展评估」等）：点卡片创建的评估
@@ -1030,6 +1034,7 @@ export default function Evaluation() {
               onClick={() => setDrawerOpen(false)}
             />
             <motion.div
+              ref={evalDrawerPanelRef}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}

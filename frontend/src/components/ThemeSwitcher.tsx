@@ -166,7 +166,10 @@ export function ThemeButton() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
+  /** 键盘打开（Enter/Space 触发的 click，detail===0）时移焦点入面板；指针打开不抢 */
+  const viaKeyboard = useRef(false);
   const { theme, pref } = useThemeStore();
   const current = THEMES.find((t) => t.id === theme);
 
@@ -184,6 +187,18 @@ export function ThemeButton() {
       document.removeEventListener('mousedown', onDown);
       document.removeEventListener('keydown', onKey);
     };
+  }, [open]);
+
+  /**
+   * 键盘打开时焦点移入首个选项（APG 菜单按钮惯例）。
+   * 指针打开不抢焦点——用户正盯着鼠标点选，焦点乱跳反而扰人。
+   * 面板是非模态 popover（无背罩、焦点可回页面），故不做圈禁。
+   */
+  useEffect(() => {
+    if (!open || !viaKeyboard.current) return;
+    viaKeyboard.current = false;
+    const first = panelRef.current?.querySelector<HTMLElement>('input[type="radio"]');
+    first?.focus();
   }, [open]);
 
   /**
@@ -211,7 +226,10 @@ export function ThemeButton() {
       <button
         type="button"
         ref={btnRef}
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          if (!open && e.detail === 0) viaKeyboard.current = true;
+          setOpen((v) => !v);
+        }}
         aria-haspopup="true"
         aria-expanded={open}
         aria-label={label}
@@ -223,6 +241,7 @@ export function ThemeButton() {
 
       {open && (
         <div
+          ref={panelRef}
           role="dialog"
           aria-label="界面外观"
           className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-line bg-surface p-1.5 shadow-float"

@@ -10,7 +10,7 @@
  * fetchObjectiveRecords / addObjectiveRecord / rollupGoals。
  * 长期目标进度不再依赖 0~5 主观打分，由「由短期目标汇总」一键反推。
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -25,6 +25,8 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -476,6 +478,10 @@ function TrialRecordSheet({
   const [recordDate, setRecordDate] = useState(today);
   const [stepId, setStepId] = useState<string>('0');
   const [sessionType, setSessionType] = useState('个训课');
+  // 2026-10-14 焦点审计实测修复：试次记录抽屉补 Esc + 焦点三件套
+  useDrawerA11y(true, onClose);
+  const trialPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, trialPanelRef);
   const [trialCount, setTrialCount] = useState(5);
   const [successCount, setSuccessCount] = useState(0);
   const [promptLevel, setPromptLevel] = useState('independent');
@@ -523,6 +529,7 @@ function TrialRecordSheet({
       onClick={onClose}
     >
       <motion.div
+        ref={trialPanelRef}
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}
@@ -705,6 +712,10 @@ function ObjectiveEditSheet({
   const [targetBehavior, setTargetBehavior] = useState(objective?.target_behavior ?? '');
   const [criteria, setCriteria] = useState(objective?.criteria ?? '');
   const [masteryPct, setMasteryPct] = useState(Math.round(Number(objective?.mastery_pct) || 80));
+  // 2026-10-14 焦点审计实测修复：短期目标抽屉补 Esc + 焦点三件套
+  useDrawerA11y(true, onClose);
+  const goalPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, goalPanelRef);
   const [status, setStatus] = useState(objective?.status ?? 'not_started');
   const [steps, setSteps] = useState<StepDraft[]>(
     objective?.steps.map((s) => ({
@@ -755,6 +766,7 @@ function ObjectiveEditSheet({
       onClick={onClose}
     >
       <motion.div
+        ref={goalPanelRef}
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}

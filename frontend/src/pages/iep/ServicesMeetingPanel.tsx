@@ -5,11 +5,13 @@
  *   可开具、可追踪的执行台账（计划次数 / 已完成 / 频次 / 时长 / 状态）。
  * - IEP 会议参与人：签到留痕，team_members(JSON) 只是名单，不是签署证据。
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { X, Plus, Trash2, Loader2, CheckCircle, Handshake, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import {
   Select,
   SelectContent,
@@ -541,6 +543,11 @@ function SheetShell({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  // 2026-10-14 焦点审计实测修复：服务/参与者两个抽屉共用本外壳，
+  // 此前只有语义，缺 Esc 与焦点三件套。在此统一补。
+  useDrawerA11y(true, onClose);
+  const shellPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, shellPanelRef);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -550,6 +557,7 @@ function SheetShell({
       onClick={onClose}
     >
       <motion.div
+        ref={shellPanelRef}
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
         exit={{ x: '100%' }}

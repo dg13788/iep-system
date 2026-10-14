@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, X, Brain } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { MENU_KEY_BY_PATH, NAV_ITEMS } from './navConfig';
 
 /**
@@ -36,7 +37,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
     navigate('/login');
   };
 
-  // 抽屉打开时：锁定背景滚动 + Esc 关闭 + 焦点进入面板
+  // 抽屉打开时：锁定背景滚动 + Esc 关闭。
+  // 焦点三件套（移入/圈禁/归还）统一走 useDialogFocus——首聚焦刻意落在
+  // 第一个导航项（打开导航的意图是"要去某个页面"，不是去点关闭按钮）。
+  useDialogFocus(mobileOpen, panelRef, 'nav button, nav a');
   useEffect(() => {
     if (!mobileOpen) return;
     const prevOverflow = document.body.style.overflow;
@@ -45,15 +49,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
       if (e.key === 'Escape') onCloseMobile();
     };
     window.addEventListener('keydown', onKey);
-    const t = window.setTimeout(() => {
-      // 焦点落第一个导航项（而不是关闭按钮）：打开导航的意图是"要去某个页面"
-      const first = panelRef.current?.querySelector<HTMLElement>('nav button, nav a');
-      first?.focus();
-    }, 60);
     return () => {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', onKey);
-      window.clearTimeout(t);
     };
   }, [mobileOpen, onCloseMobile]);
 

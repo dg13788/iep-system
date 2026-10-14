@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -74,6 +76,11 @@ export default function GoalDraftDrawer({
   const [strengths, setStrengths] = useState('');
   const [needs, setNeeds] = useState('');
   const [savedPlaafp, setSavedPlaafp] = useState(false);
+  // 2026-10-14 焦点审计实测修复：起草抽屉此前连 role=dialog / Esc /
+  // 焦点管理都没有（裸 fixed 布局）。三件一起补。
+  useDrawerA11y(true, onClose);
+  const draftPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, draftPanelRef);
   const [savingPlaafp, setSavingPlaafp] = useState(false);
 
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -212,7 +219,13 @@ export default function GoalDraftDrawer({
   return (
     <div className="fixed inset-0 z-[60] flex justify-end">
       <div className="absolute inset-0 bg-overlay/30" onClick={onClose} />
-      <div className="relative w-full max-w-[720px] h-full bg-surface flex flex-col shadow-2xl">
+      <div
+        ref={draftPanelRef}
+        className="relative w-full max-w-[720px] h-full bg-surface flex flex-col shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="从评估起草"
+      >
         {/* 头部 */}
         <div className="flex items-center justify-between gap-3 px-5 h-14 border-b border-line shrink-0">
           <div className="flex items-center gap-2 min-w-0">

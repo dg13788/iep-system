@@ -1,5 +1,6 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -970,6 +971,10 @@ interface GoalModalProps {
 }
 
 function GoalModal({ onClose, onAdd, isParticipate, currentUserName, currentUserId, teachers }: GoalModalProps) {
+  // 2026-10-14 焦点审计实测修复：添加目标模态补 Esc + 焦点三件套
+  useDrawerA11y(true, onClose);
+  const wizardPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, wizardPanelRef);
   const [area, setArea] = useState<GoalArea>('认知');
   const [goalType, setGoalType] = useState<GoalType>('短期目标');
   const [title, setTitle] = useState('');
@@ -1054,6 +1059,7 @@ function GoalModal({ onClose, onAdd, isParticipate, currentUserName, currentUser
     >
       <div className="absolute inset-0 bg-overlay/50 backdrop-blur-sm" onClick={onClose} />
       <motion.div
+        ref={wizardPanelRef}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}

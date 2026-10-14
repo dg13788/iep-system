@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -44,6 +44,7 @@ import GoalDraftDrawer from './GoalDraftDrawer';
 import TransitionPanel from './TransitionPanel';
 import { useDataScopeConfig } from '@/utils/dataScope';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { exportIEPDetailToPDF, exportIEPDetailToWord } from '@/utils/documentExport';
 import {
   approveIEP,
@@ -119,6 +120,13 @@ export default function IEPDetail({
   const config = useDataScopeConfig();
   // P3-1 修复：自研详情抽屉补充 Esc 关闭（window 级监听，交给最上层原生 dialog 处理）
   useDrawerA11y(true, onClose);
+  // 2026-10-14 焦点审计实测修复：IEP 详情是路由级大抽屉，此前打开后
+  // activeElement 停在 body、Tab 一路逃逸到背景。三个面板各配焦点三件套。
+  const mainPanelRef = useRef<HTMLDivElement>(null);
+  const deniedPanelRef = useRef<HTMLDivElement>(null);
+  const sheetPanelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(true, mainPanelRef);
+  useDialogFocus(true, deniedPanelRef);
 
   const isNone = iepLevel === 'none';
   const isView = iepLevel === 'view';
@@ -321,11 +329,13 @@ export default function IEPDetail({
 
   // P3-1 修复：进度更新子抽屉补充 Esc 关闭（仅在子抽屉打开时生效）
   useDrawerA11y(progressSheetOpen && !!selectedGoal, () => setProgressSheetOpen(false));
+  // 子抽屉自己的焦点三件套；父抽屉的圈禁见 useDialogFocus 内的让位逻辑
+  useDialogFocus(progressSheetOpen && !!selectedGoal, sheetPanelRef);
 
   // iepLevel 'none': show permission denied
   if (isNone) {
     return (
-      <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="权限提示">
+      <div ref={deniedPanelRef} className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="权限提示">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -355,7 +365,7 @@ export default function IEPDetail({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={`IEP 详情 - ${currentPlan?.student_name ?? ''}`}>
+    <div ref={mainPanelRef} className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={`IEP 详情 - ${currentPlan?.student_name ?? ''}`}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -1095,6 +1105,7 @@ export default function IEPDetail({
 
               {/* Sheet Panel */}
               <motion.div
+                ref={sheetPanelRef}
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}

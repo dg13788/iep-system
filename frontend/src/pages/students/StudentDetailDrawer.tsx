@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Pencil, Trash2, MapPin, Phone, User, Calendar, FileText, Stethoscope, Pill, AlertTriangle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
+import { useDialogFocus } from '@/hooks/useDialogFocus';
 import type { Student, ClassItem } from './data';
 import { statusBadgeClass, disabilityBadgeColors } from './data';
 import SafetyTab from './SafetyTab';
@@ -40,6 +41,10 @@ export default function StudentDetailDrawer({
 
   // P3-1 修复：补充 Esc 关闭能力
   useDrawerA11y(open, onClose);
+  // 2026-10-14 焦点审计实测修复：详情抽屉此前只有语义+Esc，
+  // 打开后焦点停在触发按钮上、Tab 会逃逸到背景。补焦点三件套。
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open, panelRef);
 
   if (!student) return null;
 
@@ -71,6 +76,7 @@ export default function StudentDetailDrawer({
             />
             {/* Drawer */}
             <motion.div
+              ref={panelRef}
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
