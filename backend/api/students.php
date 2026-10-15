@@ -48,6 +48,59 @@ function students_valid_phone($v): bool
     return (bool)preg_match('/^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/', $s);
 }
 
+/**
+ * 字段长度上限表（2026-10-16 补）：[上限字符数, 界面上的字段中文名]
+ *
+ * 为什么需要这一张表：此前本模块只校验「非空」和「格式」，不管长度。教师一旦把一段
+ * 长文本粘进来（实测：把 300 字粘进 name），MySQL strict mode 会判 Data too long，
+ * PDO 抛 SQLSTATE 22001，而下面的 catch 只会回一个兜底 500「创建失败」——
+ * 教师看到的是莫名其妙的失败，异常还没进日志，运维无从诊断。
+ * 正确做法：入库前按 schema 显式拦截，返回 400 并说清「哪个字段、最多几字、当前几字」。
+ *
+ * 上限值与 backend/sql/init.sql 的建表语句同源；改列宽时必须同步改这里。
+ * MySQL 8 的 varchar(N) 计的是**字符数**不是字节，因此这里用 mb_strlen 对齐。
+ */
+function students_field_limits(): array
+{
+    return [
+        'name'              => [100,  '姓名'],
+        'gender'            => [1,    '性别'],
+        'id_card'           => [18,   '身份证号'],
+        'disability_level'  => [50,   '障碍等级'],
+        'disability_card_no'=> [100,  '残疾证号'],
+        // update_v22 新增
+        'diagnosis_org'     => [100,  '诊断机构'],
+        'guardian_name'     => [100,  '监护人姓名'],
+        'guardian_phone'    => [50,   '监护人电话'],
+        'guardian_relation' => [50,   '与监护人关系'],
+        'emergency_contact' => [100,  '紧急联系人'],
+        'emergency_phone'   => [50,   '紧急联系电话'],
+        'photo_url'         => [500,  '照片地址'],
+        'aac_device'        => [200,  '辅助沟通设备'],
+        'receptive_level'   => [200,  '理解能力水平'],
+        'expressive_level'  => [200,  '表达能力水平'],
+    ];
+}
+
+/**
+ * 校验本次提交携带的字段有没有超长。
+ * 返回 [字段中文名, 上限, 当前字数]；没有超长则返回 null。
+ * 只校验「实际提交了」的字段（更新时可以局部提交，没带的不该因为存量超长而卡住）。
+ */
+function students_check_limits(array $input): ?array
+{
+    foreach (students_field_limits() as $field => $meta) {
+        if (!array_key_exists($field, $input)) continue;
+        $val = $input[$field];
+        if ($val === null || is_array($val) || is_object($val)) continue;
+        $len = mb_strlen(trim((string)$val), 'UTF-8');
+        if ($len > $meta[0]) {
+            return [$meta[1], $meta[0], $len];
+        }
+    }
+    return null;
+}
+
 $path = isset($_GET['path']) ? trim($_GET['path'], '/') : '';
 $parts = explode('/', $path);
 $action = isset($parts[1]) ? $parts[1] : '';
@@ -118,10 +171,15 @@ switch ($action) {
             $total = intval($countStmt->fetchColumn());
 
             // Query data
+            // 注意：编辑抽屉的数据源就是 list（行内「编辑」直接拿这一行的对象去填表单），
+            // 所以凡是表单会采集的字段，这里都必须查出来。此前漏了 update_v22 补的
+            // diagnosis_* 三列，结果就是「存进去了却读不回来」——详情接口（SELECT s.*）
+            // 看得到，列表/编辑看不到，表现得像数据没保存。
             $sql = 'SELECT s.id, s.name, s.gender, s.birth_date, s.id_card, s.status, 
                            s.disability_type_id, ddt.name AS disability_type_name, s.disability_level,
                            s.class_id, sc.name AS class_name, s.guardian_name, s.guardian_phone,
-                           s.guardian_relation, s.photo_url, s.enrollment_date, s.created_at 
+                           s.guardian_relation, s.photo_url, s.enrollment_date, s.created_at,
+                           s.disability_card_no, s.diagnosis_date, s.diagnosis_org, s.diagnosis_note 
                     FROM students s 
                     LEFT JOIN dict_disability_types ddt ON s.disability_type_id = ddt.id 
                     LEFT JOIN student_classes sc ON s.class_id = sc.id 
@@ -255,18 +313,31 @@ switch ($action) {
             $input['id_card'] = strtoupper(trim($input['id_card']));
         }
 
+        // 长度上限（2026-10-16）：必须在拼 SQL 之前拦住，否则 MySQL 只回一个
+        // 含糊的 Data too long，落到 catch 里就变成 500「创建失败」，教师不知道改哪个字段。
+        $overLimit = students_check_limits($input);
+        if ($overLimit !== null) {
+            jsonResponse([
+                'success' => false,
+                'message' => $overLimit[0] . '内容过长（最多 ' . $overLimit[1] . ' 字，当前 ' . $overLimit[2] . ' 字）',
+            ], 400);
+        }
+
         // 安全修复(P0)：创建学生时必须校验班级在数据范围内，禁止跨班创建档案
         $classId = isset($input['class_id']) ? intval($input['class_id']) : 0;
         if ($classId > 0) {
             requireClassInScope($classId);
         }
 
+        // diagnosis_* 三列由 update_v22 补齐：此前表单一直在采集但库里没有落点，
+        // 导致教师填写的医学诊断信息被静默丢弃（2026-10-16 实测）。
         $fields = [
             'name', 'gender', 'birth_date', 'id_card', 'disability_type_id',
             'disability_level', 'disability_card_no', 'class_id', 'guardian_name',
             'guardian_phone', 'guardian_relation', 'emergency_contact',
             'emergency_phone', 'address', 'health_info', 'allergy_info',
-            'medication_info', 'photo_url', 'enrollment_date', 'remarks'
+            'medication_info', 'photo_url', 'enrollment_date', 'remarks',
+            'diagnosis_date', 'diagnosis_org', 'diagnosis_note'
         ];
 
         $placeholders = [];
@@ -300,6 +371,13 @@ switch ($action) {
             if ($e->getCode() == 23000) {
                 jsonResponse(['success' => false, 'message' => '身份证号已存在'], 409);
             }
+            // 22001 = 字符串数据右截断（text 类字段超限也会走到这里）。这是用户可以
+            // 自行修正的输入问题，按 400 处理，不要和真正的服务器故障混成同一个 500。
+            if ($e->getCode() == '22001') {
+                jsonResponse(['success' => false, 'message' => '填写内容超出字段长度限制，请精简后重试'], 400);
+            }
+            // 兜底必须留痕：此前这里静默吞掉异常，出问题完全无法追溯是哪张表哪个字段。
+            error_log('[students/create] PDO ' . $e->getCode() . ' ' . $e->getMessage());
             jsonResponse(['success' => false, 'message' => '创建失败'], 500);
         }
         break;
@@ -342,13 +420,25 @@ switch ($action) {
             $input['id_card'] = strtoupper(trim($input['id_card']));
         }
 
+        // 长度上限（2026-10-16）：与 create 同口径。这里同样只校验本次携带的字段，
+        // 没带的字段即使库里存量超长也不该阻塞本次更新。
+        $overLimit = students_check_limits($input);
+        if ($overLimit !== null) {
+            jsonResponse([
+                'success' => false,
+                'message' => $overLimit[0] . '内容过长（最多 ' . $overLimit[1] . ' 字，当前 ' . $overLimit[2] . ' 字）',
+            ], 400);
+        }
+
         $updatableFields = [
             'name', 'gender', 'birth_date', 'id_card', 'disability_type_id',
             'disability_level', 'disability_card_no', 'class_id', 'guardian_name',
             'guardian_phone', 'guardian_relation', 'emergency_contact',
             'emergency_phone', 'address', 'health_info', 'allergy_info',
             'medication_info', 'photo_url', 'status', 'enrollment_date',
-            'graduation_date', 'remarks'
+            'graduation_date', 'remarks',
+            // 见 create 分支注释：update_v22 补齐的落点，同口径放开
+            'diagnosis_date', 'diagnosis_org', 'diagnosis_note'
         ];
 
         $updates = [];
@@ -380,6 +470,12 @@ switch ($action) {
             if ($e->getCode() == 23000) {
                 jsonResponse(['success' => false, 'message' => '身份证号已存在'], 409);
             }
+            // 与 create 分支同口径：长度类错误是用户可修正的输入问题，不是服务器故障
+            if ($e->getCode() == '22001') {
+                jsonResponse(['success' => false, 'message' => '填写内容超出字段长度限制，请精简后重试'], 400);
+            }
+            // 兜底留痕，避免静默吞异常导致无法定位
+            error_log('[students/update] id=' . $id . ' PDO ' . $e->getCode() . ' ' . $e->getMessage());
             jsonResponse(['success' => false, 'message' => '更新失败'], 500);
         }
         break;

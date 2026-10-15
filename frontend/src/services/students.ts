@@ -66,6 +66,10 @@ interface RawStudent {
   disability_type_name?: string | null;
   disability_level?: string | null;
   disability_card_no?: string | null;
+  // update_v22.sql 补齐的三列；此前缺这儿的类型声明导致 tsc 编译失败
+  diagnosis_date?: string | null;
+  diagnosis_org?: string | null;
+  diagnosis_note?: string | null;
   class_id?: number | string | null;
   class_name?: string | null;
   guardian_name?: string | null;
@@ -171,7 +175,8 @@ export function adaptStudent(raw: RawStudent | null | undefined): Student {
     guardian_name: nullableStr(r.guardian_name),
     guardian_phone: nullableStr(r.guardian_phone),
     guardian_relation: nullableStr(r.guardian_relation),
-    // 数据库无监护人2 / 诊断信息字段，留空
+    // 数据库无监护人2 字段，留空（注：后端 students.php 仍在校验 guardian2_phone
+    // 格式，属于无落点的死校验，见 2026-10-16 巡检报告）
     guardian2_name: '',
     guardian2_phone: '',
     emergency_contact: nullableStr(r.emergency_contact),
@@ -183,10 +188,13 @@ export function adaptStudent(raw: RawStudent | null | undefined): Student {
     enrollment_date: enrollmentDate,
     status: (str(r.status, '在读') as StudentStatus),
     remarks: nullableStr(r.remarks),
-    age: calcAge(birthDate),
-    diagnosis_date: '',
-    diagnosis_org: '',
-    diagnosis_note: '',
+  age: calcAge(birthDate),
+  // 2026-10-16：update_v22.sql 已补齐这三列，如实映射。
+  // 此前这里硬编码为空串——等于即使后端返回了值也被抹掉，和写入侧共同造成了
+  // 「填了存不下、存了读不出」的双重丢弃。
+  diagnosis_date: nullableStr(r.diagnosis_date),
+  diagnosis_org: nullableStr(r.diagnosis_org),
+  diagnosis_note: nullableStr(r.diagnosis_note),
     secondary_disability: '',
     special_needs: '',
   };
@@ -282,14 +290,27 @@ const WRITABLE_FIELDS = [
   'emergency_phone', 'address', 'health_info', 'allergy_info',
   'medication_info', 'photo_url', 'status', 'enrollment_date',
   'graduation_date', 'remarks',
+  // 2026-10-16：这三列此前在库里不存在，只能剔除，结果造成表单一直在采集却
+  // 永远存不进去的「幽灵字段」。update_v22.sql 已补齐 diagnosis_date /
+  // diagnosis_org / diagnosis_note 三列，这里同步放开，让教师的录入真正落库。
+  'diagnosis_date', 'diagnosis_org', 'diagnosis_note',
 ] as const;
 
 export type StudentWritePayload = Partial<Record<(typeof WRITABLE_FIELDS)[number], unknown>>;
 
 /**
  * 从视图模型提取可提交字段。
- * 视图模型里的 student_no / age / diagnosis_* / guardian2_* 均为前端派生或
- * 库内不存在字段，必须剔除，否则后端 SQL 会报错。
+ *
+ * 判定标准只有一个：**库里有没有落点**。视图模型为了方便渲染会带上一批派生值
+ * （student_no 由后端生成、age 由 birth_date 算），这批必须剔除，否则后端 SQL 会报错。
+ *
+ * ⚠ 反过来同样要命：如果一个字段**表单在采集、但这里没列举**，它就会被静默丢弃——
+ * 教师以为存了，重开一看是空的。2026-10-16 实测正是这样：diagnosis_* 三列因库里没有
+ * 而被剔除，UI 却照收不误，诊断机构/日期被丢了很久没人知道。现已由 update_v22.sql
+ * 补齐三列并放开，本清单与库 schemas 必须保持同源校验（新增表单字段时先问：库里有列吗？）。
+ *
+ * 注：guardian2_name / guardian2_phone 目前仍无对应列（后端 students.php 却在校验
+ * guardian2_phone 的格式——属于死校验），UI 也未渲染，保持剔除，见巡检报告。
  */
 export function buildStudentPayload(form: Partial<Student> | Record<string, unknown>): StudentWritePayload {
   const source = form as Record<string, unknown>;

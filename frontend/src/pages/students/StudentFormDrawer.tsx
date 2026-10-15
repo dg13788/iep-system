@@ -259,6 +259,7 @@ export default function StudentFormDrawer({
                       value={form.name}
                       onChange={(e) => updateField('name', e.target.value)}
                       placeholder="请输入姓名"
+                      maxLength={100}
                       className={inputClass}
                       aria-invalid={!!errors.name}
                       aria-describedby={errors.name ? 'err-name' : undefined}
@@ -314,6 +315,7 @@ export default function StudentFormDrawer({
                       value={form.id_card}
                       onChange={(e) => updateField('id_card', e.target.value)}
                       placeholder="请输入身份证号"
+                      maxLength={18}
                       className={inputClass}
                       aria-invalid={!!errors.id_card}
                       aria-describedby={errors.id_card ? 'err-id_card' : undefined}
@@ -422,6 +424,7 @@ export default function StudentFormDrawer({
                       value={form.disability_card_no}
                       onChange={(e) => updateField('disability_card_no', e.target.value)}
                       placeholder="请输入残疾证号"
+                      maxLength={100}
                       className={inputClass}
                     />
                   </div>
@@ -482,6 +485,7 @@ export default function StudentFormDrawer({
                       value={form.guardian_name}
                       onChange={(e) => updateField('guardian_name', e.target.value)}
                       placeholder="请输入监护人姓名"
+                      maxLength={100}
                       className={inputClass}
                      aria-invalid={!!errors.guardian_name}
                       aria-describedby={errors.guardian_name ? 'err-guardian_name' : undefined}/>
@@ -508,6 +512,7 @@ export default function StudentFormDrawer({
                       value={form.guardian_phone}
                       onChange={(e) => updateField('guardian_phone', e.target.value)}
                       placeholder="请输入电话"
+                      maxLength={50}
                       className={inputClass}
                      aria-invalid={!!errors.guardian_phone}
                       aria-describedby={errors.guardian_phone ? 'err-guardian_phone' : undefined}/>
