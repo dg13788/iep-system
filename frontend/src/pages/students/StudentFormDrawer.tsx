@@ -402,6 +402,7 @@ export default function StudentFormDrawer({
                       value={form.secondary_disability}
                       onChange={(e) => updateField('secondary_disability', e.target.value)}
                       placeholder="请输入伴随障碍（如有）"
+                      maxLength={100}
                       className={inputClass}
                     />
                   </div>
@@ -443,6 +444,7 @@ export default function StudentFormDrawer({
                       value={form.diagnosis_org}
                       onChange={(e) => updateField('diagnosis_org', e.target.value)}
                       placeholder="请输入诊断机构"
+                      maxLength={100}
                       className={inputClass}
                     />
                   </div>
@@ -518,12 +520,37 @@ export default function StudentFormDrawer({
                       aria-describedby={errors.guardian_phone ? 'err-guardian_phone' : undefined}/>
                     {errors.guardian_phone && <p id="err-guardian_phone" role="alert" className={errorClass}>{errors.guardian_phone}</p>}
                   </div>
+                  {/* update_v23 补齐落点后补上输入框：详情抽屉本就展示第二监护人，
+                      此前「详情承诺展示、表单无处录入、后端死校验」是半成品状态 */}
+                  <div className="col-span-2 sm:col-span-1">
+                    <Label className={labelClass}>第二监护人姓名</Label>
+                    <Input
+                      value={form.guardian2_name}
+                      onChange={(e) => updateField('guardian2_name', e.target.value)}
+                      placeholder="请输入第二监护人姓名（如有）"
+                      maxLength={50}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <Label className={labelClass}>第二监护人电话</Label>
+                    <Input
+                      value={form.guardian2_phone}
+                      onChange={(e) => updateField('guardian2_phone', e.target.value)}
+                      placeholder="请输入第二监护人电话"
+                      maxLength={20}
+                      className={inputClass}
+                      aria-invalid={!!errors.guardian2_phone}
+                      aria-describedby={errors.guardian2_phone ? 'err-guardian2_phone' : undefined}/>
+                    {errors.guardian2_phone && <p id="err-guardian2_phone" role="alert" className={errorClass}>{errors.guardian2_phone}</p>}
+                  </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>紧急联系人</Label>
                     <Input
                       value={form.emergency_contact}
                       onChange={(e) => updateField('emergency_contact', e.target.value)}
                       placeholder="请输入紧急联系人"
+                      maxLength={100}
                       className={inputClass}
                     />
                   </div>
@@ -533,6 +560,7 @@ export default function StudentFormDrawer({
                       value={form.emergency_phone}
                       onChange={(e) => updateField('emergency_phone', e.target.value)}
                       placeholder="请输入紧急联系电话"
+                      maxLength={50}
                       className={inputClass}
                       aria-invalid={!!errors.emergency_phone}
                       aria-describedby={errors.emergency_phone ? 'err-emergency_phone' : undefined}

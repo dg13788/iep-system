@@ -17,13 +17,13 @@
  *   GET  /students/options       ?status                 data: 学生下拉数组
  *
  * ── 重要契约差异（回测实测结论，勿改回）────────────────────────
- * 1) students 表**不存在** student_no / age / diagnosis_date / diagnosis_org /
- *    diagnosis_note / secondary_disability / special_needs / guardian2_name /
- *    guardian2_phone 字段。前端视图模型 Student 依赖这些字段，此处在适配层
- *    用「派生值」补齐，保证 UI 不出现 undefined：
+ * 1) students 表**不存在** student_no / age 字段。前端视图模型 Student 依赖这些
+ *    字段，此处在适配层用「派生值」补齐，保证 UI 不出现 undefined：
  *      - student_no  → 由 id + 入学年份派生（仅用于展示）
  *      - age         → 由 birth_date 实时计算
- *      - 其余         → 空字符串
+ *    注：diagnosis_*（update_v22）、guardian2_*（update_v23）、
+ *    secondary_disability / special_needs（update_v24）此前也不存在、只能按空串
+ *    处理，现已补列，均为真实读取，勿再改回「空字符串」。
  * 2) students.status 数据库 ENUM 为 ('在读','休学','毕业','转衔')，
  *    前端原定义为「转学」，与库不一致（写入会被拒）。本文件以**数据库为准**，
  *    将 StudentStatus 修正为「转衔」。
@@ -75,6 +75,12 @@ interface RawStudent {
   guardian_name?: string | null;
   guardian_phone?: string | null;
   guardian_relation?: string | null;
+  // update_v23.sql 补齐的两列（第二监护人）；与 diagnosis_* 同一次巡检发现
+  guardian2_name?: string | null;
+  guardian2_phone?: string | null;
+  // update_v24.sql 补齐的两列（伴随障碍 / 特殊需求说明）
+  secondary_disability?: string | null;
+  special_needs?: string | null;
   emergency_contact?: string | null;
   emergency_phone?: string | null;
   address?: string | null;
@@ -175,10 +181,12 @@ export function adaptStudent(raw: RawStudent | null | undefined): Student {
     guardian_name: nullableStr(r.guardian_name),
     guardian_phone: nullableStr(r.guardian_phone),
     guardian_relation: nullableStr(r.guardian_relation),
-    // 数据库无监护人2 字段，留空（注：后端 students.php 仍在校验 guardian2_phone
-    // 格式，属于无落点的死校验，见 2026-10-16 巡检报告）
-    guardian2_name: '',
-    guardian2_phone: '',
+    // update_v23 补齐两列，改为真实读取（此前硬编码空串＝存了也读不出）
+    guardian2_name: nullableStr(r.guardian2_name),
+    guardian2_phone: nullableStr(r.guardian2_phone),
+    // update_v24 补齐两列，同上（此前硬编码空串）
+    secondary_disability: nullableStr(r.secondary_disability),
+    special_needs: nullableStr(r.special_needs),
     emergency_contact: nullableStr(r.emergency_contact),
     emergency_phone: nullableStr(r.emergency_phone),
     address: nullableStr(r.address),
@@ -195,8 +203,6 @@ export function adaptStudent(raw: RawStudent | null | undefined): Student {
   diagnosis_date: nullableStr(r.diagnosis_date),
   diagnosis_org: nullableStr(r.diagnosis_org),
   diagnosis_note: nullableStr(r.diagnosis_note),
-    secondary_disability: '',
-    special_needs: '',
   };
 }
 
@@ -294,6 +300,12 @@ const WRITABLE_FIELDS = [
   // 永远存不进去的「幽灵字段」。update_v22.sql 已补齐 diagnosis_date /
   // diagnosis_org / diagnosis_note 三列，这里同步放开，让教师的录入真正落库。
   'diagnosis_date', 'diagnosis_org', 'diagnosis_note',
+  // 2026-10-16 晚间：同一幽灵模式的第二例。guardian2_* 两列表单采集、详情展示、
+  // 后端甚至还在校验 guardian2_phone 格式，但库里没有列。update_v23.sql 补齐后放开。
+  'guardian2_name', 'guardian2_phone',
+  // 2026-10-16 夜间全量比对挖出的第三组：伴随障碍与特殊需求说明同样是
+  // 「表单在采集、详情在展示、库里无列」。update_v24.sql 补齐后放开。
+  'secondary_disability', 'special_needs',
 ] as const;
 
 export type StudentWritePayload = Partial<Record<(typeof WRITABLE_FIELDS)[number], unknown>>;
@@ -309,8 +321,9 @@ export type StudentWritePayload = Partial<Record<(typeof WRITABLE_FIELDS)[number
  * 而被剔除，UI 却照收不误，诊断机构/日期被丢了很久没人知道。现已由 update_v22.sql
  * 补齐三列并放开，本清单与库 schemas 必须保持同源校验（新增表单字段时先问：库里有列吗？）。
  *
- * 注：guardian2_name / guardian2_phone 目前仍无对应列（后端 students.php 却在校验
- * guardian2_phone 的格式——属于死校验），UI 也未渲染，保持剔除，见巡检报告。
+ * 注：guardian2_name / guardian2_phone 已由 update_v23.sql（2026-10-16）补齐两列，
+ * 上面的死校验与「UI 未渲染」的判断随之作废——表单与详情抽屉本就在采集展示，
+ * 现已与 diagnosis_* 同口径放开。本清单与库 schemas 必须保持同源校验。
  */
 export function buildStudentPayload(form: Partial<Student> | Record<string, unknown>): StudentWritePayload {
   const source = form as Record<string, unknown>;

@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { filterByDataScope, useIsReadOnly, useDataScopeConfig } from '@/utils/dataScope';
+import { fetchAllPages } from '@/utils/fetchAllPages';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import Pagination from '@/components/ui/pagination';
 import { useConfirm } from '@/components/feedback/ConfirmProvider';
@@ -1128,14 +1129,16 @@ export default function Teaching() {
     let active = true;
     (async () => {
       try {
-        const [listResult, options] = await Promise.all([
-          fetchTeachingRecords({ pageSize: 200 }),
+        // 2026-10-16：教学记录表是客户端分页，pageSize:200 会让第 201 条起的
+        // 记录静默消失（后端已按数据范围过滤，这里只解决「取不全」）
+        const [list, options] = await Promise.all([
+          fetchAllPages((page, pageSize) => fetchTeachingRecords({ page, pageSize })),
           fetchStudentOptions(),
         ]);
         if (!active) return;
         // 后端已完成数据范围过滤，这里按 teacher 名称做前端兜底过滤（保持原语义）
         const scoped = filterByDataScope(
-          listResult.list,
+          list,
           (r) => normalizeStudentId(r.student_id),
           undefined,
           (r) => teacherNameToId[r.teacher] || undefined,

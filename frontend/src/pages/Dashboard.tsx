@@ -48,6 +48,7 @@ import { fetchStudents } from '@/services/students';
 import { fetchIEPList } from '@/services/iep';
 import { fetchAssessments } from '@/services/evaluation';
 import { fetchTeachingRecords } from '@/services/teaching';
+import { fetchAllPages } from '@/utils/fetchAllPages';
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -143,11 +144,13 @@ export default function Dashboard() {
 
     let alive = true;
     setLoading(true);
+    // 2026-10-16：pageSize:200 的「假全量」在数据超 200 后统计静默失真
+    // （显示 200，实际 260）。改用 fetchAllPages 自动翻页取完，计算逻辑仍只有这一份。
     Promise.all([
-      fetchStudents({ page: 1, pageSize: 200, sort_field: 'created_at', sort_order: 'desc' }).then((r) => r.list).catch(() => []),
-      fetchIEPList({ page: 1, pageSize: 200 }).then((r) => r.list).catch(() => []),
-      fetchAssessments({ page: 1, pageSize: 200 }).then((r) => r.list).catch(() => []),
-      fetchTeachingRecords({ page: 1, pageSize: 200 }).then((r) => r.list).catch(() => []),
+      fetchAllPages((page, pageSize) => fetchStudents({ page, pageSize, sort_field: 'created_at', sort_order: 'desc' })).catch(() => []),
+      fetchAllPages((page, pageSize) => fetchIEPList({ page, pageSize })).catch(() => []),
+      fetchAllPages((page, pageSize) => fetchAssessments({ page, pageSize })).catch(() => []),
+      fetchAllPages((page, pageSize) => fetchTeachingRecords({ page, pageSize })).catch(() => []),
     ]).then(([s, i, a, t]) => {
       if (!alive) return;
       setStudents(s);

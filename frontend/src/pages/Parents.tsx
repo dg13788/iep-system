@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useDataScopeConfig, useIsReadOnly, filterByDataScope, filterParentData } from '@/utils/dataScope';
+import { fetchAllPages } from '@/utils/fetchAllPages';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import {
   fetchParents,
@@ -292,8 +293,9 @@ function ParentAccountsTab() {
 
   const loadParents = useCallback(async () => {
     try {
-      const res = await fetchParents({ page: 1, pageSize: 200 });
-      setParents(res.list);
+      // 2026-10-16：pageSize:200 假全量 → 家长超 200 后列表静默缺人
+      const list = await fetchAllPages((page, pageSize) => fetchParents({ page, pageSize }));
+      setParents(list);
     } catch {
       // 后端不可用时回退本地 mock
       setParents(scopedParents);
@@ -761,12 +763,16 @@ function CommunicationTab() {
 
   const loadCommunications = useCallback(async () => {
     try {
-      const res = await fetchCommunications({ page: 1, pageSize: 200 });
-      setCommunications(res.list);
+      // 2026-10-16：同上，沟通记录与学生名→id 映射都不能被 200 截断
+      // （映射缺人会让新增沟通记录时静默找不到学生）
+      const [list, students] = await Promise.all([
+        fetchAllPages((page, pageSize) => fetchCommunications({ page, pageSize })),
+        fetchAllPages((page, pageSize) => fetchStudents({ page, pageSize })),
+      ]);
+      setCommunications(list);
       // 建立 学生名 → 数字id 映射，供新增沟通记录时使用
-      const students = await fetchStudents({ page: 1, pageSize: 200 });
       const map: Record<string, number> = {};
-      students.list.forEach((s) => {
+      students.forEach((s) => {
         map[s.name] = Number(s.id);
       });
       setStudentIdMap(map);

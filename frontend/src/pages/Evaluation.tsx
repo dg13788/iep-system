@@ -53,6 +53,7 @@ import { useIsReadOnly, useDataScopeConfig } from '@/utils/dataScope';
 import { useDrawerA11y } from '@/hooks/useDrawerA11y';
 import { useDialogFocus } from '@/hooks/useDialogFocus';
 import { ioExportDownload } from '@/utils/ioExport';
+import { fetchAllPages } from '@/utils/fetchAllPages';
 import ImportExportActions from '@/components/io/ImportExportActions';
 import {
   fetchAssessments,
@@ -349,10 +350,12 @@ export default function Evaluation() {
         // 加载失败保持空列表，模板选择区显示"暂无可选模板"而非 mock 假模板
       })
       .finally(() => setTemplatesLoading(false));
-    fetchStudentsList({ page: 1, pageSize: 200, sort_field: 'created_at', sort_order: 'asc' })
-      .then((res) => {
-        if (res.list.length > 0) {
-          setStudentOptions(res.list.map((s) => ({
+    // 2026-10-16：pageSize:200 的假全量会让学生超过 200 时下拉静默缺人
+    // （第 201 个学生选不到，评估录不进去）。改为自动翻页取完。
+    fetchAllPages((page, pageSize) => fetchStudentsList({ page, pageSize, sort_field: 'created_at', sort_order: 'asc' }))
+      .then((list) => {
+        if (list.length > 0) {
+          setStudentOptions(list.map((s) => ({
             id: s.id,
             name: s.name,
             studentNo: s.student_no,

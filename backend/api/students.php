@@ -70,6 +70,11 @@ function students_field_limits(): array
         'disability_card_no'=> [100,  '残疾证号'],
         // update_v22 新增
         'diagnosis_org'     => [100,  '诊断机构'],
+        // update_v23 新增
+        'guardian2_name'    => [50,   '第二监护人姓名'],
+        'guardian2_phone'   => [20,   '第二监护人电话'],
+        // update_v24 新增
+        'secondary_disability' => [100, '伴随障碍'],
         'guardian_name'     => [100,  '监护人姓名'],
         'guardian_phone'    => [50,   '监护人电话'],
         'guardian_relation' => [50,   '与监护人关系'],
@@ -175,12 +180,14 @@ switch ($action) {
             // 所以凡是表单会采集的字段，这里都必须查出来。此前漏了 update_v22 补的
             // diagnosis_* 三列，结果就是「存进去了却读不回来」——详情接口（SELECT s.*）
             // 看得到，列表/编辑看不到，表现得像数据没保存。
-            $sql = 'SELECT s.id, s.name, s.gender, s.birth_date, s.id_card, s.status, 
+            $sql = 'SELECT s.id, s.name, s.gender, s.birth_date, s.id_card, s.status,
                            s.disability_type_id, ddt.name AS disability_type_name, s.disability_level,
                            s.class_id, sc.name AS class_name, s.guardian_name, s.guardian_phone,
-                           s.guardian_relation, s.photo_url, s.enrollment_date, s.created_at,
-                           s.disability_card_no, s.diagnosis_date, s.diagnosis_org, s.diagnosis_note 
-                    FROM students s 
+                           s.guardian_relation, s.guardian2_name, s.guardian2_phone,
+                           s.photo_url, s.enrollment_date, s.created_at,
+                           s.disability_card_no, s.diagnosis_date, s.diagnosis_org, s.diagnosis_note,
+                           s.secondary_disability, s.special_needs
+                    FROM students s
                     LEFT JOIN dict_disability_types ddt ON s.disability_type_id = ddt.id 
                     LEFT JOIN student_classes sc ON s.class_id = sc.id 
                     WHERE ' . $whereStr . $scopeClause . ' ORDER BY s.' . $sortField . ' ' . $sortOrder . ' LIMIT ' . $offset . ', ' . $pageSize;
@@ -331,13 +338,19 @@ switch ($action) {
 
         // diagnosis_* 三列由 update_v22 补齐：此前表单一直在采集但库里没有落点，
         // 导致教师填写的医学诊断信息被静默丢弃（2026-10-16 实测）。
+        // guardian2_* 两列由 update_v23 补齐：同一幽灵模式（表单采集、后端甚至
+        // 还在校验 guardian2_phone 格式，但库里无列可存）。
+        // secondary_disability / special_needs 由 update_v24 补齐：全量比对
+        // 「表单 state × 渲染输入框 × 库列」时挖出的同家族第三组。
         $fields = [
             'name', 'gender', 'birth_date', 'id_card', 'disability_type_id',
             'disability_level', 'disability_card_no', 'class_id', 'guardian_name',
-            'guardian_phone', 'guardian_relation', 'emergency_contact',
+            'guardian_phone', 'guardian_relation', 'guardian2_name', 'guardian2_phone',
+            'emergency_contact',
             'emergency_phone', 'address', 'health_info', 'allergy_info',
             'medication_info', 'photo_url', 'enrollment_date', 'remarks',
-            'diagnosis_date', 'diagnosis_org', 'diagnosis_note'
+            'diagnosis_date', 'diagnosis_org', 'diagnosis_note',
+            'secondary_disability', 'special_needs'
         ];
 
         $placeholders = [];
@@ -438,7 +451,11 @@ switch ($action) {
             'medication_info', 'photo_url', 'status', 'enrollment_date',
             'graduation_date', 'remarks',
             // 见 create 分支注释：update_v22 补齐的落点，同口径放开
-            'diagnosis_date', 'diagnosis_org', 'diagnosis_note'
+            'diagnosis_date', 'diagnosis_org', 'diagnosis_note',
+            // update_v23 补齐：第二监护人两列，与 diagnosis_* 同一幽灵模式
+            'guardian2_name', 'guardian2_phone',
+            // update_v24 补齐：伴随障碍 / 特殊需求说明，同家族第三组
+            'secondary_disability', 'special_needs'
         ];
 
         $updates = [];

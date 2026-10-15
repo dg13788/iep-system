@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { exportAuditLogs } from '@/utils/export';
+import { fetchAllPages } from '@/utils/fetchAllPages';
 import {
   fetchUsers,
   createUser,
@@ -1198,9 +1199,10 @@ function AuditLogTab() {
 
   useEffect(() => {
     let mounted = true;
-    fetchAuditLogs({ pageSize: 200 })
-      .then((res) => {
-        if (mounted) setLogs(res.list);
+    // 2026-10-16：审计日志同样不能被 200 截断（管理员查历史操作时静默少记录）
+    fetchAllPages((page, pageSize) => fetchAuditLogs({ page, pageSize }))
+      .then((list) => {
+        if (mounted) setLogs(list);
       })
       .catch((e) => {
         if (mounted) toast.error((e as Error)?.message || '审计日志加载失败');
