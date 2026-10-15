@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import {
   AlertTriangle,
@@ -89,6 +89,7 @@ function todayText(): string {
 
 export default function Today() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
 
   const [data, setData] = useState<WorkbenchData | null>(null);
@@ -123,6 +124,16 @@ export default function Today() {
     (planId: number) => navigate(`/iep?plan=${planId}`),
     [navigate],
   );
+
+  // 深链兜底：历史收藏/手写的 URL 可能是 `#?plan=7`（plan 参数挂在根路由上）。
+  // 本页不渲染 IEP 详情，若不接管，用户点开的深链会静静停在今日页——
+  // 表现为"点了目标详情什么都没发生"。这里统一 replace 到真正的 IEP 路由。
+  const planIdParam = searchParams.get('plan');
+  useEffect(() => {
+    if (planIdParam) {
+      navigate(`/iep?plan=${planIdParam}`, { replace: true });
+    }
+  }, [planIdParam, navigate]);
 
   // 骨架屏而非转圈：教师等待时能看到"大概会来什么、有几块"，
   // 而不是对着一个转圈猜系统是不是卡住了。

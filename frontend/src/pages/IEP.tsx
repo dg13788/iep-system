@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router';
 import { toast } from 'sonner';
@@ -30,7 +30,7 @@ const LIST_PAGE_SIZE = 100;
 
 export default function IEP() {
   const { user, permissions } = useAuthStore();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const iepLevel = permissions?.iep_level || 'full';
   const isParticipate = iepLevel === 'participate';
   const isFull = iepLevel === 'full';
@@ -155,7 +155,13 @@ export default function IEP() {
   const handleView = useCallback((plan: IEPPlan) => {
     setViewingPlan(plan);
     setDetailOpen(true);
-  }, []);
+    // 深链状态同步：URL 带上 plan 参数，刷新/分享链接后仍落在该计划详情上
+    if (searchParams.get('plan') !== String(plan.id)) {
+      const next = new URLSearchParams(searchParams);
+      next.set('plan', String(plan.id));
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   /**
    * 深链支持：/iep?plan=<id>
@@ -164,14 +170,43 @@ export default function IEP() {
    * 而不是停在 21 条计划的列表里再自己找一遍。URL 带 plan 参数即在加载完成后自动展开。
    */
   const planIdParam = searchParams.get('plan');
+  // 已自动展开过的深链参数（P0 修复的关键一环）。
+  // setSearchParams 在 RR7 是 transition 更新：closeDetail 里紧急提交的
+  // detailOpen=false 会先渲染，而 URL 参数还在过渡窗口（仍是旧值），
+  // 此窗口内深链 effect 读到旧参数 + 已关状态会把抽屉再次打开——
+  // 实测表现为「点 X / Esc / 遮罩都关不掉，URL 却已干净」。
+  // 用 ref 记录已处理的参数值，同一参数只自动展开一次；
+  // 用户主动关闭后即使参数因回退/竞态再次出现，也不重开。
+  const handledPlanParamRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!planIdParam || plans.length === 0 || detailOpen) return;
+    if (!planIdParam || plans.length === 0) return;
+    if (handledPlanParamRef.current === planIdParam) return;
     const target = plans.find((p) => String(p.id) === planIdParam);
     if (target) {
+      handledPlanParamRef.current = planIdParam;
       setViewingPlan(target);
       setDetailOpen(true);
     }
-  }, [planIdParam, plans, detailOpen]);
+  }, [planIdParam, plans]);
+
+  /**
+   * 关闭详情抽屉。
+   *
+   * P0 修复（2026-10-15 真实浏览器实测）：必须同步清掉 URL 的 plan 参数，
+   * 否则下方深链 effect 会看到 planIdParam 仍在、detailOpen 已关，
+   * 立刻把同一个计划重新 setViewingPlan + setDetailOpen(true)——
+   * 用户点 X / Esc / 遮罩全都像没反应，且全屏遮罩挡住侧栏导航，
+   * 表现为「不能关闭、不能退出、无法返回其它页面」。
+   */
+  const closeDetail = useCallback(() => {
+    setDetailOpen(false);
+    setViewingPlan(null);
+    if (searchParams.has('plan')) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('plan');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const confirm = useConfirm();
 
@@ -361,10 +396,9 @@ export default function IEP() {
             iepLevel={iepLevel}
             currentUserName={currentUserName}
             currentUserId={currentUserId}
-            onClose={() => { setDetailOpen(false); setViewingPlan(null); }}
+            onClose={closeDetail}
             onEdit={(plan) => {
-              setDetailOpen(false);
-              setViewingPlan(null);
+              closeDetail();
               setEditingPlan(plan);
               setWizardOpen(true);
             }}

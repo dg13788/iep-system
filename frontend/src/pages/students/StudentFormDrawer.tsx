@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import type { Student, ClassItem } from './data';
 import { DISABILITY_TYPES, DISABILITY_LEVELS, STUDENT_STATUSES, GUARDIAN_RELATIONS } from './data';
+import { idCardError, phoneError, normalizeIdCard } from '@/utils/validators';
 
 interface StudentFormDrawerProps {
   open: boolean;
@@ -149,6 +150,15 @@ export default function StudentFormDrawer({
     if (!form.disability_type) newErrors.disability_type = '请选择障碍类型';
     if (!form.guardian_name.trim()) newErrors.guardian_name = '请输入监护人姓名';
     if (!form.guardian_phone.trim()) newErrors.guardian_phone = '请输入监护人电话';
+    // 身份证号与各类电话：非空即校验格式（选填项留空不拦）
+    const idcErr = idCardError(form.id_card);
+    if (idcErr) newErrors.id_card = idcErr;
+    const gpErr = phoneError(form.guardian_phone);
+    if (gpErr) newErrors.guardian_phone = gpErr;
+    const g2Err = phoneError(form.guardian2_phone);
+    if (g2Err) newErrors.guardian2_phone = g2Err;
+    const epErr = phoneError(form.emergency_phone);
+    if (epErr) newErrors.emergency_phone = epErr;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -166,6 +176,7 @@ export default function StudentFormDrawer({
 
     const submitted: Student = {
       ...form,
+      id_card: normalizeIdCard(form.id_card),
       id: student?.id || `s${Date.now()}`,
       age,
     };
@@ -304,7 +315,10 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('id_card', e.target.value)}
                       placeholder="请输入身份证号"
                       className={inputClass}
+                      aria-invalid={!!errors.id_card}
+                      aria-describedby={errors.id_card ? 'err-id_card' : undefined}
                     />
+                    {errors.id_card && <p id="err-id_card" role="alert" className={errorClass}>{errors.id_card}</p>}
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Label className={labelClass}>
@@ -515,7 +529,10 @@ export default function StudentFormDrawer({
                       onChange={(e) => updateField('emergency_phone', e.target.value)}
                       placeholder="请输入紧急联系电话"
                       className={inputClass}
+                      aria-invalid={!!errors.emergency_phone}
+                      aria-describedby={errors.emergency_phone ? 'err-emergency_phone' : undefined}
                     />
+                    {errors.emergency_phone && <p id="err-emergency_phone" role="alert" className={errorClass}>{errors.emergency_phone}</p>}
                   </div>
                   <div className="col-span-2">
                     <Label className={labelClass}>特殊需求说明</Label>

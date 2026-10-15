@@ -5,6 +5,21 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      /* ---- 字号规模（可读性修正，2026-10-15 真实浏览器实测后定版）----
+         PC 端正文长期停在 Tailwind 默认 text-sm=14px / text-xs=12px，
+         教师全天对着系统逐条看目标与试次记录，实测反馈「字小人眼累」。
+         src 下 text-sm 用了 748 处、text-xs 598 处，逐组件改不现实也会漂移，
+        因此在设计系统层统一上调一档（rem 基准 16px 不变）：
+          text-xs  12px → 13px（辅助信息/角标/表格次级列）
+          text-sm  14px → 15px（正文主力，表格单元格/表单标签/列表项）
+          text-base 16px 起为强调正文，不再上调，保证层次差不被压缩。
+        行高随字号同步（显式 leading-* 类优先级更高，不受影响）。
+        移动端未测试，小屏下如需回落可在此统一收紧。 */
+      fontSize: {
+        xs: ['0.8125rem', { lineHeight: '1.125rem' }],   // 13px / 18px
+        sm: ['0.9375rem', { lineHeight: '1.375rem' }],   // 15px / 22px
+        base: ['1rem', { lineHeight: '1.5rem' }],        // 16px / 24px
+      },
       // 【token 接线 · 第 2/3 处】
       // 全部用 rgb(var(--x) / <alpha-value>)：<alpha-value> 让 Tailwind
       // 能拼出 bg-surface/50、text-ink-3/70 这类透明度修饰——

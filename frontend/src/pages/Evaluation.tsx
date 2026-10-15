@@ -3,11 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardPlus,
   Search,
-  Brain,
-  MessageSquare,
-  Activity,
-  Users,
-  HomeIcon,
   Eye,
   Pencil,
   MoreVertical,
@@ -28,9 +23,6 @@ import {
   TrendingDown,
   Minus,
   Wand2,
-  Heart,
-  BookOpen,
-  ClipboardCheck,
 } from 'lucide-react';
 import {
   BarChart,
@@ -43,6 +35,7 @@ import {
   Legend,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
+import TemplatePicker, { templateIcon, templateColor } from '@/components/assessment/TemplatePicker';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -164,27 +157,9 @@ interface Student {
 /**
  * v14：模板卡片图标按分类取（原 mock 模板自带 icon 字段，真实模板没有，
  * 全部落回 brain 图标）。分类取值见 assessment_templates.category。
+ * 2026-10-15：图标/配色与选择器一起收敛到 components/assessment/TemplatePicker，
+ * 两处模板选择 UI（主页面 + 录入抽屉）共用，不再各自维护一份分类映射。
  */
-const CATEGORY_ICON_STYLE: Record<string, { icon: React.ReactNode; color: string }> = {
-  '认知发展': { icon: <Brain className="w-8 h-8" style={{ color: 'rgb(var(--brand))' }} />, color: 'rgb(var(--brand))' },
-  '沟通交往': { icon: <MessageSquare className="w-8 h-8" style={{ color: 'rgb(var(--info))' }} />, color: 'rgb(var(--info))' },
-  '运动能力': { icon: <Activity className="w-8 h-8" style={{ color: 'rgb(var(--success))' }} />, color: 'rgb(var(--success))' },
-  '社会适应': { icon: <Users className="w-8 h-8" style={{ color: 'rgb(var(--warning))' }} />, color: 'rgb(var(--warning))' },
-  '生活自理': { icon: <HomeIcon className="w-8 h-8" style={{ color: 'rgb(var(--surface-inverse-2))' }} />, color: 'rgb(var(--surface-inverse-2))' },
-  '情绪行为': { icon: <Heart className="w-8 h-8" style={{ color: 'rgb(var(--danger))' }} />, color: 'rgb(var(--danger))' },
-  '学业准备': { icon: <BookOpen className="w-8 h-8" style={{ color: 'rgb(var(--violet))' }} />, color: 'rgb(var(--violet))' },
-  '课程本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: 'rgb(var(--info))' }} />, color: 'rgb(var(--info))' },
-  '能力本位': { icon: <ClipboardCheck className="w-8 h-8" style={{ color: 'rgb(var(--info))' }} />, color: 'rgb(var(--info))' },
-  '专项评估': { icon: <FileText className="w-8 h-8" style={{ color: 'rgb(var(--ink-2))' }} />, color: 'rgb(var(--ink-2))' },
-};
-
-function templateIcon(t: AssessmentTemplate): React.ReactNode {
-  return CATEGORY_ICON_STYLE[t.category]?.icon ?? <FileText className="w-8 h-8" style={{ color: 'rgb(var(--brand))' }} />;
-}
-
-function templateColor(t: AssessmentTemplate): string {
-  return CATEGORY_ICON_STYLE[t.category]?.color ?? 'rgb(var(--brand))';
-}
 
 /** 模板满分：各维度条目满分之和（随选中模板实时计算，不再查 mock 映射表） */
 function calcTemplateMaxScore(t: AssessmentTemplate | null): number {
@@ -848,29 +823,15 @@ export default function Evaluation() {
         className="bg-surface rounded-lg p-5 mb-6 shadow-sm"
       >
         <h4 className="text-base font-semibold text-ink mb-4">选择评估模板</h4>
-        {templatesLoading ? (
-          <div className="text-sm text-ink-3 py-6">模板加载中…</div>
-        ) : templates.length === 0 ? (
-          <div className="text-sm text-ink-3 py-6">暂无可用评估模板，请先在「模板管理」中创建</div>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            {templates.map((t, i) => (
-              <motion.button
-                key={t.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: 0.2 + i * 0.06 }}
-                onClick={() => openNewAssessment(t)}
-                className="flex flex-col items-start w-[200px] p-4 bg-surface border border-line rounded-lg text-left transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer group"
-                style={{ borderColor: selectedTemplate?.id === t.id ? templateColor(t) : undefined, borderWidth: selectedTemplate?.id === t.id ? '2px' : '1px' }}
-              >
-                <div className="mb-2">{templateIcon(t)}</div>
-                <span className="text-sm font-semibold text-ink group-hover:text-brand-ink">{t.name}</span>
-                <span className="text-xs text-ink-3 mt-1 line-clamp-2">{t.description || t.category}</span>
-              </motion.button>
-            ))}
-          </div>
-        )}
+        {/* 2026-10-15 重构：37+ 模板全平铺 + 逐卡 stagger 动画是实测卡顿主因，
+            改为搜索 + 分类 chips + 渐进披露的 TemplatePicker（cards 变体） */}
+        <TemplatePicker
+          templates={templates}
+          loading={templatesLoading}
+          selectedId={selectedTemplate?.id ?? null}
+          onSelect={(t) => openNewAssessment(t)}
+          variant="cards"
+        />
       </motion.div>
 
       {/* Records Table */}
@@ -1294,27 +1255,15 @@ function NewAssessmentDrawer({
             <div>
               <label className="block text-sm font-medium text-ink mb-2">评估模板 <span className="text-danger">*</span></label>
               {!selectedTemplate ? (
-                templatesLoading ? (
-                  <div className="text-sm text-ink-3 py-4">模板加载中…</div>
-                ) : templates.length === 0 ? (
-                  <div className="text-sm text-ink-3 py-4">暂无可用评估模板，请先在「模板管理」中创建</div>
-                ) : (
-                  <div className="flex flex-wrap gap-3">
-                    {templates.map((t) => (
-                      <button
-                        key={t.id}
-                        onClick={() => onSelectTemplate(t)}
-                        className="flex items-center gap-3 p-3 border border-line rounded-lg hover:border-brand hover:shadow-sm transition-all cursor-pointer text-left"
-                      >
-                        {templateIcon(t)}
-                        <div>
-                          <div className="text-sm font-medium text-ink">{t.name}</div>
-                          <div className="text-xs text-ink-3">{t.category}</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )
+                /* 2026-10-15 重构：抽屉内同样平铺过 37 个模板，步骤页被撑长、
+                   教师要滚动半天。改为搜索 + 分类 + 分组限高列表（list 变体）。 */
+                <TemplatePicker
+                  templates={templates}
+                  loading={templatesLoading}
+                  selectedId={null}
+                  onSelect={(t) => onSelectTemplate(t)}
+                  variant="list"
+                />
               ) : (
                 <div className="flex items-center gap-3 p-3 bg-brand-soft border border-brand-line rounded-lg">
                   {templateIcon(selectedTemplate)}

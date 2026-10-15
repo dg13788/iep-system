@@ -16,6 +16,38 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/io_engine.php';
 
+/**
+ * 身份证号校验（GB 11643-1999）：18 位（加权模 11 校验位）或 15 位旧版，
+ * 出生日期须真实存在且不在未来。空字符串按「未填写」返回 true（必填性由表单层定）。
+ */
+function students_valid_id_card($v): bool
+{
+    $s = trim((string)$v);
+    if ($s === '') return true;
+    if (preg_match('/^\d{15}$/', $s)) {
+        $y = 1900 + (int)substr($s, 6, 2); $m = (int)substr($s, 8, 2); $d = (int)substr($s, 10, 2);
+    } elseif (preg_match('/^\d{17}[\dXx]$/', $s)) {
+        $y = (int)substr($s, 6, 4); $m = (int)substr($s, 10, 2); $d = (int)substr($s, 12, 2);
+        $weights = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+        $sum = 0;
+        for ($i = 0; $i < 17; $i++) $sum += (int)$s[$i] * $weights[$i];
+        if ('10X98765432'[$sum % 11] !== strtoupper($s[17])) return false;
+    } else {
+        return false;
+    }
+    if ($m < 1 || $m > 12 || $d < 1 || $d > 31) return false;
+    if (!checkdate($m, $d, $y)) return false;
+    return strtotime(sprintf('%04d-%02d-%02d', $y, $m, $d)) <= time();
+}
+
+/** 中国电话：手机号 1[3-9]xxxxxxxxx，或带区号固话 0xx-xxxxxxx / 0xxx-xxxxxxxx */
+function students_valid_phone($v): bool
+{
+    $s = trim((string)$v);
+    if ($s === '') return true;
+    return (bool)preg_match('/^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/', $s);
+}
+
 $path = isset($_GET['path']) ? trim($_GET['path'], '/') : '';
 $parts = explode('/', $path);
 $action = isset($parts[1]) ? $parts[1] : '';
@@ -205,6 +237,24 @@ switch ($action) {
             jsonResponse(['success' => false, 'message' => '学生姓名不能为空'], 400);
         }
 
+        // 格式规范（2026-10-15）：身份证号与电话后端权威校验，前端同口径仅做即时反馈
+        if (!students_valid_id_card($input['id_card'] ?? '')) {
+            jsonResponse(['success' => false, 'message' => '身份证号格式不正确（18 位居民身份证，末位可为 X；或 15 位旧版编号）'], 400);
+        }
+        if (!students_valid_phone($input['guardian_phone'] ?? '')) {
+            jsonResponse(['success' => false, 'message' => '监护人电话格式不正确（手机号 11 位，或带区号固话如 0755-1234567）'], 400);
+        }
+        if (!students_valid_phone($input['guardian2_phone'] ?? '')) {
+            jsonResponse(['success' => false, 'message' => '第二监护人电话格式不正确'], 400);
+        }
+        if (!students_valid_phone($input['emergency_phone'] ?? '')) {
+            jsonResponse(['success' => false, 'message' => '紧急联系电话格式不正确'], 400);
+        }
+        // 末位 X 统一大写，避免与纸质身份证件不一致
+        if (isset($input['id_card'])) {
+            $input['id_card'] = strtoupper(trim($input['id_card']));
+        }
+
         // 安全修复(P0)：创建学生时必须校验班级在数据范围内，禁止跨班创建档案
         $classId = isset($input['class_id']) ? intval($input['class_id']) : 0;
         if ($classId > 0) {
@@ -273,6 +323,24 @@ switch ($action) {
 
         // 安全修复(P0-2)：写操作前必须校验数据范围，禁止跨班篡改学生档案
         requireStudentInScope($id);
+
+        // 格式规范（2026-10-15）：仅校验本次提交携带的字段，缺省不动存量数据
+        if (isset($input['id_card']) && !students_valid_id_card($input['id_card'])) {
+            jsonResponse(['success' => false, 'message' => '身份证号格式不正确（18 位居民身份证，末位可为 X；或 15 位旧版编号）'], 400);
+        }
+        if (isset($input['guardian_phone']) && !students_valid_phone($input['guardian_phone'])) {
+            jsonResponse(['success' => false, 'message' => '监护人电话格式不正确（手机号 11 位，或带区号固话如 0755-1234567）'], 400);
+        }
+        if (isset($input['guardian2_phone']) && !students_valid_phone($input['guardian2_phone'])) {
+            jsonResponse(['success' => false, 'message' => '第二监护人电话格式不正确'], 400);
+        }
+        if (isset($input['emergency_phone']) && !students_valid_phone($input['emergency_phone'])) {
+            jsonResponse(['success' => false, 'message' => '紧急联系电话格式不正确'], 400);
+        }
+        // 末位 X 统一大写，避免与纸质身份证件不一致
+        if (isset($input['id_card'])) {
+            $input['id_card'] = strtoupper(trim($input['id_card']));
+        }
 
         $updatableFields = [
             'name', 'gender', 'birth_date', 'id_card', 'disability_type_id',
