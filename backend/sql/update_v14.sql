@@ -31,7 +31,21 @@ WHERE NOT EXISTS (
 );
 
 -- 2) 摘旧外键（改挂 id 前必须摘掉，否则 UPDATE 触发 1452）
-ALTER TABLE template_items_custom DROP FOREIGN KEY fk_tic_template;
+--    2026-10-15 补守卫：原为裸 `DROP FOREIGN KEY`。mysql 批处理遇错即停，
+--    若某库历史上只执行到一半（FK 已摘、新键未加），重放本文件会死在
+--    1091，后续 3) 4) 5) 全部不执行——「补一半」的库再也补不完整。
+--    守卫后：不存在就跳过摘除，由 4) 负责把键补回。
+SET @has_tic_fk := (
+    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'template_items_custom'
+      AND CONSTRAINT_NAME = 'fk_tic_template'
+      AND CONSTRAINT_TYPE  = 'FOREIGN KEY'
+);
+SET @sql_drop_tic := IF(@has_tic_fk = 1,
+    'ALTER TABLE template_items_custom DROP FOREIGN KEY fk_tic_template',
+    "SELECT 'fk_tic_template 不存在，跳过摘除（由第 4 步补回）'");
+PREPARE st_drop_tic FROM @sql_drop_tic; EXECUTE st_drop_tic; DEALLOCATE PREPARE st_drop_tic;
 
 -- 3) 条目改挂主库 id（仅当 template_id 仍落在 custom 表 id 范围内时才会匹配，天然幂等）
 UPDATE template_items_custom tic
@@ -39,9 +53,19 @@ JOIN assessment_templates_custom c ON tic.template_id = c.id
 JOIN assessment_templates t ON t.name = c.name
 SET tic.template_id = t.id;
 
--- 4) 外键改指主库
-ALTER TABLE template_items_custom ADD CONSTRAINT fk_tic_template
-  FOREIGN KEY (template_id) REFERENCES assessment_templates (id) ON DELETE CASCADE;
+-- 4) 外键改指主库（守卫：上一步已摘则不存在、直接加；已存在则跳过，避免 1826 中断）
+SET @has_tic_fk2 := (
+    SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME   = 'template_items_custom'
+      AND CONSTRAINT_NAME = 'fk_tic_template'
+      AND CONSTRAINT_TYPE  = 'FOREIGN KEY'
+);
+SET @sql_add_tic := IF(@has_tic_fk2 = 0,
+    'ALTER TABLE template_items_custom ADD CONSTRAINT fk_tic_template
+       FOREIGN KEY (template_id) REFERENCES assessment_templates (id) ON DELETE CASCADE',
+    "SELECT 'fk_tic_template 已存在，跳过'");
+PREPARE st_add_tic FROM @sql_add_tic; EXECUTE st_add_tic; DEALLOCATE PREPARE st_add_tic;
 
 -- 5) 从真实评估条目派生 5 个在用模板的条目定义（不新编内容，先删后插幂等）
 DELETE FROM template_items_custom WHERE template_id IN (101, 102, 103, 122, 123);

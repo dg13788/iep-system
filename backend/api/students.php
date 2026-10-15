@@ -855,6 +855,10 @@ switch ($action) {
             } catch (Throwable $e) {
                 $failed++;
                 $errors[] = "第 " . ($lineNo + 2) . " 行：" . (($e instanceof PDOException && $e->getCode() == 23000) ? '身份证号重复或数据冲突' : '导入失败');
+                // 23000（重复/冲突）是预期内的行级失败，其余异常必须留痕。
+                if (!($e instanceof PDOException && $e->getCode() == 23000)) {
+                    error_log('students/import 第 ' . ($lineNo + 2) . " 行失败: " . $e->getMessage());
+                }
             }
         }
 

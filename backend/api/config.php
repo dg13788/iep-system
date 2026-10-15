@@ -1488,6 +1488,9 @@ function currentParentId(?array $user = null): ?int
         $ref = $st->fetchColumn();
         return $ref ? intval($ref) : null;
     } catch (Throwable $e) {
+        // 查不到家长引用时按「无关联」处理（调用方据此走非家长分支），
+        // 但数据库异常与「确实没有引用」是两件事，静默会把故障伪装成正常业务结果。
+        error_log('currentParentId 查询失败 uid=' . $uid . ': ' . $e->getMessage());
         return null;
     }
 }

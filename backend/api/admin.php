@@ -198,6 +198,7 @@ function adminOverview(): void {
                 $exact[$t] = intval($c->fetchColumn());
             } catch (PDOException $e) {
                 $exact[$t] = null; // 表不存在等情况，置空不阻断总览
+                error_log('admin/tables 行数校正失败 table=' . $t . ': ' . $e->getMessage());
             }
         }
 
@@ -230,6 +231,7 @@ function adminOverview(): void {
                 $metrics[$k] = $pdo->query($sql)->fetchColumn();
             } catch (PDOException $e) {
                 $metrics[$k] = null;
+                error_log('admin/metrics 指标查询失败 key=' . $k . ': ' . $e->getMessage());
             }
         }
 
@@ -276,6 +278,7 @@ function adminTables(): void {
                 $c = intval($pdo->query('SELECT COUNT(*) FROM `' . $t . '`')->fetchColumn());
             } catch (PDOException $e) {
                 $c = null;
+                error_log('admin/tables 行数查询失败 table=' . $t . ': ' . $e->getMessage());
             }
             $out[] = ['table' => $t, 'label' => $label, 'count' => $c];
         }
@@ -755,6 +758,9 @@ function adminCanRecreateViews(?string &$err): bool {
             $privs = array_map('strtoupper', $st->fetchAll(PDO::FETCH_COLUMN));
         } catch (Throwable $e2) {
             $privs = [];
+            // 查权限失败时 $privs 为空，下面会按「不具备 SYSTEM_USER/SUPER」
+            // 给出「视图定义者不一致」的结论——那是误判。留痕区分两种原因。
+            error_log('adminCanRecreateViews 权限查询失败: ' . $e2->getMessage());
         }
         if (in_array('SYSTEM_USER', $privs, true) || in_array('SUPER', $privs, true)) {
             return true;
@@ -1166,6 +1172,9 @@ function adminTableHasColumn(PDO $pdo, string $table, string $column): bool {
         $stmt->execute([$table, $column]);
         return intval($stmt->fetchColumn()) > 0;
     } catch (PDOException $e) {
+        // 数据库异常时返回 false，调用方会据此跳过 ALTER——静默的 schema
+        // 漂移比一次显式失败危险得多，必须留痕。
+        error_log('adminTableHasColumn 查询失败 table=' . $table . ' column=' . $column . ': ' . $e->getMessage());
         return false;
     }
 }

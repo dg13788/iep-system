@@ -63,6 +63,36 @@ switch ($action) {
             $st->execute($params);
             $plans = $st->fetchAll(PDO::FETCH_ASSOC);
 
+            // ---- 批量取目标（原按计划逐条查，N+1：60 个计划 = 61 次查询）----
+            $goalsByPlan = [];
+            $ownerIds    = [];
+            if ($plans) {
+                $pids  = array_map(fn($p) => (int)$p['id'], $plans);
+                $ph    = implode(',', array_fill(0, count($pids), '?'));
+                $gs    = $pdo->prepare(
+                    "SELECT id, iep_plan_id, title, monitor_frequency, responsible_teacher_id
+                       FROM iep_goals WHERE iep_plan_id IN ($ph) AND deleted_at IS NULL"
+                );
+                $gs->execute($pids);
+                foreach ($gs->fetchAll(PDO::FETCH_ASSOC) as $g) {
+                    $goalsByPlan[(int)$g['iep_plan_id']][] = $g;
+                    $oid = (int)($g['responsible_teacher_id'] ?: 0);
+                    if ($oid > 0) $ownerIds[$oid] = true;
+                }
+            }
+
+            // ---- 批量取责任人姓名（原按目标逐条查，N+1）----
+            $userNames = [];
+            if ($ownerIds) {
+                $uids = array_keys($ownerIds);
+                $uph  = implode(',', array_fill(0, count($uids), '?'));
+                $us   = $pdo->prepare("SELECT id, real_name FROM users WHERE id IN ($uph)");
+                $us->execute($uids);
+                foreach ($us->fetchAll(PDO::FETCH_ASSOC) as $u) {
+                    $userNames[(int)$u['id']] = (string)$u['real_name'];
+                }
+            }
+
             $today    = pa_today();
             $byClass  = [];
             $overdue  = [];
@@ -88,12 +118,10 @@ switch ($action) {
                 }
 
                 // ---- 目标健康度：逐个目标问决策引擎（不另算一套）----
-                $gs = $pdo->prepare(
-                    'SELECT id, title, monitor_frequency, responsible_teacher_id
-                       FROM iep_goals WHERE iep_plan_id = ? AND deleted_at IS NULL'
-                );
-                $gs->execute([$pid]);
-                foreach ($gs->fetchAll(PDO::FETCH_ASSOC) as $g) {
+                // pa_analyze_goal / pa_consistency_check 是决策引擎调用，
+                // 每个目标一次分析是语义所需（ADR-001 单一口径），不在此合并；
+                // 本轮只消除「为取数据而发的重复 SQL」这两类 N+1。
+                foreach ($goalsByPlan[$pid] ?? [] as $g) {
                     $an = pa_analyze_goal($pdo, (int)$g['id']);
                     if (!$an) continue;
                     $lvl   = (string)($an['decision']['level'] ?? 'nodata');
@@ -109,11 +137,8 @@ switch ($action) {
                     $last = $pts ? end($pts)['date'] : null;
                     $ownerId   = (int)($g['responsible_teacher_id'] ?: $p['primary_teacher_id'] ?: 0);
                     $ownerName = $p['teacher_name'] ?: '未指定责任人';
-                    if ($ownerId > 0) {
-                        $qn = $pdo->prepare('SELECT real_name FROM users WHERE id = ?');
-                        $qn->execute([$ownerId]);
-                        $nm = $qn->fetchColumn();
-                        if ($nm) $ownerName = (string)$nm;
+                    if ($ownerId > 0 && isset($userNames[$ownerId])) {
+                        $ownerName = $userNames[$ownerId];
                     }
                     if (!isset($overdue[$ownerId])) {
                         $overdue[$ownerId] = [

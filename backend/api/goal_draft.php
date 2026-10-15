@@ -201,6 +201,11 @@ switch ($action) {
             }
             unset($d);
 
+            // 审计留痕：一次生成调用记一条。逐条草案已在 iep_goal_drafts
+            // 内溯源到 created_by，此处再逐条记审计会淹没日志。
+            auditLog('generate', 'goal_draft', 'iep_plan', $planId, (string)$plan['title'], null, null,
+                sprintf('规则引擎生成 %d 条目标草案（来源评估 #%d）', count($res['drafts']), (int)$a['id']));
+
             jsonResponse([
                 'success' => true,
                 'data'    => [
@@ -279,6 +284,14 @@ switch ($action) {
             $r = gd_adopt_draft($pdo, $draftId, $final, $planId, $uid);
             $pdo->commit();
 
+            // 审计留痕：草案→正式目标是「AI 建议→教师定稿」链路的关键一跳
+            //（ADR-007），edited_fields 即差异证据，必须进审计。
+            auditLog('adopt', 'goal_draft', 'iep_goal', (int)$r['goal_id'], '', null, null,
+                sprintf('采纳草案 #%d 为正式目标（%s）', (int)$r['draft_id'],
+                    $r['edited_fields']
+                        ? ('调整字段：' . implode('、', $r['edited_fields']))
+                        : '与草案完全一致'));
+
             jsonResponse([
                 'success' => true,
                 'data'    => [
@@ -351,6 +364,12 @@ switch ($action) {
                 $draftId,
             ]);
             $pdo->commit();
+
+            // 审计留痕：PLAAFP 是计划的核心叙述字段，引擎初稿→教师定稿的
+            // 采纳动作与差异字段进审计（ADR-007）。
+            auditLog('save_plaafp', 'goal_draft', 'iep_plan', $planId, (string)$plan['title'], null, null,
+                sprintf('采纳 PLAAFP 初稿（%s）',
+                    $edited ? ('调整字段：' . implode('、', $edited)) : '与初稿完全一致'));
 
             jsonResponse([
                 'success' => true,

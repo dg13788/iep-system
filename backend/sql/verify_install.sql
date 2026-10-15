@@ -83,13 +83,29 @@ INSERT INTO _v_col_expected (t_name, c_name) VALUES
   ('iep_plans','plaafp_draft_source'),
   ('iep_plans','placement_type'),
   ('iep_plans','meeting_date'),
+  ('iep_plans','lre_narrative'),
+  ('iep_plans','lre_removal_reason'),
   ('iep_goals','direction'),
   ('iep_goals','target_prompt_level'),
   ('iep_goals','baseline_value'),
   ('iep_goals','target_value'),
+  ('iep_goals','measurement_scale'),
+  ('iep_goals','source_assessment_id'),
+  ('iep_goals','source_assessment_item_id'),
   ('iep_goals','monitor_frequency'),
+  ('iep_intervention_adjustments','adopted'),
+  ('iep_intervention_adjustments','suggestion_ids'),
+  ('assessments','iep_plan_id'),
   ('students','disability_level_id'),
   ('students','communication_methods');
+
+DROP TEMPORARY TABLE IF EXISTS _v_fk_expected;
+CREATE TEMPORARY TABLE _v_fk_expected (c_name VARCHAR(64), PRIMARY KEY (c_name));
+INSERT INTO _v_fk_expected (c_name) VALUES
+  ('fk_goal_source_asm'),
+  ('fk_goal_source_item'),
+  ('fk_plan_source_asm'),
+  ('fk_asm_iep_plan');
 
 SET @v_fail = 0;
 
@@ -176,6 +192,15 @@ SET @v_tpl_fail = IF(@v_tpl >= 37, 0, 1) + IF(@v_tic >= 71, 0, 1)
                 + IF(@v_tpl_item_ok = 5, 0, 1);
 SET @v_fail = @v_fail + @v_tpl_fail;
 
+-- C9 溯源链外键（update_v21）：四条 FOREIGN KEY 必须都在。
+--   为什么单列一项：v7 引入溯源四列时全部无外键，「指向不存在的评估」
+--   在数据层静默成立，而应用层只查非空、查不住指向空处。
+SET @v_fk = (SELECT COUNT(*) FROM _v_fk_expected e
+   LEFT JOIN information_schema.REFERENTIAL_CONSTRAINTS r
+     ON r.CONSTRAINT_SCHEMA = DATABASE() AND r.CONSTRAINT_NAME = e.c_name
+  WHERE r.CONSTRAINT_NAME IS NULL);
+SET @v_fail = @v_fail + @v_fk;
+
 SELECT '===== IEP 安装自检明细 =====' AS step;
 
 SELECT 'C1 缺失数据库对象' AS check_item, @v_missing AS actual, 0 AS expected, IF(@v_missing = 0, 'OK', 'FAIL') AS result
@@ -187,6 +212,7 @@ UNION ALL SELECT 'C6 重复数据', @v_dup, 0, IF(@v_dup = 0, 'OK', 'FAIL')
 UNION ALL SELECT 'C7 视图可查询(行数)', @v_viewrows, -2, IF(@v_viewrows >= 0, 'OK', 'FAIL')
 UNION ALL SELECT 'C5b 字典分类明细齐全', @v_dict_cat_fail, 0, IF(@v_dict_cat_fail = 0, 'OK', 'FAIL')
 UNION ALL SELECT 'C8 评估模板内容基线(37模板/71条目/5在用有条目)', @v_tpl_fail, 0, IF(@v_tpl_fail = 0, 'OK', 'FAIL')
+UNION ALL SELECT 'C9 溯源链外键(v21四条)', @v_fk, 0, IF(@v_fk = 0, 'OK', 'FAIL')
 UNION ALL SELECT '参考:模板101-137', @v_tpl, 37, 'INFO'
 UNION ALL SELECT '参考:上述模板条目数', @v_tic, 71, 'INFO'
 UNION ALL SELECT '参考:在用模板已有条目数', @v_tpl_item_ok, 5, 'INFO'

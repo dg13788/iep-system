@@ -363,7 +363,9 @@ switch ($action) {
                     $values[] = round(($ts / $ms) * 100, 2);
                 }
             } catch (PDOException $e) {
-                // ignore
+                // 取旧分失败只放弃「百分比」这一派生列的刷新，不阻断主更新；
+                // 但静默吞掉会让「百分比没更新」永远查不到原因，补日志。
+                error_log('assessments/update 读取旧分数失败（百分比列跳过刷新）: ' . $e->getMessage());
             }
         }
 
@@ -743,6 +745,9 @@ switch ($action) {
             } catch (Throwable $e) {
                 $failed++;
                 $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
+                // 行级失败对用户只给通用文案（不外泄库表细节），
+                // 但服务端必须能查到真实原因，否则批量导入坏了没人知道为什么。
+                error_log('assessments/import 第 ' . ($lineNo + 2) . " 行失败: " . $e->getMessage());
             }
         }
 

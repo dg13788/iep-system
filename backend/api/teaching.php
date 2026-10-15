@@ -502,6 +502,7 @@ switch ($action) {
             } catch (Throwable $e) {
                 $failed++;
                 $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
+                error_log('teaching/import 第 ' . ($lineNo + 2) . " 行失败: " . $e->getMessage());
             }
         }
 

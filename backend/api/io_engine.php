@@ -411,6 +411,9 @@ function io_zip_write($zipPath, $entries) {
         unset($phar);
         return file_exists($zipPath) && filesize($zipPath) > 0;
     } catch (Throwable $e) {
+        // PharData 不可用（phar.readonly / 缺扩展）时返回 false，调用方改走
+        // 其他导出通道；但「为什么打不开 zip」必须能在日志里查到。
+        error_log('io_zip_write 失败 path=' . $zipPath . ': ' . $e->getMessage());
         return false;
     }
 }

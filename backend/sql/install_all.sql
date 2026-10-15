@@ -22,8 +22,14 @@
 --   若干家长）。空库跑完是想要的；对着**已有演示数据的库**再跑一次，这些
 --   种子会因为「按姓名判重」而与既有演示学生并存——实测学生数 18 → 33，
 --   多出 15 个张伟/李芳/王强…，回归基线被污染。
---   已有库请只跑增量：`mysql -uroot <库名> < backend/sql/update_v16.sql`
---   （或按版本号只跑缺的那几个），不要重跑本入口。
+--   已有库请只跑增量：按版本号只跑缺的那几个
+--     （如 `mysql -uroot <库名> < backend/sql/update_v20.sql`），不要重跑本入口。
+--
+-- ⚠️ 新增迁移文件后，必须同步在本文件 SOURCE 清单里追加（ADR-039）：
+--   历史上 v19/v20 曾只落了迁移文件、漏加进本清单——全新部署拿到少 5 列
+--   的库（adopted/suggestion_ids/measurement_scale/lre_narrative/
+--   lre_removal_reason），接口在相关端点直接 500，而安装过程零报错。
+--   追加后务必按 ADR-044 建临时空库跑通本入口 + verify_install.sql。
 --
 -- 不在本入口内的文件（勿追加）：
 --   init_demo_minimal.sql —— 管理控制台「系统初始化(mode=demo)」用的演示种子，
@@ -54,5 +60,8 @@ SOURCE backend/sql/update_v15.sql
 SOURCE backend/sql/update_v16.sql
 SOURCE backend/sql/update_v17.sql
 SOURCE backend/sql/update_v18.sql
+SOURCE backend/sql/update_v19.sql
+SOURCE backend/sql/update_v20.sql
+SOURCE backend/sql/update_v21.sql
 
 SELECT '===== IEP 一键安装结束（请执行 verify_install.sql 自检）=====' AS step;

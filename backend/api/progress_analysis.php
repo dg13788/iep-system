@@ -34,6 +34,9 @@ if (!function_exists('pa_days_between')) {
             $a = new DateTimeImmutable(substr($from, 0, 10));
             $b = new DateTimeImmutable(substr($to, 0, 10));
         } catch (Exception $e) {
+            // 日期非法时按 0 天处理（调用方据此判「未逾期」）。
+            // 这是有意的降级，但非法日期本身是数据质量问题，留痕以便回查。
+            error_log(sprintf('pa_days_between 日期解析失败: from=%s to=%s', $from, $to));
             return 0;
         }
         $diff = $a->diff($b);
@@ -859,19 +862,29 @@ if (!function_exists('pa_days_between')) {
             }
         }
 
-        // ---- 达成信号：达标即达标，先于 Rule A/B 短路 ----
+        // ---- 达成信号：持续达标才判 mastered，先于 Rule A/B 短路 ----
         // 此前 mastered 只能从 on_track 晋升，而 Rule B 会先把已稳居目标之上的学生打成 adjust，
         // 导致「常年 95%（目标 80%）」的孩子收到「建议调整干预」——越优秀越报警。
+        //
+        // 2026-10-15 审计整改（评估报告第四节第 5 项）：判据由「最近 3 点中
+        // 任意 1 点触及期末值」改为「最近 3 个数据点全部达到期末值」。
+        // 单点触及在学年中期完全可能是偶然（一次状态好、一次任务简单），
+        // 此时判 mastered 会让教师提前上调目标或转入维持期，学生随即回落，
+        // 反复几次教师就不再信系统。只触及个别点的落回 Rule A：高于当日
+        // 目标线判 on_track（提前达标是「符合预期」，不是「已达标」）。
+        // 3 个连续探点达到标准也是 DBI 达成判定的惯例口径。
         $targetValue = $aim['end_value'] ?? null;
         $reached = false;
         if ($targetValue !== null && $level !== 'regression') {
-            foreach (array_slice($points, -3) as $p) {
-                if ($isReached((float)$p['value'], (float)$targetValue)) { $reached = true; break; }
+            $recent3 = array_slice($points, -3);
+            $reached = $recent3 !== [];
+            foreach ($recent3 as $p) {
+                if (!$isReached((float)$p['value'], (float)$targetValue)) { $reached = false; break; }
             }
         }
         if ($reached) {
             $reasons[] = sprintf(
-                '最近已有数据点达到%s期末目标值 %.0f（%s），可考虑提升目标或转入泛化/维持期',
+                '最近 3 个数据点均达到%s期末目标值 %.0f（%s），可考虑提升目标或转入泛化/维持期',
                 $dec > 0 ? '或超过' : '或低于', (float)$targetValue, $dirText
             );
             $ruleHit[] = 'reached';
@@ -1243,7 +1256,7 @@ if (!function_exists('pa_days_between')) {
         $gs = $pdo->prepare(
             'SELECT id, area, title, criteria, baseline, evaluation_method, monitor_frequency,
                     monitor_method, monitor_owner_id, baseline_value, target_value, target_score,
-                    target_date, responsible_teacher_id
+                    target_date, responsible_teacher_id, direction, source_assessment_id
                FROM iep_goals WHERE iep_plan_id = ? AND deleted_at IS NULL ORDER BY area, sort_order'
         );
         $gs->execute([$planId]);
@@ -1368,6 +1381,7 @@ if (!function_exists('pa_days_between')) {
 
         $missBase = []; $missCriteria = []; $missFreq = []; $missMethod = [];
         $missTarget = []; $missOwner = []; $missDue = []; $dueOverflow = []; $noObjective = []; $noData = [];
+        $noSource = [];
 
         foreach ($goals as $g) {
             $t = $g['title'];
@@ -1383,6 +1397,13 @@ if (!function_exists('pa_days_between')) {
                       && pa_days_between(substr((string)$g['target_date'], 0, 10), substr((string)$plan['end_date'], 0, 10)) < 0) {
                 $dueOverflow[] = $t;
             }
+            // GOA12：目标未关联来源评估。
+            // 此前系统里没有任何目标级规则看得见这件事（计划级只有 PLN11），
+            // 「教师绕开评估手写目标」在质检报告里完全隐形。
+            // 定为 warn 而非 error 的边界：前端手工建目标不走起草链路、
+            // 无法携带该关联，此刻升 error 会造出「点了提交却永远过不了」
+            // 的死校验；待手工建目标也能选评估后，再评估升 error。
+            if (empty($g['source_assessment_id'])) $noSource[] = $t;
         }
 
         if (!empty($missBase)) {
@@ -1453,11 +1474,21 @@ if (!function_exists('pa_days_between')) {
                 '进入执行后请按监控频率采集数据，否则无法判断是否有效、也无法在到期时出具有依据的进度报告。');
         }
 
+        if (!empty($noSource)) {
+            $push('GOA12', 'warn', '目标未关联来源评估', $noSource,
+                '这些目标没有记录「依据哪次评估得出」。建议从「从评估起草」链路生成或补充关联，'
+                . '否则到期复核时无法回答「目标为什么这样定」。');
+        }
+
         // GOA11 目标是否具有挑战性（Endrew 实质性标准）
-        // 若「降低问题行为发生频率」类目标，期末值低于基线是正常的；
-        // 但技能习得类目标若目标值不高于基线，等于宣布「维持现状即可」。
+        //
+        // 方向敏感（ADR-021）：direction='decrease' 的目标（如「降低问题行为
+        // 发生率」）期末值低于基线是正常设计，曾因不读 direction 被一律误报
+        // 「期末目标不高于基线」——库内 6 条降频目标全部中招。这里只对
+        // increase 方向（含默认值）应用该判据。
         $notAmbitious = [];
         foreach ($goals as $g) {
+            if (($g['direction'] ?? 'increase') === 'decrease') continue;
             $bv = pa_num($g['baseline_value'] ?? null);
             $tv = pa_num($g['target_value'] ?? null);
             if ($tv === null) $tv = pa_num($g['target_score'] ?? null);
@@ -1465,8 +1496,9 @@ if (!function_exists('pa_days_between')) {
         }
         if (!empty($notAmbitious)) {
             $push('GOA11', 'warn', '期末目标不高于基线', $notAmbitious,
-                'Endrew 判决要求 IEP 目标须「合理计算以取得适当进步」。若这是「降低问题行为频率」类目标属正常；'
-                . '若是技能习得类目标，说明目标设定偏松，建议上调目标或缩短达成周期。');
+                'Endrew 判决要求 IEP 目标须「合理计算以取得适当进步」。技能习得类目标若目标值'
+                . '不高于基线，等于宣布「维持现状即可」，建议上调目标或缩短达成周期。'
+                . '（降频类目标方向为递减，不适用本判据）');
         }
 
         foreach ($grouped as $g) {
@@ -1538,6 +1570,8 @@ if (!function_exists('pa_days_between')) {
             $d = new DateTimeImmutable(substr($date, 0, 10));
             return $d->modify(($days >= 0 ? '+' : '') . $days . ' day')->format('Y-m-d');
         } catch (Exception $e) {
+            // 同 pa_days_between：降级返回原日期，但留痕。
+            error_log(sprintf('pa_date_add 日期解析失败: date=%s days=%d', $date, $days));
             return substr($date, 0, 10);
         }
     }

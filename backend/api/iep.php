@@ -1524,79 +1524,96 @@ switch ($action) {
 
         $validStatuses = ['draft', 'reviewing', 'approved', 'rejected'];
 
-        // v15 预检（dry_run）：逐行走完插入与审批留痕，结尾 rollBack 不落库
+        // v15 预检（dry_run）：整批包事务，结尾 rollBack 不落库。
+        // 2026-10-15 对齐其余四个导入（students/teaching/parents/assessments）
+        // 的事务口径：此前本导入逐行 begin/commit，是五个导入里唯一的例外——
+        // 行数多时逐行提交既慢，又让「前 30 行进了库、第 31 行起批级异常」
+        // 停在半完成状态。整批事务 + 行级 SAVEPOINT：行内失败只回退该行，
+        // 批级异常整体回滚，两种语义都保住。
         $dryRun = io_import_is_dry_run();
 
-        foreach ($parsed['rows'] as $lineNo => $row) {
-            $data = io_extract_row($row, $colIndex);
-            if (trim($data['student_name']) === '' || trim($data['title']) === '') {
-                $failed++;
-                $errors[] = "第 " . ($lineNo + 2) . " 行：学生姓名与计划标题不能为空";
-                continue;
-            }
+        try {
+            $pdo->beginTransaction();
 
-            $studentId = io_lookup_student_by_name($pdo, $data['student_name']);
-            if ($studentId <= 0) {
-                $failed++;
-                $errors[] = "第 " . ($lineNo + 2) . " 行：学生「" . $data['student_name'] . "」不存在或姓名重复，已跳过";
-                continue;
-            }
-            // 学生范围校验（fail-closed，逐行跳过）
-            if (!isStudentInScope($studentId, getDataScope())) {
-                $failed++;
-                $errors[] = "第 " . ($lineNo + 2) . " 行：学生「" . $data['student_name'] . "」超出数据范围，已跳过";
-                continue;
-            }
-
-            $startDate = io_normalize_date($data['start_date']);
-            $endDate = io_normalize_date($data['end_date']);
-            if ($startDate === false || $endDate === false) {
-                $failed++;
-                $errors[] = "第 " . ($lineNo + 2) . " 行：日期格式错误（应为 YYYY-MM-DD）";
-                continue;
-            }
-
-            $academicYear = $data['academic_year'] !== '' ? $data['academic_year'] : (date('Y') . '-' . (date('Y') + 1));
-            $planCode = 'IEP-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
-
-            try {
-                $pdo->beginTransaction();
-                $stmt = $pdo->prepare(
-                    'INSERT INTO iep_plans (student_id, plan_code, title, academic_year, semester,
-                     start_date, end_date, primary_teacher_id, created_by, status, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "draft", NOW(), NOW())'
-                );
-                $stmt->execute([
-                    $studentId, $planCode, $data['title'], $academicYear,
-                    $data['semester'] !== '' ? $data['semester'] : null,
-                    $startDate, $endDate, $userId, $userId,
-                ]);
-                $planId = $pdo->lastInsertId();
-
-                $logStmt = $pdo->prepare(
-                    'INSERT INTO iep_approval_logs (iep_plan_id, approver_id, approver_type, approver_name,
-                     action, new_status, comment, created_at)
-                     VALUES (?, ?, "user", ?, "submit", "draft", "批量导入IEP计划", NOW())'
-                );
-                $logStmt->execute([$planId, $userId, $userName]);
-                // v15：预检模式回滚本行（数据与审批留痕都不落库），auditLog 也跳过
-                if ($dryRun) {
-                    $pdo->rollBack();
-                } else {
-                    $pdo->commit();
-                    auditLog('import', 'iep', 'iep_plan', intval($planId), $data['title'], null, null, '批量导入IEP计划');
+            foreach ($parsed['rows'] as $lineNo => $row) {
+                $data = io_extract_row($row, $colIndex);
+                if (trim($data['student_name']) === '' || trim($data['title']) === '') {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：学生姓名与计划标题不能为空";
+                    continue;
                 }
-                $inserted++;
-            } catch (Throwable $e) {
-                if ($pdo->inTransaction()) { $pdo->rollBack(); }
-                $failed++;
-                $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
-            }
-        }
 
-        // v15：预检报告（此时库中没有任何新数据）
-        if ($dryRun) {
-            io_import_dry_run_response('iep', $inserted, $failed, $errors);
+                $studentId = io_lookup_student_by_name($pdo, $data['student_name']);
+                if ($studentId <= 0) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：学生「" . $data['student_name'] . "」不存在或姓名重复，已跳过";
+                    continue;
+                }
+                // 学生范围校验（fail-closed，逐行跳过）
+                if (!isStudentInScope($studentId, getDataScope())) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：学生「" . $data['student_name'] . "」超出数据范围，已跳过";
+                    continue;
+                }
+
+                $startDate = io_normalize_date($data['start_date']);
+                $endDate = io_normalize_date($data['end_date']);
+                if ($startDate === false || $endDate === false) {
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：日期格式错误（应为 YYYY-MM-DD）";
+                    continue;
+                }
+
+                $academicYear = $data['academic_year'] !== '' ? $data['academic_year'] : (date('Y') . '-' . (date('Y') + 1));
+                $planCode = 'IEP-' . date('Y') . '-' . str_pad(mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+
+                // 行内原子性：本行要写「计划 + 审批留痕」两条语句，
+                // 用 SAVEPOINT 保证要么都成、要么都不成——早年逐行事务
+                // 靠 commit/rollBack 天然做到，改整批后必须显式补回。
+                $pdo->exec('SAVEPOINT sp_iep_import_row');
+                try {
+                    $stmt = $pdo->prepare(
+                        'INSERT INTO iep_plans (student_id, plan_code, title, academic_year, semester,
+                         start_date, end_date, primary_teacher_id, created_by, status, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "draft", NOW(), NOW())'
+                    );
+                    $stmt->execute([
+                        $studentId, $planCode, $data['title'], $academicYear,
+                        $data['semester'] !== '' ? $data['semester'] : null,
+                        $startDate, $endDate, $userId, $userId,
+                    ]);
+                    $planId = $pdo->lastInsertId();
+
+                    $logStmt = $pdo->prepare(
+                        'INSERT INTO iep_approval_logs (iep_plan_id, approver_id, approver_type, approver_name,
+                         action, new_status, comment, created_at)
+                         VALUES (?, ?, "user", ?, "submit", "draft", "批量导入IEP计划", NOW())'
+                    );
+                    $logStmt->execute([$planId, $userId, $userName]);
+                    // 预检模式不写审计：结尾统一 rollBack，auditLog 随事务一起回滚
+                    if (!$dryRun) {
+                        auditLog('import', 'iep', 'iep_plan', intval($planId), $data['title'], null, null, '批量导入IEP计划');
+                    }
+                    $inserted++;
+                } catch (Throwable $e) {
+                    $pdo->exec('ROLLBACK TO sp_iep_import_row');
+                    $failed++;
+                    $errors[] = "第 " . ($lineNo + 2) . " 行：导入失败";
+                    error_log('iep/import 第 ' . ($lineNo + 2) . ' 行失败: ' . $e->getMessage());
+                }
+            }
+
+            // v15：预检报告（此时库中没有任何新数据）
+            if ($dryRun) {
+                $pdo->rollBack();
+                io_import_dry_run_response('iep', $inserted, $failed, $errors);
+            }
+            $pdo->commit();
+        } catch (Throwable $batchError) {
+            // 整批提交（修复事务口径不一致：iep 导入曾逐行提交，其余四个导入整批）
+            if ($pdo->inTransaction()) { $pdo->rollBack(); }
+            error_log('iep/import batch error: ' . $batchError->getMessage());
+            jsonResponse(['success' => false, 'message' => '导入过程中发生异常，本批数据已整体回滚', 'code' => 500], 500);
         }
 
         jsonResponse([
